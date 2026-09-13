@@ -29,6 +29,7 @@ RUN bun install --frozen-lockfile --production --filter '!@kobralink/desktop' --
 COPY --from=build /repo/apps/api/src apps/api/src
 COPY --from=build /repo/apps/api/prisma apps/api/prisma
 COPY --from=build /repo/apps/api/certs apps/api/certs
+COPY --from=build /repo/apps/api/assets apps/api/assets
 COPY --from=build /repo/apps/api/tsconfig.json apps/api/
 COPY --from=build /repo/apps/web/dist apps/web/dist
 WORKDIR /repo/apps/api

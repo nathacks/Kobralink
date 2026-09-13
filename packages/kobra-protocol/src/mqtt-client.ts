@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import mqtt, { type IClientOptions, type MqttClient } from 'mqtt';
-import type { KobraInfoData, KobraMessage, KobraMultiColorBoxData, KobraPrintData } from './types';
+import type { KobraInfoData, KobraMessage, KobraMultiColorBoxData, KobraPrintData, KobraSkipData } from './types';
 
 export interface KobraLogger {
     debug(msg: string, ...args: unknown[]): void;
@@ -396,6 +396,25 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
     ) {
         this.send('multiColorBox', 'setDry', {
             multi_color_box: aceIds.map((id) => ({ id, drying_status: { ...drying } })),
+        });
+    }
+
+    querySkipObjects() {
+        return this.request<KobraSkipData>('skip', 'query_obj', undefined, 3000);
+    }
+
+    skipObjects(names: string[]) {
+        return this.request<KobraSkipData>('skip', 'start', { objects_skip_parts: names }, 5000);
+    }
+
+    listLocalFiles() {
+        this.send('file', 'listLocal', { page_num: 1, page_size: 1000, path: '/' });
+    }
+
+    deleteLocalFiles(filenames: string[]) {
+        this.send('file', 'deleteBatch', {
+            root: 'local',
+            files: filenames.map((filename) => ({ path: '/', filename })),
         });
     }
 

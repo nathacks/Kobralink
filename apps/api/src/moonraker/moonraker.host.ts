@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { PrinterBridge } from '../bridge/printer-bridge';
+import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
 import { MoonrakerAppModule } from './moonraker-app.module';
 
@@ -11,12 +12,15 @@ export class MoonrakerHost {
     private readonly log = new Logger(MoonrakerHost.name);
     private readonly apps = new Map<string, NestExpressApplication>();
 
-    constructor(private readonly gcode: GcodeService) {}
+    constructor(
+        private readonly gcode: GcodeService,
+        private readonly filaments: FilamentService,
+    ) {}
 
     async startFor(bridge: PrinterBridge): Promise<void> {
         if (this.apps.has(bridge.id)) return;
         const app = await NestFactory.create<NestExpressApplication>(
-            MoonrakerAppModule.forPrinter(bridge, this.gcode),
+            MoonrakerAppModule.forPrinter(bridge, this.gcode, this.filaments),
             {
                 logger: ['error', 'warn', 'log'],
                 bodyParser: true,

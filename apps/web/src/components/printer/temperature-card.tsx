@@ -1,4 +1,3 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { useLiveState } from '@/stores/printers';
 
 const PRESETS = [
     { label: 'PLA', nozzle: 210, bed: 60 },
@@ -16,7 +16,8 @@ const PRESETS = [
     { label: 'Off', nozzle: 0, bed: 0 },
 ];
 
-export function TemperatureCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
+export function TemperatureCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
     const set = useMutation({
         mutationFn: (input: { nozzle?: number; bed?: number }) => api.control.temperature(printerId, input),
         onError: (e) => toast.error(e.message),

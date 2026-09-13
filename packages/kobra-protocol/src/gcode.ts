@@ -11,6 +11,7 @@ export interface GcodeMetadata {
     firstLayerHeight: number;
     thumbnailB64: string;
     filaments: GcodeFilamentInfo[];
+    objects: string[];
 }
 
 function headAndTail(data: Buffer, head: number, tail: number): string {
@@ -133,7 +134,16 @@ export function parseGcodeMetadata(data: Buffer): GcodeMetadata {
         firstLayerHeight,
         thumbnailB64: extractThumbnail(data),
         filaments: extractFilamentInfo(data),
+        objects: extractObjectNames(data),
     };
+}
+
+export function extractObjectNames(data: Buffer): string[] {
+    const text = headAndTail(data, 2 * 1024 * 1024, 256 * 1024);
+    const names = new Set<string>();
+    const re = /^EXCLUDE_OBJECT_DEFINE\s+NAME=(\S+)/gm;
+    for (const m of text.matchAll(re)) names.add(m[1]);
+    return [...names];
 }
 
 function splitList(raw: string, sep: string | RegExp): string[] {

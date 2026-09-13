@@ -5,18 +5,26 @@ import {
     aceDrySchema,
     amsFeedSchema,
     amsSetSlotSchema,
+    type DeletePrinterFilesInput,
+    deletePrinterFilesSchema,
+    type FileObjectsDto,
     type MoveAxisInput,
     moveAxisSchema,
     type PrinterLiveState,
+    type PrintPrinterFileInput,
+    printPrinterFileSchema,
     type SetFanInput,
     type SetLightInput,
     type SetSpeedInput,
     type SetTemperatureInput,
+    type SkipObjectsInput,
+    type SkipStateDto,
     type StartPrintInput,
     setFanSchema,
     setLightSchema,
     setSpeedSchema,
     setTemperatureSchema,
+    skipObjectsSchema,
     startPrintSchema,
 } from '@kobralink/shared';
 import {
@@ -42,6 +50,7 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { fromEvent, map, merge, Observable, of, throttleTime } from 'rxjs';
 import type { z } from 'zod';
+
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { serveSnapshot, serveStream } from '../bridge/camera';
 import { BridgeOfflineError, type PrinterBridge } from '../bridge/printer-bridge';
@@ -247,7 +256,110 @@ export class KxController {
         if (!file) throw new NotFoundException('Fichier introuvable');
         this.log.log(`Impression demandée: ${file.filename}`);
         const serveBase = await this.serveBase(bridge);
-        return this.run(() => bridge.printStoredFile(file.id, { serveBase, autoLeveling: body.autoLeveling }));
+        return this.run(() =>
+            bridge.printStoredFile(file.id, {
+                serveBase,
+                autoLeveling: body.autoLeveling,
+                excludedObjects: body.excludedObjects,
+            }),
+        );
+    }
+
+    @Get('printer-files')
+    printerFiles(@Param('id') id: string) {
+        return this.run(() => this.bridge(id).listPrinterFiles());
+    }
+
+    @Post('printer-files/delete')
+    @HttpCode(204)
+    async deletePrinterFiles(
+        @Param('id') id: string,
+        @Body(new ZodPipe(deletePrinterFilesSchema)) body: DeletePrinterFilesInput,
+    ) {
+        await this.run(() => this.bridge(id).deletePrinterFiles(body.filenames));
+    }
+
+    @Post('printer-files/print')
+    @HttpCode(204)
+    async printPrinterFile(
+        @Param('id') id: string,
+        @Body(new ZodPipe(printPrinterFileSchema)) body: PrintPrinterFileInput,
+    ) {
+        this.log.log(`Impression d'un fichier de l'imprimante demandée: ${body.filename}`);
+        await this.run(() => this.bridge(id).printPrinterFile(body.filename, body.sizeBytes ?? 0, body.autoLeveling));
+    }
+
+    @Get('printer-files/download')
+    async downloadPrinterFile(@Param('id') id: string, @Query('filename') filename: string, @Res() res: Response) {
+        if (!filename) throw new BadRequestException('filename requis');
+        const url = this.run(() => this.bridge(id).printerFileDownloadUrl(filename));
+        this.log.log(`Téléchargement depuis l'imprimante: ${url}`);
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20_000);
+        let upstream: globalThis.Response;
+        try {
+            upstream = await fetch(url, { signal: ctrl.signal });
+        } catch (e) {
+            clearTimeout(timer);
+            throw new ServiceUnavailableException(
+                `Imprimante injoignable pour le téléchargement: ${(e as Error).message}`,
+            );
+        }
+        clearTimeout(timer);
+        if (!upstream.ok || !upstream.body) {
+            const text = await upstream.text().catch(() => '');
+            this.log.warn(`Téléchargement refusé (${upstream.status}) ${url} ${text.slice(0, 200)}`);
+            throw new BadRequestException(
+                `L'imprimante a refusé le téléchargement (HTTP ${upstream.status})${text ? ` : ${text.slice(0, 120)}` : ''}`,
+            );
+        }
+        res.setHeader('content-type', upstream.headers.get('content-type') ?? 'application/octet-stream');
+        res.setHeader('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        const len = upstream.headers.get('content-length');
+        if (len) res.setHeader('content-length', len);
+        const { Readable } = await import('node:stream');
+        Readable.fromWeb(upstream.body as import('node:stream/web').ReadableStream).pipe(res);
+    }
+
+    @Get('printer-files/thumbnail')
+    async printerFileThumbnail(@Param('id') id: string, @Query('filename') filename: string) {
+        if (!filename) throw new BadRequestException('filename requis');
+        const thumbnail = await this.run(() => this.bridge(id).printerFileThumbnail(filename));
+        return { thumbnail };
+    }
+
+    @Get('files/:fileId/objects')
+    async fileObjects(@Param('id') id: string, @Param('fileId') fileId: string): Promise<FileObjectsDto> {
+        const info = await this.gcode.objects(fileId);
+        if (!info) throw new NotFoundException('Fichier introuvable');
+        if (!info.names.length) this.bridge(id).requestFileObjects(info.filename);
+        return { names: info.names, svgB64: info.svgB64 };
+    }
+
+    @Post('skip')
+    @HttpCode(204)
+    async skip(@Param('id') id: string, @Body(new ZodPipe(skipObjectsSchema)) body: SkipObjectsInput) {
+        await this.run(() => this.bridge(id).skipObjects(body.names));
+    }
+
+    @Post('skip/query')
+    async skipQuery(@Param('id') id: string): Promise<SkipStateDto> {
+        await this.run(() => this.bridge(id).querySkip());
+        return this.skipState(id);
+    }
+
+    @Get('skip/state')
+    async skipState(@Param('id') id: string): Promise<SkipStateDto> {
+        const s = this.bridge(id).snapshot();
+        const file = s.filename ? await this.gcode.getByFilename(s.filename) : null;
+        const info = file ? await this.gcode.objects(file.id) : null;
+        return {
+            filename: s.filename,
+            objects: info?.names ?? [],
+            skipped: s.skippedObjects,
+            svgB64: info?.svgB64 ?? '',
+            ts: s.skipTs,
+        };
     }
 
     @Delete('files/:fileId')

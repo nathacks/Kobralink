@@ -8,6 +8,7 @@ export const printerSettingsSchema = z.object({
     pollIntervalSec: z.number().int().min(1).max(60).default(3),
     cameraOnPrint: z.boolean().default(false),
     deletePrinterFileAfterPrint: z.boolean().default(false),
+    visibleVendors: z.array(z.string().trim().min(1)).default([]),
 });
 export type PrinterSettings = z.infer<typeof printerSettingsSchema>;
 

@@ -15,6 +15,7 @@ export interface KobralinkEnv {
     webDir: string | null;
 
     certsDir: string;
+    assetsDir: string;
 
     migrationsDir: string;
 
@@ -65,6 +66,7 @@ export function loadEnv(): KobralinkEnv {
         authSecret: ensureSecret(dataDir),
         webDir,
         certsDir: process.env.KOBRALINK_CERTS_DIR ?? path.join(root, 'certs'),
+        assetsDir: path.join(root, 'assets'),
         migrationsDir: path.join(root, 'prisma', 'migrations'),
         extraOrigins: (process.env.KOBRALINK_EXTRA_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173')
             .split(',')

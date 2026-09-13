@@ -31,6 +31,7 @@
         "@thallesp/nestjs-better-auth": "^2.8.0",
         "better-auth": "^1.7.4",
         "express": "^5.1.0",
+        "fflate": "^0.8.3",
         "multer": "^2.0.2",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.2",

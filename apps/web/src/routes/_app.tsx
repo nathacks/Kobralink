@@ -1,15 +1,16 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useParams } from '@tanstack/react-router';
 import { LayoutGrid, LogOut, Printer } from 'lucide-react';
 import { useEffect } from 'react';
 import { Avatar } from '@/components/layout/avatar';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
+import { PrinterSwitcher } from '@/components/printer/printer-switcher';
+import { usePrintersSync } from '@/hooks/use-printers-sync';
 import { authClient } from '@/lib/auth-client';
 import { greeting } from '@/lib/format';
-import { printersQuery } from '@/lib/queries';
 import { sessionQuery } from '@/lib/session';
-import { usePrintersStore } from '@/stores/printers';
+import { usePrinters, usePrintersStore } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app')({
     beforeLoad: async ({ context, location }) => {
@@ -26,15 +27,17 @@ function AppLayout() {
     const { session } = Route.useRouteContext();
     const qc = useQueryClient();
     const navigate = useNavigate();
-    const printers = useQuery(printersQuery);
-    const setPrinters = usePrintersStore((s) => s.setPrinters);
+    usePrintersSync();
+    const printers = usePrinters();
+    const select = usePrintersStore((s) => s.select);
+    const { printerId } = useParams({ strict: false });
 
     useEffect(() => {
-        if (printers.data) setPrinters(printers.data);
-    }, [printers.data, setPrinters]);
+        select(printerId ?? null);
+    }, [printerId, select]);
 
-    const online = printers.data?.filter((p) => p.live?.connected).length ?? 0;
-    const printing = printers.data?.filter((p) => p.live?.printState === 'printing').length ?? 0;
+    const online = printers.filter((p) => p.live?.connected).length ?? 0;
+    const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (session.user.name || session.user.email.split('@')[0]).split(' ')[0];
 
     const logout = async () => {
@@ -43,11 +46,11 @@ function AppLayout() {
         await navigate({ to: '/login' });
     };
 
-    const subtitle = !printers.data?.length
+    const subtitle = !printers.length
         ? 'Ajoutez votre première imprimante pour commencer.'
         : printing
-          ? `${printing} impression${printing > 1 ? 's' : ''} en cours · ${online}/${printers.data.length} en ligne`
-          : `${online}/${printers.data.length} imprimante${printers.data.length > 1 ? 's' : ''} en ligne`;
+          ? `${printing} impression${printing > 1 ? 's' : ''} en cours · ${online}/${printers.length} en ligne`
+          : `${online}/${printers.length} imprimante${printers.length > 1 ? 's' : ''} en ligne`;
 
     return (
         <div className="flex min-h-svh gap-4 p-4 pt-(--inset-top)">
@@ -62,7 +65,7 @@ function AppLayout() {
                         <RailLink to="/printers" activeOptions={{ exact: true }} title="Accueil">
                             <LayoutGrid />
                         </RailLink>
-                        {printers.data?.map((p) => (
+                        {printers.map((p) => (
                             <RailLink
                                 key={p.id}
                                 to="/printers/$printerId"
@@ -96,7 +99,7 @@ function AppLayout() {
                         <p className="text-sm text-muted-foreground">{subtitle}</p>
                     </div>
                     <div className="ml-auto flex items-center gap-3">
-                        <AddPrinterDialog compact />
+                        {printerId ? <PrinterSwitcher /> : <AddPrinterDialog compact />}
                     </div>
                 </header>
                 <main className="min-w-0 flex-1 pb-6">

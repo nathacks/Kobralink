@@ -5,6 +5,7 @@ import { createAuth } from './auth/auth';
 import { SetupController } from './auth/setup.controller';
 import { BridgeModule } from './bridge/bridge.module';
 import { loadEnv } from './config/env';
+import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
 import { KxModule } from './kx/kx.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -16,6 +17,7 @@ const env = loadEnv();
         PrismaModule,
         AuthModule.forRoot({ auth: createAuth(), bodyParser: { json: { limit: '5mb' } } }),
         GcodeModule,
+        FilamentModule,
         BridgeModule,
         KxModule,
         ...(env.webDir

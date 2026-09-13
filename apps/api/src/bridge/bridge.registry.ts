@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { loadEnv } from '../config/env';
+import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
 import { MoonrakerHost } from '../moonraker/moonraker.host';
 import { PrintersService } from '../printers/printers.service';
@@ -17,6 +18,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         private readonly printers: PrintersService,
         private readonly gcode: GcodeService,
         private readonly moonraker: MoonrakerHost,
+        private readonly filaments: FilamentService,
     ) {}
 
     private loadCerts(): { cert: Buffer; key: Buffer } {
@@ -79,6 +81,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         this.bridges.delete(id);
         await this.moonraker.stopFor(id);
         await bridge.stop();
+        this.filaments.forgetPrinter(id);
         this.log.log(`Bridge arrêté: ${bridge.config.name}`);
     }
 

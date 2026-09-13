@@ -33,6 +33,7 @@ await build({
 });
 
 fs.cpSync(path.join(apiRoot, 'certs'), path.join(outDir, 'certs'), { recursive: true });
+fs.cpSync(path.join(apiRoot, 'assets'), path.join(outDir, 'assets'), { recursive: true });
 fs.cpSync(path.join(apiRoot, 'prisma', 'migrations'), path.join(outDir, 'prisma', 'migrations'), { recursive: true });
 
 const deps = Object.fromEntries(

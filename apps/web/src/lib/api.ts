@@ -4,15 +4,24 @@ import type {
     AddPrinterInput,
     AmsFeedInput,
     AmsSetSlotInput,
+    FilamentProfile,
+    FileObjectsDto,
     GcodeFileDto,
+    ImportProfilesResult,
     MoveAxisInput,
     Printer,
+    PrinterFileDto,
     PrinterLiveState,
     PrintJobDto,
+    PrintPrinterFileInput,
     SetFanInput,
     SetLightInput,
+    SetSlotProfileInput,
     SetSpeedInput,
     SetTemperatureInput,
+    SkipStateDto,
+    SlotFilamentInfo,
+    SlotProfileRef,
     StartPrintInput,
     UpdatePrinterInput,
 } from '@kobralink/shared';
@@ -98,6 +107,48 @@ export const api = {
         dry: (id: string, input: AceDryInput) => request<void>(`/kx/printers/${id}/ace/dry`, json(input)),
     },
 
+    printerFiles: {
+        list: (id: string) => request<PrinterFileDto[]>(`/kx/printers/${id}/printer-files`),
+        remove: (id: string, filenames: string[]) =>
+            request<void>(`/kx/printers/${id}/printer-files/delete`, json({ filenames })),
+        print: (id: string, input: PrintPrinterFileInput) =>
+            request<void>(`/kx/printers/${id}/printer-files/print`, json(input)),
+        downloadUrl: (id: string, filename: string) =>
+            `/kx/printers/${id}/printer-files/download?filename=${encodeURIComponent(filename)}`,
+        thumbnail: (id: string, filename: string) =>
+            request<{ thumbnail: string }>(
+                `/kx/printers/${id}/printer-files/thumbnail?filename=${encodeURIComponent(filename)}`,
+            ),
+    },
+
+    skip: {
+        state: (id: string) => request<SkipStateDto>(`/kx/printers/${id}/skip/state`),
+        query: (id: string) => request<SkipStateDto>(`/kx/printers/${id}/skip/query`, { method: 'POST' }),
+        apply: (id: string, names: string[]) => request<void>(`/kx/printers/${id}/skip`, json({ names })),
+    },
+
+    filament: {
+        profiles: () => request<FilamentProfile[]>('/kx/filament/profiles'),
+        vendors: () => request<string[]>('/kx/filament/vendors'),
+        userProfiles: () => request<FilamentProfile[]>('/kx/filament/profiles/user'),
+        importProfiles: (files: File[]) => {
+            const fd = new FormData();
+            for (const f of files) fd.append('files', f, f.name);
+            return request<ImportProfilesResult>('/kx/filament/profiles/user', { method: 'POST', body: fd });
+        },
+        deleteUserProfile: (vendor: string, name: string) =>
+            request<{ removed: number; totalUser: number }>(
+                `/kx/filament/profiles/user?vendor=${encodeURIComponent(vendor)}&name=${encodeURIComponent(name)}`,
+                { method: 'DELETE' },
+            ),
+        slots: (id: string) => request<SlotFilamentInfo[]>(`/kx/printers/${id}/filament/slots`),
+        setSlotProfile: (id: string, slotIndex: number, input: SetSlotProfileInput) =>
+            request<{ slotIndex: number; profile: SlotProfileRef | null }>(
+                `/kx/printers/${id}/filament/slots/${slotIndex}/profile`,
+                json(input),
+            ),
+    },
+
     camera: {
         start: (id: string) => request<{ state: string }>(`/kx/printers/${id}/camera/start`, { method: 'POST' }),
         stop: (id: string) => request<void>(`/kx/printers/${id}/camera/stop`, { method: 'POST' }),
@@ -115,6 +166,7 @@ export const api = {
             return request<GcodeFileDto>(`/kx/printers/${id}/files`, { method: 'POST', body: fd });
         },
         print: (id: string, input: StartPrintInput) => request<GcodeFileDto>(`/kx/printers/${id}/print`, json(input)),
+        objects: (id: string, fileId: string) => request<FileObjectsDto>(`/kx/printers/${id}/files/${fileId}/objects`),
         remove: (id: string, fileId: string) =>
             request<void>(`/kx/printers/${id}/files/${fileId}`, { method: 'DELETE' }),
         verify: (id: string, fileId: string) =>

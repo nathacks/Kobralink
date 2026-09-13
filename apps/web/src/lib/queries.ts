@@ -29,3 +29,50 @@ export const setupQuery = queryOptions({
     queryFn: api.setupStatus,
     staleTime: 0,
 });
+
+export const filamentProfilesQuery = queryOptions({
+    queryKey: ['filament', 'profiles'],
+    queryFn: api.filament.profiles,
+    staleTime: 5 * 60_000,
+});
+
+export const filamentVendorsQuery = queryOptions({
+    queryKey: ['filament', 'vendors'],
+    queryFn: api.filament.vendors,
+    staleTime: 5 * 60_000,
+});
+
+export const userProfilesQuery = queryOptions({
+    queryKey: ['filament', 'user'],
+    queryFn: api.filament.userProfiles,
+});
+
+export const filamentSlotsQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'filament-slots'], queryFn: () => api.filament.slots(id) });
+
+export const fileObjectsQuery = (id: string, fileId: string) =>
+    queryOptions({
+        queryKey: ['printers', id, 'files', fileId, 'objects'],
+        queryFn: () => api.files.objects(id, fileId),
+        refetchInterval: (q) => (q.state.data?.names.length ? false : 3000),
+    });
+
+export const skipStateQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'skip'], queryFn: () => api.skip.state(id), refetchInterval: 5000 });
+
+export const printerFilesQuery = (id: string, enabled: boolean) =>
+    queryOptions({
+        queryKey: ['printers', id, 'printer-files'],
+        queryFn: () => api.printerFiles.list(id),
+        enabled,
+        staleTime: 60_000,
+        retry: false,
+    });
+
+export const printerFileThumbQuery = (id: string, filename: string) =>
+    queryOptions({
+        queryKey: ['printers', id, 'printer-files', filename, 'thumb'],
+        queryFn: () => api.printerFiles.thumbnail(id, filename),
+        staleTime: Number.POSITIVE_INFINITY,
+        retry: false,
+    });

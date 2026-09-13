@@ -21,7 +21,7 @@ export interface KobraInfoData {
     version?: string;
     state?: string;
     temp?: Partial<KobraTemp>;
-    urls?: { fileUploadurl?: string; rtspUrl?: string };
+    urls?: { fileUploadurl?: string; rtspUrl?: string; [k: string]: string | undefined };
     fan_speed_pct?: number;
     print_speed_mode?: number;
     project?: {
@@ -98,8 +98,27 @@ export interface KobraLightData {
     type?: number;
 }
 
+export interface KobraSkipData {
+    objects_skip_parts?: string[];
+    skipped?: string[];
+    skipped_parts?: string[];
+    [k: string]: unknown;
+}
+
+export interface KobraFileRecord {
+    filename: string;
+    is_dir?: boolean;
+    size?: number;
+    timestamp?: number;
+    [k: string]: unknown;
+}
+
 export interface KobraFileData {
     filename?: string;
+    records?: KobraFileRecord[];
+    total?: number;
+    total_count?: number;
+    count?: number;
     file_details?: {
         filename?: string;
         thumbnail?: string;
@@ -124,7 +143,7 @@ export interface PrintStartPayload {
     url: string;
     filename: string;
     md5: string;
-    filepath: null;
+    filepath: string | null;
     filetype: number;
     project_type: number;
     filesize: number;

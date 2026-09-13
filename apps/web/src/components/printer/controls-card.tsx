@@ -1,13 +1,12 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { useMutation } from '@tanstack/react-query';
 import { Fan, Gauge, Lightbulb } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useLiveState, usePrintersStore } from '@/stores/printers';
 
 const SPEED_MODES = [
     { value: 1, label: 'Silencieux' },
@@ -16,14 +15,11 @@ const SPEED_MODES = [
     { value: 4, label: 'Ultra' },
 ];
 
-export function ControlsCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
+export function ControlsCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
     const offline = !state.connected;
     const busy = state.printState === 'printing';
-    const [fan, setFan] = useState(state.fanSpeed);
-
-    const [brightness, setBrightness] = useState(state.lightBrightness);
-    useEffect(() => setFan(state.fanSpeed), [state.fanSpeed]);
-    useEffect(() => setBrightness(state.lightBrightness), [state.lightBrightness]);
+    const patchLiveState = usePrintersStore((s) => s.patchLiveState);
 
     const onError = (e: Error) => toast.error(e.message);
     const fanMut = useMutation({ mutationFn: (speed: number) => api.control.fan(printerId, { speed }), onError });
@@ -39,14 +35,14 @@ export function ControlsCard({ printerId, state }: { printerId: string; state: P
                 <CardTitle className="text-lg font-medium">Contrôles</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <Row icon={<Fan />} label="Ventilateur pièce" value={`${fan} %`}>
+                <Row icon={<Fan />} label="Ventilateur pièce" value={`${state.fanSpeed} %`}>
                     <Slider
-                        value={[fan]}
+                        value={[state.fanSpeed]}
                         min={0}
                         max={100}
                         step={5}
                         disabled={offline}
-                        onValueChange={([v]) => setFan(v)}
+                        onValueChange={([v]) => patchLiveState(printerId, { fanSpeed: v })}
                         onValueCommit={([v]) => fanMut.mutate(v)}
                     />
                 </Row>
@@ -56,18 +52,18 @@ export function ControlsCard({ printerId, state }: { printerId: string; state: P
                     value={
                         <Switch
                             checked={state.lightOn}
-                            disabled={offline}
-                            onCheckedChange={(on) => lightMut.mutate({ on, brightness })}
+                            disabled={offline || lightMut.isPending}
+                            onCheckedChange={(on) => lightMut.mutate({ on, brightness: state.lightBrightness })}
                         />
                     }
                 >
                     <Slider
-                        value={[brightness]}
+                        value={[state.lightBrightness]}
                         min={0}
                         max={100}
                         step={5}
-                        disabled={offline}
-                        onValueChange={([v]) => setBrightness(v)}
+                        disabled={offline || lightMut.isPending || !state.lightOn}
+                        onValueChange={([v]) => patchLiveState(printerId, { lightBrightness: v })}
                         onValueCommit={([v]) => lightMut.mutate({ on: true, brightness: v })}
                     />
                 </Row>

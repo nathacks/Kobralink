@@ -1,16 +1,20 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ban, Pause, Play, X } from 'lucide-react';
+import { Ban, Pause, Play, Scissors, X } from 'lucide-react';
+import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { Ring } from '@/components/viz/ring';
 import { usePrinterAction } from '@/hooks/use-printer-action';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { useLiveState } from '@/stores/printers';
 
-export function PrintCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
+export function PrintCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
     const qc = useQueryClient();
     const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
+    const openDialog = useConfirmationDialogStore((s) => s.openDialog);
     const pause = usePrinterAction(printerId, api.control.pause, 'Pause demandée');
     const resume = usePrinterAction(printerId, api.control.resume, 'Reprise demandée');
     const cancel = usePrinterAction(printerId, api.control.cancel, 'Annulation demandée');
@@ -47,6 +51,19 @@ export function PrintCard({ printerId, state }: { printerId: string; state: Prin
                 </div>
                 {active && (
                     <div className="flex shrink-0 gap-2">
+                        <CircleButton
+                            title="Ignorer des objets"
+                            onClick={() =>
+                                openDialog({
+                                    title: 'Ignorer des objets',
+                                    description:
+                                        'Les objets sélectionnés ne seront plus imprimés à partir de la couche en cours. Irréversible pour cette impression.',
+                                    content: <SkipObjectsForm printerId={printerId} />,
+                                })
+                            }
+                        >
+                            <Scissors />
+                        </CircleButton>
                         {printing ? (
                             <CircleButton title="Pause" onClick={() => pause.mutate()} disabled={pause.isPending}>
                                 <Pause />

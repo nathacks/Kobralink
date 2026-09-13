@@ -8,6 +8,7 @@ import {
     KobraMqttClient,
     type KobraMultiColorBoxData,
     type KobraPrintData,
+    type KobraSkipData,
     type PrintStartPayload,
     uploadGcode,
 } from '@kobralink/kobra-protocol';
@@ -18,6 +19,7 @@ import {
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
     PRE_PRINT_STATES,
+    type PrinterFileDto,
     type PrinterLiveState,
     type PrinterSettings,
     TERMINAL_PRINT_STATES,
@@ -120,7 +122,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             fanSpeed: 0,
             printSpeedMode: 2,
             lightOn: false,
-            lightBrightness: 80,
+            lightBrightness: 0,
             taskId: '-1',
             fileReady: '',
             errorCode: 0,
@@ -130,6 +132,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             amsLoadedSlot: -1,
             aceUnits: [],
             aceDrying: EMPTY_DRYING,
+            skippedObjects: [],
+            skipTs: 0,
             storageTotalMb: 0,
             storageUsedMb: 0,
             updatedAt: Date.now(),
@@ -336,6 +340,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             case 'file/report':
                 this.onFile(payload as KobraMessage<KobraFileData>);
                 break;
+            case 'skip/report':
+                this.onSkip(payload as KobraMessage<KobraSkipData>);
+                break;
             case 'buried/report':
                 this.onBuried(payload as KobraMessage<Record<string, unknown>>);
                 break;
@@ -391,6 +398,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (kobraState === 'finished' && this.currentJobId) {
             void this.gcode.finishJob(this.currentJobId, 'completed');
             this.log.log(`Impression terminée: ${this.currentJobFilename}`);
+            if (this.config.settings.deletePrinterFileAfterPrint && this.currentJobFilename) {
+                const name = this.currentJobFilename;
+                setTimeout(() => {
+                    this.deletePrinterFiles([name])
+                        .then(() => this.log.log(`Fichier supprimé de l'imprimante: ${name}`))
+                        .catch((e) => this.log.warn(`Suppression sur l'imprimante impossible (${name}): ${e.message}`));
+                }, 3000);
+            }
             this.currentJobId = '';
             this.currentJobFilename = '';
         } else if ((kobraState === 'stoped' || kobraState === 'canceled') && this.currentJobId) {
@@ -477,6 +492,15 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.s.bedTemp = Number(d.temp.curr_hotbed_temp ?? 0);
             this.s.bedTarget = Number(d.temp.target_hotbed_temp ?? 0);
         }
+        if (d.urls) {
+            const keys = Object.keys(d.urls).sort().join(',');
+            if (keys !== this.knownUrlKeys) {
+                this.knownUrlKeys = keys;
+                this.log.log(`URLs annoncées par l'imprimante: ${JSON.stringify(d.urls)}`);
+            }
+            const dl = Object.entries(d.urls).find(([k, v]) => /download/i.test(k) && typeof v === 'string');
+            this.downloadUrlTemplate = dl?.[1] ?? '';
+        }
         if (d.urls?.fileUploadurl) this.uploadUrl = d.urls.fileUploadurl;
         if (d.urls?.rtspUrl) {
             this.s.cameraUrl = d.urls.rtspUrl;
@@ -532,7 +556,76 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.publish();
     }
 
+    private knownUrlKeys = '';
+    private downloadUrlTemplate = '';
+
+    printerFileDownloadUrl(filename: string): string {
+        const encoded = encodeURIComponent(filename);
+        if (this.downloadUrlTemplate) {
+            const t = this.downloadUrlTemplate;
+            if (t.includes('{filename}')) return t.replace('{filename}', encoded);
+            return `${t}${t.includes('?') ? '&' : '?'}filename=${encoded}`;
+        }
+        if (!this.uploadUrl)
+            throw new Error("URL d'accès aux fichiers de l'imprimante inconnue (pas encore de rapport info)");
+        const u = new URL(this.uploadUrl);
+        const token = u.searchParams.get('s') ?? '';
+        return `http://${u.hostname}:${u.port || 18910}/gcode_download?s=${encodeURIComponent(token)}&filename=${encoded}`;
+    }
+
+    private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();
+    private readonly printerThumbs = new Map<string, string>();
+
+    private waitFileAction(
+        action: string,
+        send: () => void,
+        timeoutMs = 8000,
+    ): Promise<KobraMessage<KobraFileData> | null> {
+        this.ensureConnected();
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                if (this.fileWaiters.get(action) === done) this.fileWaiters.delete(action);
+                resolve(null);
+            }, timeoutMs);
+            const done = (m: KobraMessage<KobraFileData>) => {
+                clearTimeout(timer);
+                this.fileWaiters.delete(action);
+                resolve(m);
+            };
+            this.fileWaiters.set(action, done);
+            send();
+        });
+    }
+
+    async listPrinterFiles(): Promise<PrinterFileDto[]> {
+        const res = await this.waitFileAction('listLocal', () => this.client.listLocalFiles(), 15000);
+        if (res?.code !== 200) throw new Error("L'imprimante n'a pas renvoyé la liste de ses fichiers");
+        return (res.data?.records ?? [])
+            .filter((r) => !r.is_dir)
+            .map((r) => ({ filename: r.filename, sizeBytes: Number(r.size ?? 0), timestamp: Number(r.timestamp ?? 0) }))
+            .sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    async deletePrinterFiles(filenames: string[]): Promise<void> {
+        const res = await this.waitFileAction('deleteBatch', () => this.client.deleteLocalFiles(filenames));
+        if (res?.state !== 'success') throw new Error("Suppression refusée par l'imprimante");
+        for (const f of filenames) this.printerThumbs.delete(f);
+    }
+
+    async printerFileThumbnail(filename: string): Promise<string> {
+        const cached = this.printerThumbs.get(filename);
+        if (cached !== undefined) return cached;
+        const res = await this.waitFileAction('fileDetails', () => this.client.requestFileDetails(filename), 5000);
+        if (!res) throw new Error('Miniature indisponible');
+        const thumb = res.data?.file_details?.thumbnail ?? res.data?.file_details?.png_image ?? '';
+        this.printerThumbs.set(filename, thumb);
+        return thumb;
+    }
+
     private onFile(p: KobraMessage<KobraFileData>): void {
+        const waiter = this.fileWaiters.get(p.action);
+        if (waiter) waiter(p);
+        if (p.action === 'listLocal' || p.action === 'deleteBatch') return;
         const d = p.data ?? {};
         const details = d.file_details ?? {};
         const thumb = details.thumbnail || details.png_image || '';
@@ -542,6 +635,76 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.s.thumbnail = thumb;
             this.publish();
         }
+        const objects = details.objects_skip_parts ?? [];
+        if (objects.length && fileName) {
+            void this.gcode.updateObjects(fileName, objects, details.svg_image ?? '').catch((e) => {
+                this.log.warn(`Mise à jour des objets impossible pour ${fileName}: ${(e as Error).message}`);
+            });
+        }
+    }
+
+    private pendingPreprintSkip: string[] = [];
+    private pendingPreprintDeadline = 0;
+
+    private onSkip(p: KobraMessage<KobraSkipData>): void {
+        const d = p.data ?? {};
+        let skipped = (d.objects_skip_parts ?? d.skipped ?? d.skipped_parts ?? []).map(String).filter(Boolean);
+        if (!skipped.length && this.pendingPreprintSkip.length && Date.now() <= this.pendingPreprintDeadline) return;
+        const active = this.s.printState === 'printing' || this.s.printState === 'paused';
+        const existing = this.s.skippedObjects;
+        if (active && existing.length) {
+            if (!skipped.length) skipped = [...existing];
+            else if (!existing.every((n) => skipped.includes(n))) {
+                skipped = [...existing, ...skipped.filter((n) => !existing.includes(n))];
+            }
+        }
+        if (this.pendingPreprintSkip.length && this.pendingPreprintSkip.every((n) => skipped.includes(n))) {
+            this.pendingPreprintSkip = [];
+            this.pendingPreprintDeadline = 0;
+        }
+        this.s.skippedObjects = skipped;
+        this.s.skipTs = Date.now();
+        this.publish();
+    }
+
+    async skipObjects(names: string[]): Promise<void> {
+        this.ensureConnected();
+        const res = await this.client.skipObjects(names);
+        if (!res) throw new Error("Pas de réponse de l'imprimante (skip)");
+        if (res.state === 'failed') throw new Error(`Skip refusé par l'imprimante`);
+    }
+
+    async querySkip(): Promise<void> {
+        this.ensureConnected();
+        const prev = this.s.skipTs;
+        void this.client.querySkipObjects();
+        const deadline = Date.now() + 1500;
+        while (Date.now() < deadline && this.s.skipTs <= prev) await this.sleep(100);
+    }
+
+    requestFileObjects(filename: string): void {
+        if (this.client.connected) this.client.requestFileDetails(filename);
+    }
+
+    private async applyPreprintSkip(names: string[]): Promise<void> {
+        this.pendingPreprintSkip = [...names];
+        this.pendingPreprintDeadline = Date.now() + 20_000;
+        for (let i = 0; i < 20; i++) {
+            if (!this.running) break;
+            if (this.s.printState === 'printing' || this.s.printState === 'paused') {
+                const res = await this.client.skipObjects(names).catch(() => null);
+                if (res) {
+                    this.log.log(`Skip pré-impression appliqué (${names.length} objets)`);
+                    this.pendingPreprintSkip = [];
+                    this.pendingPreprintDeadline = 0;
+                    return;
+                }
+            }
+            await this.sleep(750);
+        }
+        this.log.warn('Skip pré-impression non confirmé');
+        this.pendingPreprintSkip = [];
+        this.pendingPreprintDeadline = 0;
     }
 
     private onBuried(p: KobraMessage<Record<string, unknown>>): void {
@@ -795,7 +958,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.client.requestFileDetails(file.filename);
     }
 
-    async printStoredFile(fileId: string, opts: { serveBase: string; autoLeveling?: boolean }): Promise<StoredFile> {
+    async printStoredFile(
+        fileId: string,
+        opts: { serveBase: string; autoLeveling?: boolean; excludedObjects?: string[] },
+    ): Promise<StoredFile> {
         this.ensureConnected();
         const loaded = await this.gcode.readData(fileId);
         if (!loaded) throw new Error('Fichier introuvable dans le GCode store');
@@ -814,8 +980,62 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         return all;
     }
 
-    private async startPrint(file: StoredFile, opts: { serveBase: string; autoLeveling?: boolean }): Promise<void> {
+    async printPrinterFile(filename: string, sizeBytes: number, autoLeveling?: boolean): Promise<void> {
+        this.ensureConnected();
         this.s.fileReady = '';
+        this.s.skippedObjects = [];
+        this.s.skipTs = Date.now();
+        const mapping = buildAutoAmsBoxMapping(this.loadedSlotsForPrint(), this.filamentMode);
+        const payload: PrintStartPayload = {
+            taskid: '-1',
+            url: '',
+            filename,
+            md5: '',
+            filepath: `/${filename}`,
+            filetype: 1,
+            project_type: 1,
+            filesize: sizeBytes,
+            ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
+            task_settings: this.taskSettings(autoLeveling, []),
+        };
+        this.s.slicerTimeSec = 0;
+        this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
+        this.log.log(`print/start (fichier imprimante) → ${filename}  ams=${mapping.length} slots`);
+        const result = await this.client.startPrint(payload);
+        if (!result) throw new Error("Pas de réponse de l'imprimante au démarrage de l'impression");
+        if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
+            this.log.warn(`print/start local refusé: ${JSON.stringify(result)}`);
+            throw new Error(
+                `Démarrage refusé par l'imprimante (code ${result.code ?? '?'}): ${result.msg ?? JSON.stringify(result.data)}`,
+            );
+        }
+        this.currentJobId = await this.gcode.startJob(this.config.id, filename, null);
+        this.currentJobFilename = filename;
+        this.s.filename = filename;
+        this.publish();
+    }
+
+    private taskSettings(autoLeveling: boolean | undefined, excluded: string[]): PrintStartPayload['task_settings'] {
+        return {
+            auto_leveling: (autoLeveling ?? this.config.settings.autoLeveling) ? 1 : 0,
+            vibration_compensation: this.config.settings.vibrationCompensation ? 1 : 0,
+            flow_calibration: 0,
+            dry_mode: 0,
+            ai_settings: { status: 0, count: 0, type: 1 },
+            timelapse: { status: 0, count: 0, type: 64 },
+            drying_settings: { status: 0, target_temp: 0, duration: 0, remain_time: 0 },
+            model_objects_skip_parts: excluded,
+        };
+    }
+
+    private async startPrint(
+        file: StoredFile,
+        opts: { serveBase: string; autoLeveling?: boolean; excludedObjects?: string[] },
+    ): Promise<void> {
+        this.s.fileReady = '';
+        const excluded = (opts.excludedObjects ?? []).filter((n) => file.objects.includes(n));
+        this.s.skippedObjects = excluded;
+        this.s.skipTs = Date.now();
         let loaded = this.loadedSlotsForPrint();
 
         const used = new Set(file.filaments.filter((f) => f.isUsed).map((f) => f.slotIndex));
@@ -832,16 +1052,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             project_type: 1,
             filesize: file.sizeBytes,
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
-            task_settings: {
-                auto_leveling: (opts.autoLeveling ?? this.config.settings.autoLeveling) ? 1 : 0,
-                vibration_compensation: this.config.settings.vibrationCompensation ? 1 : 0,
-                flow_calibration: 0,
-                dry_mode: 0,
-                ai_settings: { status: 0, count: 0, type: 1 },
-                timelapse: { status: 0, count: 0, type: 64 },
-                drying_settings: { status: 0, target_temp: 0, duration: 0, remain_time: 0 },
-                model_objects_skip_parts: [],
-            },
+            task_settings: this.taskSettings(opts.autoLeveling, excluded),
         };
         this.s.slicerTimeSec = file.estPrintTimeSec;
         this.s.thumbnail = file.thumbnail ?? '';
@@ -857,6 +1068,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobFilename = file.filename;
         this.s.filename = file.filename;
         this.publish();
+        if (excluded.length) void this.applyPreprintSkip(excluded);
     }
 }
 

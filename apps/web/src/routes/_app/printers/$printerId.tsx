@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Settings } from 'lucide-react';
 import { ActivityCard } from '@/components/printer/activity-card';
@@ -10,8 +9,9 @@ import { FilesCard } from '@/components/printer/files/files-card';
 import { PrintCard } from '@/components/printer/print-card';
 import { TemperatureCard } from '@/components/printer/temperature-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePrinterEvents, useSamples } from '@/hooks/use-printer-events';
-import { printerQuery, printerStateQuery } from '@/lib/queries';
+import { usePrinterSync } from '@/hooks/use-printers-sync';
+import { printerQuery } from '@/lib/queries';
+import { usePrinter } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app/printers/$printerId')({
     loader: ({ context, params }) => context.queryClient.ensureQueryData(printerQuery(params.printerId)),
@@ -20,20 +20,18 @@ export const Route = createFileRoute('/_app/printers/$printerId')({
 
 function PrinterDashboard() {
     const { printerId } = Route.useParams();
-    const printer = useQuery(printerQuery(printerId));
-    const state = useQuery(printerStateQuery(printerId));
-    const samples = useSamples(printerId);
-    usePrinterEvents(printerId);
+    usePrinterSync(printerId, { events: true });
+    const printer = usePrinter(printerId);
+    const live = printer?.live;
 
-    if (!printer.data) return <Skeleton className="h-40 rounded-3xl" />;
-    const live = state.data ?? printer.data.live;
+    if (!printer) return <Skeleton className="h-40 rounded-3xl" />;
 
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3 px-2">
-                <h2 className="text-xl font-medium">{printer.data.name}</h2>
+                <h2 className="text-xl font-medium">{printer.name}</h2>
                 <span className="text-sm text-muted-foreground">
-                    {printer.data.ip} · Moonraker :{printer.data.httpPort}
+                    {printer.ip} · Moonraker :{printer.httpPort}
                 </span>
                 <Link
                     to="/printers/$printerId/settings"
@@ -55,27 +53,23 @@ function PrinterDashboard() {
             ) : (
                 <div className="grid gap-4 lg:grid-cols-3">
                     <div className="lg:col-span-2">
-                        <ActivityCard state={live} samples={samples} />
+                        <ActivityCard printerId={printerId} />
                     </div>
-                    <PrintCard printerId={printerId} state={live} />
+                    <PrintCard printerId={printerId} />
                     <div className="lg:col-span-2">
-                        <CameraCard
-                            printerId={printerId}
-                            state={live}
-                            cameraOnPrint={printer.data.settings.cameraOnPrint}
-                        />
+                        <CameraCard printerId={printerId} />
                     </div>
                     <div className="grid gap-4 lg:col-span-1">
-                        <AmsCard printerId={printerId} state={live} />
-                        <ControlsCard printerId={printerId} state={live} />
+                        <AmsCard printerId={printerId} />
+                        <ControlsCard printerId={printerId} />
                     </div>
                     <div className="lg:col-span-2">
-                        <FilesCard printerId={printerId} state={live} />
+                        <FilesCard printerId={printerId} />
                     </div>
                     <div className="lg:col-span-2">
-                        <TemperatureCard printerId={printerId} state={live} />
+                        <TemperatureCard printerId={printerId} />
                     </div>
-                    <AxesCard printerId={printerId} state={live} />
+                    <AxesCard printerId={printerId} />
                 </div>
             )}
         </div>

@@ -91,6 +91,8 @@ export interface PrinterLiveState {
     amsLoadedSlot: number;
     aceUnits: AceUnit[];
     aceDrying: AceDrying;
+    skippedObjects: string[];
+    skipTs: number;
     storageTotalMb: number;
     storageUsedMb: number;
     updatedAt: number;

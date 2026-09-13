@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowUpRight, Printer, RefreshCw, Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { printersQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
+import { usePrinters } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app/printers/')({
     loader: ({ context }) => context.queryClient.ensureQueryData(printersQuery),
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/_app/printers/')({
 
 function PrintersPage() {
     const qc = useQueryClient();
-    const printers = useQuery(printersQuery);
+    const printers = usePrinters();
     const reconnect = useMutation({
         mutationFn: api.printers.reconnect,
         onSuccess: () => {
@@ -27,7 +28,7 @@ function PrintersPage() {
         onError: (e) => toast.error(e.message),
     });
 
-    if (printers.data?.length === 0) {
+    if (printers.length === 0) {
         return (
             <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-primary/40 p-10 text-center">
                 <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -45,7 +46,7 @@ function PrintersPage() {
 
     return (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {printers.data?.map((p) => {
+            {printers.map((p) => {
                 const live = p.live;
                 const printing = live?.printState === 'printing' || live?.printState === 'paused';
                 return (

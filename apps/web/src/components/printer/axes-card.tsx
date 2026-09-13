@@ -1,4 +1,3 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Home, Power } from 'lucide-react';
 import { useState } from 'react';
@@ -7,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useLiveState } from '@/stores/printers';
 
 const AXIS = { Y: 1, X: 2, Z: 3, ALL: 4 } as const;
 const DISTANCES = [1, 10, 50];
 
-export function AxesCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
+export function AxesCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
     const locked = !state.connected || state.printState === 'printing';
     const [distance, setDistance] = useState(10);
     const onError = (e: Error) => toast.error(e.message);

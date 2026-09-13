@@ -2,6 +2,15 @@ import type { AmsSlot } from '@kobralink/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { loadEnv } from '../config/env';
+import { FilamentService } from '../filament/filament.service';
+import {
+    defaultFilamentName,
+    GATE_TEMP,
+    lookupFilamentId,
+    materialFamily,
+    normalizeMaterial,
+    TRAY_INFO_IDX,
+} from '../filament/filament-library';
 import { GcodeService } from '../gcode/gcode.service';
 
 export const PRINTER_BRIDGE = Symbol('PRINTER_BRIDGE');
@@ -11,68 +20,6 @@ export const KLIPPER_VERSION = 'v0.12.0-1';
 
 const STATIC_OBJECTS = new Set(['configfile', 'webhooks', 'heaters', 'history']);
 
-const MATERIAL_ALIASES: Record<string, string> = {
-    PLAPLUS: 'PLA+',
-    'PLA PLUS': 'PLA+',
-    'SILK PLA': 'PLA SILK',
-    PLASILK: 'PLA SILK',
-    TPE: 'TPU',
-    'PETG PLUS': 'PETG+',
-    PA6: 'PA',
-    PA12: 'PA',
-    PA66: 'PA',
-};
-const GATE_TEMP: Record<string, number> = {
-    PLA: 210,
-    PETG: 230,
-    ABS: 240,
-    ASA: 250,
-    TPU: 220,
-    PA: 260,
-    PC: 270,
-    HIPS: 220,
-};
-
-export function normalizeMaterial(mat: string): string {
-    const m = mat.toUpperCase().trim().replace(/[-_]/g, ' ');
-    return MATERIAL_ALIASES[m] ?? m;
-}
-
-export function materialFamily(mat: string): string {
-    const m = normalizeMaterial(mat);
-    for (const fam of ['PETG', 'PLA', 'ABS', 'ASA', 'TPU', 'PVA', 'HIPS', 'PA', 'PC', 'PET']) {
-        if (m.startsWith(fam)) return fam;
-    }
-    return m;
-}
-
-const TRAY_INFO_IDX: Record<string, string> = {
-    PLA: 'GFPLA',
-    'PLA+': 'GFPLA+',
-    'PLA SILK': 'GFPLA Silk',
-    'PLA MATTE': 'GFPLA',
-    PETG: 'GFPETG',
-    'PETG+': 'GFPETG',
-    ABS: 'GFABS',
-    ASA: 'GFASA',
-    TPU: 'GFTPU 95A',
-    PVA: 'GFPVA',
-    'PLA CF': 'OGFL98',
-    'PETG CF': 'OGFG98',
-    PA: 'OGFN99',
-    'PA CF': 'OGFN98',
-    PC: 'OGFC99',
-    HIPS: 'OGFS98',
-};
-
-function genericName(material: string): string {
-    const m = normalizeMaterial(material);
-    if (m === 'PLA SILK') return 'Generic PLA Silk';
-    if (m === 'PLA MATTE') return 'Generic PLA Matte';
-    if (m === 'PLA+') return 'Generic PLA';
-    return `Generic ${materialFamily(m)}`;
-}
-
 @Injectable()
 export class MoonrakerService {
     private readonly kv = new Map<string, Map<string, unknown>>();
@@ -80,7 +27,32 @@ export class MoonrakerService {
     constructor(
         @Inject(PRINTER_BRIDGE) readonly bridge: PrinterBridge,
         readonly gcode: GcodeService,
+        readonly filaments: FilamentService,
     ) {}
+
+    private slotFilament(slot: AmsSlot): { material: string; name: string; vendor: string; trayInfoIdx: string } {
+        const library = this.filaments.library();
+        const raw = normalizeMaterial(slot.type || 'PLA');
+        const { profile } = this.filaments.resolveSlot(this.bridge.id, slot.globalIndex, raw);
+        if (profile?.name) {
+            const type = library.find((p) => p.vendor === profile.vendor && p.name === profile.name)?.type ?? '';
+            const material = materialFamily(type) || raw;
+            return {
+                material,
+                name: profile.name,
+                vendor: profile.vendor,
+                trayInfoIdx: profile.id || TRAY_INFO_IDX[material] || 'OGFL99',
+            };
+        }
+        const name = defaultFilamentName(raw, library);
+        const vendor = name.startsWith('Generic ') ? 'Generic' : '';
+        return {
+            material: raw,
+            name,
+            vendor,
+            trayInfoIdx: lookupFilamentId(library, vendor, name) || TRAY_INFO_IDX[raw] || 'OGFL99',
+        };
+    }
 
     get printerId(): string {
         return this.bridge.id;
@@ -159,12 +131,13 @@ export class MoonrakerService {
         for (const s of sorted) {
             const occupied = s.status === 5;
             gateStatus.push(occupied ? 1 : 0);
-            const material = occupied ? normalizeMaterial(s.type || 'PLA') : '';
+            const info = occupied ? this.slotFilament(s) : null;
+            const material = info?.material ?? '';
             gateMaterial.push(material);
             gateColor.push(occupied ? hex(s.color) : '');
             gateRgb.push(occupied ? s.color.map((c) => Math.round((c / 255) * 1000) / 1000) : [0, 0, 0]);
             gateTemp.push(occupied ? (GATE_TEMP[materialFamily(material)] ?? 210) : 0);
-            gateName.push(occupied ? genericName(material) : '');
+            gateName.push(info?.name ?? '');
         }
         const active = sorted.findIndex((s) => s.globalIndex === loaded);
         return {
@@ -369,20 +342,18 @@ export class MoonrakerService {
                 const s = slots[idx];
                 if (s.status === 5) {
                     trayBits |= 1 << idx;
-                    const material = normalizeMaterial(s.type || 'PLA');
-                    const name = genericName(material);
-                    const trayInfoIdx = TRAY_INFO_IDX[material] ?? 'OGFL99';
+                    const { material, name, vendor, trayInfoIdx } = this.slotFilament(s);
                     tray.push({
                         id: String(slotId),
                         tag_uid: '0000000000000000',
                         tray_info_idx: trayInfoIdx,
                         tray_type: material,
                         tray_color: `${hex(s.color)}FF`,
-                        tray_sub_brands: 'Generic',
+                        tray_sub_brands: vendor,
                         name,
-                        vendor_name: 'Generic',
+                        vendor_name: vendor,
                         filament_id: trayInfoIdx,
-                        filament_vendor: 'Generic',
+                        filament_vendor: vendor,
                         filament_name: name,
                         preset: name,
                     });

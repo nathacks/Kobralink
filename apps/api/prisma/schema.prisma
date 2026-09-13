@@ -88,8 +88,34 @@ model Printer {
   updatedAt DateTime @updatedAt
   files     GcodeFile[]
   jobs      PrintJob[]
+  slotProfiles SlotProfile[]
 
   @@map("printer")
+}
+
+model FilamentProfile {
+  id         String   @id @default(cuid())
+  filamentId String
+  name       String
+  vendor     String
+  type       String
+  color      String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@unique([vendor, name])
+  @@map("filament_profile")
+}
+
+model SlotProfile {
+  printerId  String
+  printer    Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  slotIndex  Int
+  vendor     String
+  name       String
+  filamentId String  @default("")
+
+  @@id([printerId, slotIndex])
+  @@map("slot_profile")
 }
 
 model GcodeFile {
@@ -104,6 +130,8 @@ model GcodeFile {
   firstLayerHeight Float     @default(0)
   thumbnail        String?
   filaments        String    @default("[]")
+  objects          String    @default("[]")
+  svgImage         String?
   webUnverified    Boolean   @default(false)
   createdAt        DateTime  @default(now())
   jobs             PrintJob[]

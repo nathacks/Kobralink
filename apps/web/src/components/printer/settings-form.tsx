@@ -1,6 +1,6 @@
 import { type PrinterSettingsFormValues, printerSettingsFormSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { api, type PrinterWithLive } from '@/lib/api';
+import { filamentVendorsQuery } from '@/lib/queries';
+import { cn } from '@/lib/utils';
 import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 const SLOT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -241,6 +243,21 @@ export function PrinterSettingsForm({
                 </CardContent>
             </Card>
 
+            <Card className="rounded-3xl border-0 shadow-none">
+                <CardHeader>
+                    <CardTitle>Marques visibles</CardTitle>
+                    <CardDescription>
+                        Filtre le choix de profil OrcaSlicer par slot. Aucune sélection = toutes les marques. Vos
+                        profils importés restent toujours visibles.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form.Field name="settings.visibleVendors">
+                        {(field) => <VendorPicker value={field.state.value} onChange={field.handleChange} />}
+                    </form.Field>
+                </CardContent>
+            </Card>
+
             <div className="flex items-center gap-2">
                 <form.Subscribe selector={(s) => s.isSubmitting}>
                     {(isSubmitting) => (
@@ -266,5 +283,43 @@ export function PrinterSettingsForm({
                 </Button>
             </div>
         </form>
+    );
+}
+
+function VendorPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+    const vendors = useQuery(filamentVendorsQuery);
+    if (!vendors.data) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+    const toggle = (v: string) => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+    return (
+        <div className="flex flex-wrap gap-2">
+            {vendors.data.map((v) => {
+                const on = value.includes(v);
+                return (
+                    <button
+                        type="button"
+                        key={v}
+                        onClick={() => toggle(v)}
+                        aria-pressed={on}
+                        className={cn(
+                            'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                            on
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-secondary text-muted-foreground hover:text-foreground',
+                        )}
+                    >
+                        {v}
+                    </button>
+                );
+            })}
+            {value.length > 0 && (
+                <button
+                    type="button"
+                    onClick={() => onChange([])}
+                    className="rounded-full px-3 py-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
+                >
+                    Tout afficher
+                </button>
+            )}
+        </div>
     );
 }

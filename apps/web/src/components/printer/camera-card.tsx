@@ -1,4 +1,3 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { useMutation } from '@tanstack/react-query';
 import { Camera, CameraOff, Loader2, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -6,18 +5,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useLiveState, usePrinter } from '@/stores/printers';
 
 type Phase = 'off' | 'starting' | 'live' | 'error';
 
-export function CameraCard({
-    printerId,
-    state,
-    cameraOnPrint,
-}: {
-    printerId: string;
-    state: PrinterLiveState;
-    cameraOnPrint: boolean;
-}) {
+export function CameraCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
+    const cameraOnPrint = usePrinter(printerId)?.settings.cameraOnPrint ?? false;
     const [phase, setPhase] = useState<Phase>('off');
     const [src, setSrc] = useState('');
     const userStopped = useRef(false);

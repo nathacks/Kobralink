@@ -54,6 +54,7 @@ export class GcodeService {
                 firstLayerHeight: meta.firstLayerHeight,
                 thumbnail: meta.thumbnailB64 || null,
                 filaments: JSON.stringify(meta.filaments),
+                objects: JSON.stringify(meta.objects),
                 webUnverified,
             },
             update: {
@@ -65,6 +66,7 @@ export class GcodeService {
                 firstLayerHeight: meta.firstLayerHeight,
                 thumbnail: meta.thumbnailB64 || null,
                 filaments: JSON.stringify(meta.filaments),
+                ...(meta.objects.length ? { objects: JSON.stringify(meta.objects) } : {}),
                 webUnverified,
                 createdAt: new Date(),
             },
@@ -97,6 +99,29 @@ export class GcodeService {
             include: { jobs: { orderBy: { startedAt: 'desc' }, take: 1 } },
         });
         return row ? this.toDto(row, row.jobs[0] ?? null) : null;
+    }
+
+    async updateObjects(filename: string, objects: string[], svg: string): Promise<void> {
+        const safe = GcodeService.safeName(filename);
+        const row = await this.prisma.client.gcodeFile.findFirst({
+            where: { filename: safe },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+        });
+        if (!row) return;
+        await this.prisma.client.gcodeFile.update({
+            where: { id: row.id },
+            data: { objects: JSON.stringify(objects), ...(svg ? { svgImage: svg } : {}) },
+        });
+    }
+
+    async objects(id: string): Promise<{ names: string[]; svgB64: string; filename: string } | null> {
+        const row = await this.prisma.client.gcodeFile.findUnique({
+            where: { id },
+            select: { filename: true, objects: true, svgImage: true },
+        });
+        if (!row) return null;
+        return { names: parseList(row.objects), svgB64: row.svgImage ?? '', filename: row.filename };
     }
 
     async readData(id: string): Promise<{ file: StoredFile; data: Buffer } | null> {
@@ -174,6 +199,8 @@ export class GcodeService {
             firstLayerHeight: row.firstLayerHeight,
             thumbnail: row.thumbnail,
             filaments,
+            objects: parseList(row.objects),
+            hasSvg: Boolean(row.svgImage),
             webUnverified: row.webUnverified,
             createdAt: row.createdAt.toISOString(),
             lastJob: lastJob
@@ -199,4 +226,13 @@ function toJobDto(j: PrintJob): PrintJobDto {
         finishedAt: j.finishedAt?.toISOString() ?? null,
         durationSec: j.durationSec,
     };
+}
+
+function parseList(raw: string): string[] {
+    try {
+        const v = JSON.parse(raw);
+        return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+    } catch {
+        return [];
+    }
 }

@@ -1,13 +1,14 @@
-import type { PrinterLiveState } from '@kobralink/shared';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { rgbCss, textOn } from '@/lib/color';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { useLiveState } from '@/stores/printers';
 import { AceControls } from './ace-controls';
 import { SlotForm } from './slot-form';
 
-export function AmsCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
+export function AmsCard({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId);
     const slots = [...state.amsSlots].sort((a, b) => a.globalIndex - b.globalIndex);
     const loaded = slots.find((s) => s.globalIndex === state.amsLoadedSlot);
     const openDialog = useConfirmationDialogStore((s) => s.openDialog);
@@ -41,22 +42,22 @@ export function AmsCard({ printerId, state }: { printerId: string; state: Printe
                                         openDialog({
                                             title: `Slot ${s.index + 1} · ${s.boxId >= 0 ? `ACE ${s.boxId + 1}` : 'Tête'}`,
                                             description:
-                                                'Matière et couleur sont écrites sur l\'écran de l\'imprimante. Le chargement déplace le filament jusqu\'à la buse.',
-                                            content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s}/>,
+                                                "Matière et couleur sont écrites sur l'écran de l'imprimante. Le chargement déplace le filament jusqu'à la buse.",
+                                            content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s} />,
                                         })
                                     }
-                                    className="flex w-14 flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+                                    className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                                     title={empty ? 'Slot vide' : `${s.type} — modifier`}
                                 >
                                     <div
                                         className={cn(
-                                            'flex size-14 items-center justify-center rounded-full border-2 text-sm font-semibold',
+                                            'flex size-14 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all group-enabled:group-hover:scale-105 group-enabled:group-hover:shadow-md',
                                             empty
-                                                ? 'border-dashed border-muted-foreground/40 text-muted-foreground'
-                                                : 'border-transparent',
+                                                ? 'border-dashed border-muted-foreground/40 text-muted-foreground group-enabled:group-hover:border-muted-foreground/70 group-enabled:group-hover:bg-muted'
+                                                : 'border-transparent group-enabled:group-hover:brightness-110',
                                             isLoaded && 'ring-4 ring-primary/40',
                                             (s.activity === 'feeding' || s.activity === 'retracting') &&
-                                            'animate-pulse',
+                                                'animate-pulse',
                                         )}
                                         style={
                                             empty ? undefined : { background: rgbCss(s.color), color: textOn(s.color) }
@@ -74,7 +75,7 @@ export function AmsCard({ printerId, state }: { printerId: string; state: Printe
                 )}
 
                 {state.aceUnits.length > 0 && (
-                    <AceControls printerId={printerId} units={state.aceUnits} disabled={offline} busy={busy}/>
+                    <AceControls printerId={printerId} units={state.aceUnits} disabled={offline} busy={busy} />
                 )}
             </CardContent>
         </Card>

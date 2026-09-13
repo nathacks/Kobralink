@@ -1,8 +1,16 @@
-import { AMS_MATERIALS, type AmsSlot, type AmsSlotFormValues, amsSlotFormSchema } from '@kobralink/shared';
+import {
+    AMS_MATERIALS,
+    type AmsSlot,
+    type AmsSlotFormValues,
+    amsSlotFormSchema,
+    materialFamily,
+    type SlotFilamentInfo,
+} from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -11,20 +19,49 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import { hexToRgb, rgbToHex } from '@/lib/color';
+import { filamentProfilesQuery, filamentSlotsQuery } from '@/lib/queries';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
 import { usePrinter } from '@/stores/printers';
 
 export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot }) {
-    const live = usePrinter(printerId)?.live;
+    const slotInfos = useQuery(filamentSlotsQuery(printerId));
+    if (slotInfos.isPending) return <div className="h-64 animate-pulse rounded-2xl bg-secondary/60" />;
+    const current = slotInfos.data?.find((x) => x.slotIndex === slot.globalIndex);
+    return <SlotFormInner printerId={printerId} slot={slot} current={current} />;
+}
+
+function SlotFormInner({
+    printerId,
+    slot,
+    current,
+}: {
+    printerId: string;
+    slot: AmsSlot;
+    current: SlotFilamentInfo | undefined;
+}) {
+    const printer = usePrinter(printerId);
+    const live = printer?.live;
+    const visibleVendors = printer?.settings.visibleVendors ?? [];
+    const qc = useQueryClient();
+    const profiles = useQuery(filamentProfilesQuery);
     const loaded = live?.amsLoadedSlot === slot.globalIndex;
     const busy = live?.printState === 'printing';
     const onClose = useConfirmationDialogStore((s) => s.closeDialog);
     const onError = (e: Error) => toast.error(e.message);
     const save = useMutation({
-        mutationFn: (v: AmsSlotFormValues) =>
-            api.ams.setSlot(printerId, { index: slot.globalIndex, type: v.type, color: hexToRgb(v.color) }),
+        mutationFn: async (v: AmsSlotFormValues & { profile: string }) => {
+            const [vendor = '', name = ''] = v.profile ? v.profile.split('|||') : [];
+            const overrideKey = current?.override ? profileKey(current.override) : '';
+            await Promise.all([
+                api.ams.setSlot(printerId, { index: slot.globalIndex, type: v.type, color: hexToRgb(v.color) }),
+                v.profile !== overrideKey
+                    ? api.filament.setSlotProfile(printerId, slot.globalIndex, { vendor, name })
+                    : Promise.resolve(),
+            ]);
+        },
         onSuccess: () => {
             toast.success(`Slot ${slot.index + 1} mis à jour`);
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'filament-slots'] });
             onClose();
         },
         onError,
@@ -38,8 +75,12 @@ export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot
         onError,
     });
     const form = useForm({
-        defaultValues: { type: slot.type || 'PLA', color: rgbToHex(slot.color) },
-        validators: { onSubmit: amsSlotFormSchema },
+        defaultValues: {
+            type: slot.type || 'PLA',
+            color: rgbToHex(slot.color),
+            profile: current?.override ? profileKey(current.override) : '',
+        },
+        validators: { onSubmit: amsSlotFormSchema.extend({ profile: z.string() }) },
         onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
     });
     const isKnown = (v: string) => (AMS_MATERIALS as readonly string[]).includes(v);
@@ -119,6 +160,56 @@ export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot
                         </div>
                     )}
                 </form.Field>
+                <form.Field name="profile">
+                    {(field) => (
+                        <form.Subscribe selector={(st) => st.values.type}>
+                            {(type) => {
+                                const family = materialFamily(type);
+                                const options = (profiles.data ?? [])
+                                    .filter((p) => !family || materialFamily(p.type) === family)
+                                    .filter(
+                                        (p) => p.isUser || !visibleVendors.length || visibleVendors.includes(p.vendor),
+                                    )
+                                    .sort(
+                                        (a, b) =>
+                                            Number(b.isUser ?? false) - Number(a.isUser ?? false) ||
+                                            a.vendor.localeCompare(b.vendor) ||
+                                            a.name.localeCompare(b.name),
+                                    );
+                                const auto = current?.source === 'rfid' ? current.profile : null;
+                                return (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="slot-profile">Profil OrcaSlicer</Label>
+                                        <Select
+                                            value={field.state.value || '__none'}
+                                            onValueChange={(v) => field.handleChange(v === '__none' ? '' : v)}
+                                        >
+                                            <SelectTrigger id="slot-profile" className="rounded-full">
+                                                <SelectValue placeholder="Générique" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="__none">
+                                                    {auto
+                                                        ? `Auto (RFID) · ${auto.vendor} ${auto.name}`
+                                                        : `Générique (${family || type})`}
+                                                </SelectItem>
+                                                {options.map((p) => (
+                                                    <SelectItem key={profileKey(p)} value={profileKey(p)}>
+                                                        {p.isUser ? '★ ' : ''}
+                                                        {p.vendor} · {p.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="px-4 text-xs text-muted-foreground">
+                                            Envoyé à OrcaSlicer comme marque + nom de preset pour ce slot.
+                                        </p>
+                                    </div>
+                                );
+                            }}
+                        </form.Subscribe>
+                    )}
+                </form.Field>
             </div>
             <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
                 <div className="flex gap-2">
@@ -151,4 +242,8 @@ export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot
             </DialogFooter>
         </form>
     );
+}
+
+function profileKey(p: { vendor: string; name: string }): string {
+    return `${p.vendor}|||${p.name}`;
 }
