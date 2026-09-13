@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import type { KobraColorBox } from '@kobralink/kobra-protocol';
-import { aggregateSlots, buildAutoAmsBoxMapping, detectFilamentMode, slotUsableForPrint } from '../src/bridge/ams';
+import {
+    aggregateAceUnits,
+    aggregateSlots,
+    buildAutoAmsBoxMapping,
+    detectFilamentMode,
+    globalToBoxSlot,
+    slotUsableForPrint,
+} from '../src/bridge/ams';
 
 const slot = (index: number, status: number, type = 'PLA', color = [255, 0, 0]) => ({
     index,
@@ -73,5 +80,36 @@ describe('print mapping', () => {
 
     it('returns an empty mapping without loaded slots', () => {
         expect(buildAutoAmsBoxMapping([], 'toolhead')).toEqual([]);
+    });
+});
+
+describe('ams commands', () => {
+    it('maps global index back to box + local slot from known slots', () => {
+        const { slots } = aggregateSlots(aceDirect, 'ace_direct');
+        expect(globalToBoxSlot(slots, 6, 'ace_direct')).toEqual({ boxId: 1, localSlot: 2 });
+    });
+
+    it('falls back to arithmetic mapping when the slot is unknown', () => {
+        expect(globalToBoxSlot([], 6, 'toolhead')).toEqual({ boxId: -1, localSlot: 6 });
+        const { slots } = aggregateSlots(aceDirect, 'ace_direct');
+        expect(globalToBoxSlot(slots, 9, 'ace_direct')).toEqual({ boxId: 2, localSlot: 1 });
+    });
+
+    it('aggregates ACE drying and auto-feed, keeping previous values when absent', () => {
+        const boxes: KobraColorBox[] = [
+            {
+                id: 0,
+                auto_feed: 1,
+                drying_status: { status: 1, target_temp: 50, duration: 7200, remain_time: 3600, humidity: 22 },
+            },
+            { id: 1 },
+        ];
+        const first = aggregateAceUnits(boxes, []);
+        expect(first.units.map((u) => u.id)).toEqual([0, 1]);
+        expect(first.units[0].autoFeed).toBe(true);
+        expect(first.drying).toMatchObject({ status: 1, targetTemp: 50, duration: 120, remainTime: 60, humidity: 22 });
+        const second = aggregateAceUnits([{ id: 0 }, { id: 1 }], first.units);
+        expect(second.units[0].autoFeed).toBe(true);
+        expect(second.units[0].drying.targetTemp).toBe(50);
     });
 });

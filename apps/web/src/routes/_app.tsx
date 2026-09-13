@@ -1,12 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from '@tanstack/react-router';
 import { LayoutGrid, LogOut, Printer } from 'lucide-react';
+import { useEffect } from 'react';
 import { Avatar } from '@/components/layout/avatar';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
 import { authClient } from '@/lib/auth-client';
+import { greeting } from '@/lib/format';
 import { printersQuery } from '@/lib/queries';
 import { sessionQuery } from '@/lib/session';
+import { usePrintersStore } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app')({
     beforeLoad: async ({ context, location }) => {
@@ -19,18 +22,17 @@ export const Route = createFileRoute('/_app')({
 
 const isDesktop = typeof window !== 'undefined' && 'kobralinkDesktop' in window;
 
-function greeting(): string {
-    const h = new Date().getHours();
-    if (h < 6) return 'Bonne nuit';
-    if (h < 18) return 'Bonjour';
-    return 'Bonsoir';
-}
-
 function AppLayout() {
     const { session } = Route.useRouteContext();
     const qc = useQueryClient();
     const navigate = useNavigate();
     const printers = useQuery(printersQuery);
+    const setPrinters = usePrintersStore((s) => s.setPrinters);
+
+    useEffect(() => {
+        if (printers.data) setPrinters(printers.data);
+    }, [printers.data, setPrinters]);
+
     const online = printers.data?.filter((p) => p.live?.connected).length ?? 0;
     const printing = printers.data?.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (session.user.name || session.user.email.split('@')[0]).split(' ')[0];

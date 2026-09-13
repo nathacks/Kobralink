@@ -1,5 +1,9 @@
 import type {
+    AceAutoFeedInput,
+    AceDryInput,
     AddPrinterInput,
+    AmsFeedInput,
+    AmsSetSlotInput,
     GcodeFileDto,
     MoveAxisInput,
     Printer,
@@ -84,6 +88,14 @@ export const api = {
         resume: (id: string) => request<void>(`/kx/printers/${id}/print/resume`, { method: 'POST' }),
         cancel: (id: string) => request<void>(`/kx/printers/${id}/print/cancel`, { method: 'POST' }),
         clearFileReady: (id: string) => request<void>(`/kx/printers/${id}/file-ready/clear`, { method: 'POST' }),
+    },
+
+    ams: {
+        setSlot: (id: string, input: AmsSetSlotInput) => request<void>(`/kx/printers/${id}/ams/slot`, json(input)),
+        feed: (id: string, input: AmsFeedInput) => request<void>(`/kx/printers/${id}/ams/feed`, json(input)),
+        autoFeed: (id: string, input: AceAutoFeedInput) =>
+            request<void>(`/kx/printers/${id}/ace/auto-feed`, json(input)),
+        dry: (id: string, input: AceDryInput) => request<void>(`/kx/printers/${id}/ace/dry`, json(input)),
     },
 
     camera: {

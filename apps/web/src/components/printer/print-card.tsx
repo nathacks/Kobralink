@@ -1,17 +1,19 @@
 import type { PrinterLiveState } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ban, Pause, Play, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { Ring } from '@/components/viz/ring';
+import { usePrinterAction } from '@/hooks/use-printer-action';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export function PrintCard({ printerId, state }: { printerId: string; state: PrinterLiveState }) {
     const qc = useQueryClient();
-    const pause = useAction(printerId, api.control.pause, 'Pause demandée');
-    const resume = useAction(printerId, api.control.resume, 'Reprise demandée');
-    const cancel = useAction(printerId, api.control.cancel, 'Annulation demandée');
+    const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
+    const pause = usePrinterAction(printerId, api.control.pause, 'Pause demandée');
+    const resume = usePrinterAction(printerId, api.control.resume, 'Reprise demandée');
+    const cancel = usePrinterAction(printerId, api.control.cancel, 'Annulation demandée');
     const clearReady = useMutation({
         mutationFn: () => api.control.clearFileReady(printerId),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'state'] }),
@@ -56,9 +58,15 @@ export function PrintCard({ printerId, state }: { printerId: string; state: Prin
                         )}
                         <CircleButton
                             title="Annuler"
-                            onClick={() => {
-                                if (window.confirm("Annuler l'impression en cours ?")) cancel.mutate();
-                            }}
+                            onClick={() =>
+                                openAlertDialog({
+                                    title: "Annuler l'impression en cours ?",
+                                    description: "L'impression sera arrêtée et ne pourra pas être reprise.",
+                                    actionLabel: "Annuler l'impression",
+                                    cancelLabel: 'Continuer',
+                                    onAction: () => cancel.mutateAsync(),
+                                })
+                            }
                             disabled={cancel.isPending}
                         >
                             <Ban />
@@ -152,12 +160,4 @@ function CircleButton(props: React.ComponentProps<'button'>) {
             className="flex size-10 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground transition-colors hover:bg-primary-foreground/25 disabled:opacity-50 [&_svg]:size-4"
         />
     );
-}
-
-function useAction(printerId: string, fn: (id: string) => Promise<void>, ok: string) {
-    return useMutation({
-        mutationFn: () => fn(printerId),
-        onSuccess: () => toast.success(ok),
-        onError: (e) => toast.error(e.message),
-    });
 }

@@ -17,28 +17,15 @@ export function formatDate(iso: string): string {
     return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function rgbCss(c: [number, number, number]): string {
-    return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+export function formatMinutes(min: number): string {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h ? `${h} h ${m.toString().padStart(2, '0')}` : `${m} min`;
 }
 
-export const KOBRA_STATE_LABEL: Record<string, string> = {
-    free: 'Prête',
-    busy: 'Occupée',
-    printing: 'Impression',
-    preheating: 'Préchauffage',
-    auto_leveling: 'Nivellement',
-    checking: 'Vérification',
-    updated: 'Mise à jour',
-    init: 'Initialisation',
-    pausing: 'Mise en pause',
-    paused: 'En pause',
-    pause: 'En pause',
-    resuming: 'Reprise',
-    resumed: 'Reprise',
-    stopping: 'Arrêt',
-    stoped: 'Arrêtée',
-    finished: 'Terminée',
-    failed: 'Erreur',
-    canceled: 'Annulée',
-    offline: 'Hors ligne',
-};
+export function greeting(now = new Date()): string {
+    const h = now.getHours();
+    if (h < 6) return 'Bonne nuit';
+    if (h < 18) return 'Bonjour';
+    return 'Bonsoir';
+}

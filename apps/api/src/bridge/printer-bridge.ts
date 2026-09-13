@@ -13,6 +13,7 @@ import {
 } from '@kobralink/kobra-protocol';
 import {
     ACTIVE_PRINT_STATES,
+    type AceDrying,
     type AmsSlot,
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
@@ -23,7 +24,16 @@ import {
 } from '@kobralink/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
-import { aggregateSlots, buildAutoAmsBoxMapping, detectFilamentMode, slotActivityMap, slotUsableForPrint } from './ams';
+import {
+    aggregateAceUnits,
+    aggregateSlots,
+    buildAutoAmsBoxMapping,
+    detectFilamentMode,
+    EMPTY_DRYING,
+    globalToBoxSlot,
+    slotActivityMap,
+    slotUsableForPrint,
+} from './ams';
 import { CameraCache } from './camera';
 
 export interface BridgePrinterConfig {
@@ -118,6 +128,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             filamentMode: 'toolhead',
             amsSlots: [],
             amsLoadedSlot: -1,
+            aceUnits: [],
+            aceDrying: EMPTY_DRYING,
             storageTotalMb: 0,
             storageUsedMb: 0,
             updatedAt: Date.now(),
@@ -503,11 +515,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 }, 2000);
             }
         }
+        const ace = aggregateAceUnits(boxes, this.s.aceUnits);
+        this.s.aceUnits = ace.units;
+        this.s.aceDrying = ace.drying;
         if (slots.length) {
             this.s.amsSlots = slots;
             this.s.amsLoadedSlot = loaded;
-            this.publish();
         }
+        this.publish();
     }
 
     private onLight(p: KobraMessage<KobraLightData>): void {
@@ -642,6 +657,61 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     disableSteppers(): void {
         this.ensureConnected();
         this.client.disableSteppers();
+    }
+
+    amsSetSlot(globalIndex: number, type: string, color: [number, number, number]): void {
+        this.ensureConnected();
+        const { boxId, localSlot } = globalToBoxSlot(this.s.amsSlots, globalIndex, this.filamentMode);
+        this.client.setAmsSlotInfo(boxId, localSlot, type, color);
+        const slot = this.s.amsSlots.find((x) => x.globalIndex === globalIndex);
+        if (slot) {
+            slot.type = type;
+            slot.color = color;
+        }
+        this.publish();
+    }
+
+    amsFeed(globalIndex: number, type: 1 | 2): void {
+        this.ensureConnected();
+        const target = type === 2 && this.s.amsLoadedSlot >= 0 ? this.s.amsLoadedSlot : globalIndex;
+        const { boxId, localSlot } = globalToBoxSlot(this.s.amsSlots, target, this.filamentMode);
+        this.client.feedFilament(boxId, localSlot, type);
+    }
+
+    aceAutoFeed(aceId: number, on: boolean): void {
+        this.ensureConnected();
+        this.client.setAutoFeed(aceId, on);
+        const unit = this.s.aceUnits.find((u) => u.id === aceId);
+        if (unit) unit.autoFeed = on;
+        this.publish();
+    }
+
+    aceDry(action: 'start' | 'stop', opts: { aceId?: number; targetTemp: number; duration: number }): void {
+        this.ensureConnected();
+        let ids = this.s.aceUnits.map((u) => u.id);
+        if (!ids.length)
+            ids = [...new Set(this.s.amsSlots.filter((x) => x.boxId >= 0 && x.boxId <= 3).map((x) => x.boxId))];
+        if (!ids.length && this.filamentMode !== 'toolhead') ids = [0];
+        if (!ids.length) throw new BridgeOfflineError('Aucun ACE détecté');
+        if (opts.aceId !== undefined) {
+            if (!ids.includes(opts.aceId)) throw new BridgeOfflineError(`ACE ${opts.aceId + 1} non détecté`);
+            ids = [opts.aceId];
+        }
+        const drying =
+            action === 'start'
+                ? { status: 1, target_temp: opts.targetTemp, duration: opts.duration, remain_time: opts.duration }
+                : { status: 0 };
+        this.client.setDry(ids, drying);
+        const next: AceDrying = {
+            ...this.s.aceDrying,
+            status: action === 'start' ? 1 : 0,
+            targetTemp: action === 'start' ? opts.targetTemp : 0,
+            duration: action === 'start' ? opts.duration : 0,
+            remainTime: action === 'start' ? opts.duration : 0,
+        };
+        for (const u of this.s.aceUnits) if (ids.includes(u.id)) u.drying = { ...u.drying, ...next };
+        this.s.aceDrying = next;
+        this.publish();
     }
 
     async pause(): Promise<void> {

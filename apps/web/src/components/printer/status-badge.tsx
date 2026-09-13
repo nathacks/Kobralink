@@ -1,5 +1,5 @@
 import type { PrinterLiveState } from '@kobralink/shared';
-import { KOBRA_STATE_LABEL } from '@/lib/format';
+import { KOBRA_STATE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function StatusBadge({ state, className }: { state: PrinterLiveState; className?: string }) {

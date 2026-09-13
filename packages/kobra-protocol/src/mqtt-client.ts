@@ -374,6 +374,31 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         this.send('axis', 'turnOff');
     }
 
+    setAmsSlotInfo(boxId: number, localSlot: number, type: string, color: [number, number, number]) {
+        this.publishWeb('multiColorBox', 'setInfo', {
+            multi_color_box: [{ id: boxId, slots: [{ index: localSlot, type, color }] }],
+        });
+    }
+
+    feedFilament(boxId: number, localSlot: number, type: number) {
+        this.send('multiColorBox', 'feedFilament', {
+            multi_color_box: [{ id: boxId, feed_status: { slot_index: localSlot, type } }],
+        });
+    }
+
+    setAutoFeed(aceId: number, on: boolean) {
+        this.send('multiColorBox', 'setAutoFeed', { multi_color_box: [{ id: aceId, auto_feed: on ? 1 : 0 }] });
+    }
+
+    setDry(
+        aceIds: number[],
+        drying: { status: number; target_temp?: number; duration?: number; remain_time?: number },
+    ) {
+        this.send('multiColorBox', 'setDry', {
+            multi_color_box: aceIds.map((id) => ({ id, drying_status: { ...drying } })),
+        });
+    }
+
     requestFileDetails(filename: string) {
         this.send('file', 'fileDetails', { root: 'local', filename });
     }

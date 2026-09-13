@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Settings } from 'lucide-react';
 import { ActivityCard } from '@/components/printer/activity-card';
-import { AmsCard } from '@/components/printer/ams-card';
+import { AmsCard } from '@/components/printer/ams/ams-card';
 import { AxesCard } from '@/components/printer/axes-card';
 import { CameraCard } from '@/components/printer/camera-card';
 import { ControlsCard } from '@/components/printer/controls-card';
-import { FilesCard } from '@/components/printer/files-card';
+import { FilesCard } from '@/components/printer/files/files-card';
 import { PrintCard } from '@/components/printer/print-card';
 import { TemperatureCard } from '@/components/printer/temperature-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,7 +66,7 @@ function PrinterDashboard() {
                         />
                     </div>
                     <div className="grid gap-4 lg:col-span-1">
-                        <AmsCard state={live} />
+                        <AmsCard printerId={printerId} state={live} />
                         <ControlsCard printerId={printerId} state={live} />
                     </div>
                     <div className="lg:col-span-2">

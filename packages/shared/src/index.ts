@@ -1,4 +1,5 @@
 export * from './control';
 export * from './files';
+export * from './forms';
 export * from './printer';
 export * from './state';

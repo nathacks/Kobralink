@@ -17,10 +17,14 @@ async function bootstrap() {
     app.enableCors({ origin: [env.baseUrl, ...env.extraOrigins], credentials: true });
     app.enableShutdownHooks();
     await app.listen(env.port, '0.0.0.0');
-    log.log(
-        `UI + API: ${env.baseUrl}  (données: ${env.dataDir}, runtime: ${process.versions.bun ? `bun ${process.versions.bun}` : `node ${process.versions.node}`})`,
-    );
-    if (!env.webDir) log.warn('Build web introuvable — UI servie par Vite en dev (bun dev)');
+    const runtime = process.versions.bun ? `bun ${process.versions.bun}` : `node ${process.versions.node}`;
+    if (env.isDev) {
+        log.log(`API: ${env.baseUrl}  (données: ${env.dataDir}, runtime: ${runtime})`);
+        log.log('UI dev (HMR): http://localhost:5173  — ne pas utiliser :7100 pour le front en dev');
+    } else {
+        log.log(`UI + API: ${env.baseUrl}  (données: ${env.dataDir}, runtime: ${runtime})`);
+        if (!env.webDir) log.warn('Build web introuvable — UI servie par Vite en dev (bun dev)');
+    }
 }
 
 bootstrap().catch((e) => {

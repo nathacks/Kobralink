@@ -39,6 +39,21 @@ export interface AmsSlot {
     activity: string;
 }
 
+export interface AceDrying {
+    status: number;
+    targetTemp: number;
+    duration: number;
+    remainTime: number;
+    humidity: number | null;
+    currentTemp: number | null;
+}
+
+export interface AceUnit {
+    id: number;
+    autoFeed: boolean;
+    drying: AceDrying;
+}
+
 export interface PrinterLiveState {
     printerId: string;
     connected: boolean;
@@ -74,6 +89,8 @@ export interface PrinterLiveState {
     filamentMode: FilamentMode;
     amsSlots: AmsSlot[];
     amsLoadedSlot: number;
+    aceUnits: AceUnit[];
+    aceDrying: AceDrying;
     storageTotalMb: number;
     storageUsedMb: number;
     updatedAt: number;

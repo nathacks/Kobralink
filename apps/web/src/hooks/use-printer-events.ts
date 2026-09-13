@@ -1,6 +1,7 @@
 import type { PrinterLiveState } from '@kobralink/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { usePrintersStore } from '@/stores/printers';
 
 export interface Sample {
     t: number;
@@ -39,6 +40,7 @@ export function usePrinterEvents(printerId: string | undefined) {
                 return;
             }
             qc.setQueryData(['printers', printerId, 'state'], state);
+            usePrintersStore.getState().setLiveState(printerId, state);
             qc.setQueryData<Sample[]>(samplesKey(printerId), (old = []) => {
                 const last = old[old.length - 1];
                 if (last && state.updatedAt - last.t < 2000) return old;

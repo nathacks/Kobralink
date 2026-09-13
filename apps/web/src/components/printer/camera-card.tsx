@@ -1,0 +1,147 @@
+import type { PrinterLiveState } from '@kobralink/shared';
+import { useMutation } from '@tanstack/react-query';
+import { Camera, CameraOff, Loader2, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+type Phase = 'off' | 'starting' | 'live' | 'error';
+
+export function CameraCard({
+    printerId,
+    state,
+    cameraOnPrint,
+}: {
+    printerId: string;
+    state: PrinterLiveState;
+    cameraOnPrint: boolean;
+}) {
+    const [phase, setPhase] = useState<Phase>('off');
+    const [src, setSrc] = useState('');
+    const userStopped = useRef(false);
+    const printing = state.printState === 'printing';
+    const offline = !state.connected;
+
+    const start = useMutation({
+        mutationFn: () => api.camera.start(printerId),
+        onMutate: () => setPhase('starting'),
+        onSuccess: () => {
+            setSrc(`${api.camera.streamUrl(printerId)}?t=${Date.now()}`);
+        },
+        onError: (e) => {
+            setPhase('error');
+            toast.error(e.message);
+        },
+    });
+    const stop = useMutation({
+        mutationFn: () => api.camera.stop(printerId),
+        onError: (e) => toast.error(e.message),
+    });
+    const reset = useMutation({
+        mutationFn: () => api.camera.reset(printerId),
+        onSuccess: () => {
+            setPhase('starting');
+            setSrc(`${api.camera.streamUrl(printerId)}?t=${Date.now()}`);
+        },
+        onError: (e) => toast.error(e.message),
+    });
+
+    const turnOff = () => {
+        userStopped.current = true;
+        setSrc('');
+        setPhase('off');
+        stop.mutate();
+    };
+
+    useEffect(() => {
+        if (!printing) userStopped.current = false;
+    }, [printing]);
+
+    const autostart = printing && cameraOnPrint && phase === 'off' && !offline && !userStopped.current;
+    useEffect(() => {
+        if (autostart && !start.isPending) start.mutate();
+    }, [autostart, start]);
+
+    useEffect(() => () => setSrc(''), []);
+
+    return (
+        <section className="flex flex-col overflow-hidden rounded-3xl bg-card text-card-foreground">
+            <div className="flex items-center justify-between gap-3 p-6 pb-3">
+                <div>
+                    <h2 className="text-lg font-medium">Caméra</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {phase === 'live'
+                            ? 'Flux en direct'
+                            : phase === 'starting'
+                              ? 'Connexion au flux…'
+                              : phase === 'error'
+                                ? 'Flux indisponible'
+                                : 'Caméra arrêtée'}
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    {phase !== 'off' && (
+                        <Button
+                            variant="secondary"
+                            size="icon"
+                            className="rounded-full"
+                            title="Relancer le flux"
+                            onClick={() => reset.mutate()}
+                            disabled={reset.isPending}
+                        >
+                            <RotateCcw />
+                        </Button>
+                    )}
+                    {phase === 'off' || phase === 'error' ? (
+                        <Button
+                            className="rounded-full"
+                            onClick={() => start.mutate()}
+                            disabled={offline || start.isPending}
+                        >
+                            <Camera /> Démarrer
+                        </Button>
+                    ) : (
+                        <Button variant="secondary" className="rounded-full" onClick={turnOff}>
+                            <CameraOff /> Arrêter
+                        </Button>
+                    )}
+                </div>
+            </div>
+            <div className="relative aspect-video w-full bg-black/40">
+                {src && (
+                    <img
+                        src={src}
+                        alt="Flux caméra"
+                        className={cn('size-full object-contain', phase !== 'live' && 'invisible')}
+                        onLoad={() => setPhase('live')}
+                        onError={() => {
+                            setSrc('');
+                            setPhase('error');
+                            toast.error('Flux caméra indisponible');
+                        }}
+                    />
+                )}
+                {phase !== 'live' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        {phase === 'starting' ? (
+                            <Loader2 className="size-8 animate-spin" />
+                        ) : (
+                            <CameraOff className="size-8" />
+                        )}
+                        <span className="text-sm">
+                            {phase === 'starting'
+                                ? 'Démarrage de la caméra…'
+                                : phase === 'error'
+                                  ? 'Impossible de lire le flux'
+                                  : offline
+                                    ? 'Imprimante hors ligne'
+                                    : 'Cliquez sur Démarrer'}
+                        </span>
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}

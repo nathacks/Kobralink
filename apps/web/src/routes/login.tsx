@@ -1,3 +1,4 @@
+import { type LoginFormValues, loginFormSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
@@ -12,13 +13,6 @@ import { setupQuery } from '@/lib/queries';
 import { sessionQuery } from '@/lib/session';
 
 const searchSchema = z.object({ redirect: z.string().optional() });
-
-const loginSchema = z.object({
-    name: z.string().trim().max(64, '64 caractères maximum'),
-    email: z.email('Adresse e-mail invalide'),
-    password: z.string().min(8, 'Au moins 8 caractères'),
-});
-type LoginValues = z.infer<typeof loginSchema>;
 
 export const Route = createFileRoute('/login')({
     validateSearch: searchSchema,
@@ -37,7 +31,7 @@ function LoginPage() {
     const needsSetup = setup.data?.needsSetup ?? false;
 
     const submit = useMutation({
-        mutationFn: async ({ name, email, password }: LoginValues) => {
+        mutationFn: async ({ name, email, password }: LoginFormValues) => {
             const res = needsSetup
                 ? await authClient.signUp.email({ email, password, name: name || email.split('@')[0] })
                 : await authClient.signIn.email({ email, password });
@@ -52,8 +46,8 @@ function LoginPage() {
     });
 
     const form = useForm({
-        defaultValues: { name: '', email: '', password: '' } as LoginValues,
-        validators: { onSubmit: loginSchema },
+        defaultValues: { name: '', email: '', password: '' } as LoginFormValues,
+        validators: { onSubmit: loginFormSchema },
         onSubmit: ({ value }) => submit.mutateAsync(value).catch(() => undefined),
     });
 

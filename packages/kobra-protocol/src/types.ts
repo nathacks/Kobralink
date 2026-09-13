@@ -65,12 +65,24 @@ export interface KobraBoxSlot {
     [k: string]: unknown;
 }
 
+export interface KobraDryingStatus {
+    status?: number;
+    target_temp?: number;
+    duration?: number;
+    remain_time?: number;
+    humidity?: number;
+    current_temp?: number;
+    [k: string]: unknown;
+}
+
 export interface KobraColorBox {
     id: number;
     loaded_slot?: number;
     auto_feed?: number;
     slots?: KobraBoxSlot[];
     feed_status?: { current_status?: number; slot_index?: number; type?: number };
+    drying_status?: KobraDryingStatus;
+    drying_settings?: KobraDryingStatus;
     [k: string]: unknown;
 }
 

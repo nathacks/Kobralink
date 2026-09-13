@@ -1,5 +1,5 @@
-import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox } from '@kobralink/kobra-protocol';
-import type { AmsSlot, FilamentMode } from '@kobralink/shared';
+import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox, KobraDryingStatus } from '@kobralink/kobra-protocol';
+import type { AceDrying, AceUnit, AmsSlot, FilamentMode } from '@kobralink/shared';
 
 export function detectFilamentMode(boxes: KobraColorBox[]): FilamentMode {
     const toolhead = boxes.some((b) => b.id === -1);
@@ -123,4 +123,82 @@ export function buildAutoAmsBoxMapping(loaded: AmsSlot[], mode: FilamentMode): A
         });
     }
     return out;
+}
+
+export function globalToBoxSlot(
+    slots: AmsSlot[],
+    globalIndex: number,
+    mode: FilamentMode,
+): { boxId: number; localSlot: number } {
+    const found = slots.find((s) => s.globalIndex === globalIndex);
+    if (found) return { boxId: found.boxId, localSlot: found.index };
+    const acePresent = slots.some((s) => s.boxId >= 0);
+    if (mode === 'ace_direct' && acePresent) return { boxId: Math.floor(globalIndex / 4), localSlot: globalIndex % 4 };
+    if (!acePresent || globalIndex < 3) return { boxId: -1, localSlot: globalIndex };
+    const offset = globalIndex - 3;
+    return { boxId: Math.floor(offset / 4), localSlot: offset % 4 };
+}
+
+export const EMPTY_DRYING: AceDrying = {
+    status: 0,
+    targetTemp: 0,
+    duration: 0,
+    remainTime: 0,
+    humidity: null,
+    currentTemp: null,
+};
+
+function num(src: Record<string, unknown> | undefined, keys: string[]): number | null {
+    if (!src) return null;
+    for (const k of keys) {
+        const v = src[k];
+        if (v === undefined || v === null) continue;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    }
+    return null;
+}
+
+function minutes(v: unknown): number {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0;
+    return n > 24 * 60 ? Math.max(0, Math.round(n / 60)) : Math.max(0, Math.trunc(n));
+}
+
+function toDrying(box: KobraColorBox, raw: KobraDryingStatus | undefined): AceDrying {
+    const src = raw ?? {};
+    return {
+        status: Number(src.status ?? 0),
+        targetTemp: Number(src.target_temp ?? 0),
+        duration: minutes(src.duration),
+        remainTime: minutes(src.remain_time),
+        humidity:
+            num(src, ['humidity', 'current_humidity', 'cur_humidity', 'relative_humidity', 'humidity_value']) ??
+            num(box, ['humidity']),
+        currentTemp:
+            num(src, ['current_temp', 'cur_temp', 'temperature', 'temp', 'drying_temp', 'chamber_temp']) ??
+            num(box, ['current_temp']),
+    };
+}
+
+export function aggregateAceUnits(
+    boxes: KobraColorBox[],
+    previous: AceUnit[],
+): { units: AceUnit[]; drying: AceDrying } {
+    const units: AceUnit[] = [];
+    for (const box of boxes) {
+        const id = Number(box.id ?? -1);
+        if (id < 0 || id > 3) continue;
+        const prev = previous.find((u) => u.id === id);
+        const raw = box.drying_status ?? box.drying_settings;
+        units.push({
+            id,
+            autoFeed: box.auto_feed !== undefined ? Number(box.auto_feed) === 1 : (prev?.autoFeed ?? false),
+            drying: raw ? toDrying(box, raw) : (prev?.drying ?? EMPTY_DRYING),
+        });
+    }
+    units.sort((a, b) => a.id - b.id);
+    const active = units.find((u) => u.drying.status !== 0);
+    const primary = active ?? units[0];
+    return { units, drying: primary ? primary.drying : EMPTY_DRYING };
 }

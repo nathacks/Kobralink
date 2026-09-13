@@ -1,4 +1,10 @@
 import {
+    type AceAutoFeedInput,
+    type AmsFeedInput,
+    aceAutoFeedSchema,
+    aceDrySchema,
+    amsFeedSchema,
+    amsSetSlotSchema,
     type MoveAxisInput,
     moveAxisSchema,
     type PrinterLiveState,
@@ -35,6 +41,7 @@ import {
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { fromEvent, map, merge, Observable, of, throttleTime } from 'rxjs';
+import type { z } from 'zod';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { serveSnapshot, serveStream } from '../bridge/camera';
 import { BridgeOfflineError, type PrinterBridge } from '../bridge/printer-bridge';
@@ -117,6 +124,36 @@ export class KxController {
     @HttpCode(204)
     axisOff(@Param('id') id: string) {
         this.run(() => this.bridge(id).disableSteppers());
+    }
+
+    @Post('ams/slot')
+    @HttpCode(204)
+    amsSlot(@Param('id') id: string, @Body(new ZodPipe(amsSetSlotSchema)) body: z.output<typeof amsSetSlotSchema>) {
+        this.run(() => this.bridge(id).amsSetSlot(body.index, body.type, body.color));
+    }
+
+    @Post('ams/feed')
+    @HttpCode(204)
+    amsFeed(@Param('id') id: string, @Body(new ZodPipe(amsFeedSchema)) body: AmsFeedInput) {
+        this.run(() => this.bridge(id).amsFeed(body.slotIndex, body.type));
+    }
+
+    @Post('ace/auto-feed')
+    @HttpCode(204)
+    aceAutoFeed(@Param('id') id: string, @Body(new ZodPipe(aceAutoFeedSchema)) body: AceAutoFeedInput) {
+        this.run(() => this.bridge(id).aceAutoFeed(body.aceId, body.on));
+    }
+
+    @Post('ace/dry')
+    @HttpCode(204)
+    aceDry(@Param('id') id: string, @Body(new ZodPipe(aceDrySchema)) body: z.output<typeof aceDrySchema>) {
+        this.run(() =>
+            this.bridge(id).aceDry(body.action, {
+                aceId: body.aceId,
+                targetTemp: body.targetTemp,
+                duration: body.duration,
+            }),
+        );
     }
 
     @Post('print/pause')
