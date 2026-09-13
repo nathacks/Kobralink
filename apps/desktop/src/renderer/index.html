@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Kobralink</title>
+    <link rel="stylesheet" href="./launcher.css" />
+  </head>
+  <body>
+    <div class="drag"></div>
+    <main id="app">
+      <h1>Kobralink</h1>
+      <p id="message">Démarrage du bridge…</p>
+      <form id="settings" hidden>
+        <label><input type="radio" name="mode" value="local" /> Bridge local (sur ce Mac)</label>
+        <label class="row">Port <input id="localPort" type="number" min="1024" max="65535" /></label>
+        <label><input type="radio" name="mode" value="remote" /> Bridge distant</label>
+        <label class="row">URL <input id="remoteUrl" type="url" placeholder="http://192.168.1.50:7100" /></label>
+        <div class="actions">
+          <button type="submit">Se connecter</button>
+        </div>
+      </form>
+      <div id="error-actions" hidden>
+        <button type="button" id="retry">Réessayer</button>
+        <button type="button" id="open-settings" class="secondary">Changer de bridge</button>
+      </div>
+    </main>
+    <script type="module" src="./launcher.ts"></script>
+  </body>
+</html>

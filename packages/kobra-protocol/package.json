@@ -1,0 +1,40 @@
+{
+    "name": "@kobralink/kobra-protocol",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Anycubic Kobra X LAN protocol: MQTT client, credential fetch, GCode upload, GCode metadata parsing.",
+    "license": "GPL-3.0-only",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "bunx tsdown",
+        "dev": "bunx tsdown --watch",
+        "check-types": "bunx tsc --noEmit",
+        "test": "bun test"
+    },
+    "dependencies": {
+        "mqtt": "^5.14.0"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.0",
+        "tsdown": "^0.15.0",
+        "typescript": "^5.9.3"
+    }
+}

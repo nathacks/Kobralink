@@ -1,0 +1,17 @@
+appId: dev.kobralink.desktop
+productName: Kobralink
+directories:
+  output: release
+files:
+  - out/**
+extraResources:
+  - from: ../api/bundle
+    to: api
+  - from: ../api/bundle/node_modules
+    to: api/node_modules
+  - from: ../web/dist
+    to: web
+mac:
+  category: public.app-category.utilities
+  target: [dmg]
+  darkModeSupport: true

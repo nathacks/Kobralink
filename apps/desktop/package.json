@@ -1,0 +1,22 @@
+{
+    "name": "@kobralink/desktop",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Kobralink desktop (macOS) — embeds the bridge API or connects to a remote one.",
+    "main": "./out/main/index.js",
+    "scripts": {
+        "dev": "bunx electron-vite dev",
+        "build": "bunx electron-vite build",
+        "start": "bunx electron-vite preview",
+        "check-types": "bunx tsc --noEmit -p tsconfig.json",
+        "dist:mac": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --mac"
+    },
+    "devDependencies": {
+        "@types/node": "^26.5.1",
+        "electron": "44.3.0",
+        "electron-builder": "^26.15.3",
+        "electron-vite": "^5.0.0",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.0"
+    }
+}

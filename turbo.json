@@ -1,0 +1,40 @@
+{
+    "$schema": "https://turborepo.dev/schema.json",
+    "globalEnv": [
+        "NODE_ENV",
+        "KOBRALINK_DATA_DIR",
+        "KOBRALINK_PORT",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DATABASE_URL",
+        "KOBRALINK_URL"
+    ],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["dist/**", "out/**", "src/generated/**"]
+        },
+        "dev": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "persistent": true
+        },
+        "check-types": {
+            "dependsOn": ["^build"]
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": []
+        },
+        "db:generate": {
+            "cache": false
+        },
+        "db:migrate": {
+            "cache": false
+        },
+        "bundle": {
+            "dependsOn": ["^build"],
+            "outputs": ["bundle/**", "dist/**", "src/generated/**"]
+        }
+    }
+}

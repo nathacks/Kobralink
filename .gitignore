@@ -1,0 +1,15 @@
+node_modules
+dist
+out
+.turbo
+*.log
+.DS_Store
+.idea
+.env
+.env.local
+data/
+.bun
+apps/api/src/generated/
+apps/web/src/routeTree.gen.ts
+*.tsbuildinfo
+apps/api/bundle/

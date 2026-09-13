@@ -1,0 +1,46 @@
+{
+    "name": "kobralink",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "bun@1.4.2",
+    "scripts": {
+        "dev": "bunx turbo run dev",
+        "dev:web": "bunx turbo run dev --filter=@kobralink/api --filter=@kobralink/web",
+        "dev:desktop": "bunx turbo run dev --filter=@kobralink/desktop...",
+        "build": "bunx turbo run build",
+        "check-types": "bunx turbo run check-types",
+        "test": "bunx turbo run test",
+        "lint": "bunx biome check .",
+        "format": "bunx biome format --write .",
+        "db:migrate": "bun run --filter @kobralink/api db:migrate",
+        "db:generate": "bun run --filter @kobralink/api db:generate",
+        "db:studio": "bun run --filter @kobralink/api db:studio"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.5.6",
+        "@types/bun": "^1.4.2",
+        "turbo": "^2.5.8",
+        "typescript": "^5.9.3"
+    },
+    "engines": {
+        "bun": ">=1.4.2"
+    },
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "trustedDependencies": [
+        "@biomejs/biome",
+        "@ffmpeg-installer/darwin-arm64",
+        "@ffmpeg-installer/darwin-x64",
+        "@ffmpeg-installer/linux-arm64",
+        "@ffmpeg-installer/linux-x64",
+        "@ffmpeg-installer/win32-x64",
+        "@nestjs/core",
+        "@prisma/engines",
+        "@tailwindcss/oxide",
+        "electron",
+        "esbuild",
+        "prisma"
+    ]
+}

@@ -1,0 +1,51 @@
+{
+    "name": "@kobralink/api",
+    "version": "0.1.0",
+    "private": true,
+    "license": "GPL-3.0-only",
+    "scripts": {
+        "build": "bunx prisma generate && bunx nest build",
+        "dev": "bunx prisma generate && bun --watch src/main.ts",
+        "start": "bun dist/main.js",
+        "start:node": "node dist/main.js",
+        "check-types": "bunx prisma generate && bunx tsc --noEmit -p tsconfig.json",
+        "db:generate": "bunx prisma generate",
+        "db:migrate": "bunx prisma migrate dev",
+        "db:studio": "bunx prisma studio",
+        "test": "bun test",
+        "bundle": "bunx prisma generate && bunx nest build && bun scripts/bundle.ts"
+    },
+    "dependencies": {
+        "@ffmpeg-installer/ffmpeg": "^1.1.0",
+        "@kobralink/kobra-protocol": "workspace:*",
+        "@kobralink/shared": "workspace:*",
+        "@libsql/client": "^0.17.0",
+        "@nestjs/common": "^11.1.6",
+        "@nestjs/core": "^11.1.6",
+        "@nestjs/platform-express": "^11.1.6",
+        "@nestjs/platform-ws": "^11.1.6",
+        "@nestjs/serve-static": "^5.0.4",
+        "@nestjs/websockets": "^11.1.6",
+        "@prisma/adapter-libsql": "7.10.0",
+        "@prisma/client": "7.10.0",
+        "@thallesp/nestjs-better-auth": "^2.8.0",
+        "better-auth": "^1.7.4",
+        "express": "^5.1.0",
+        "multer": "^2.0.2",
+        "reflect-metadata": "^0.2.2",
+        "rxjs": "^7.8.2",
+        "ws": "^8.21.0",
+        "zod": "^4.1.0"
+    },
+    "devDependencies": {
+        "@nestjs/cli": "^11.0.10",
+        "@nestjs/schematics": "^11.0.7",
+        "@types/express": "^5.0.5",
+        "@types/multer": "^2.0.0",
+        "@types/node": "^24.0.0",
+        "@types/ws": "^8.18.1",
+        "esbuild": "^0.25.12",
+        "prisma": "7.10.0",
+        "typescript": "^5.9.3"
+    }
+}

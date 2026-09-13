@@ -1,0 +1,129 @@
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Printer {
+  id        String   @id @default(cuid())
+  name      String
+  ip        String
+  mqttPort  Int      @default(9883)
+  username  String
+  password  String
+  deviceId  String
+  modeId    String   @default("20030")
+  model     String   @default("Anycubic Kobra X")
+  httpPort  Int      @unique
+  settings  String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  files     GcodeFile[]
+  jobs      PrintJob[]
+
+  @@map("printer")
+}
+
+model GcodeFile {
+  id               String    @id
+  printerId        String?
+  printer          Printer?  @relation(fields: [printerId], references: [id], onDelete: SetNull)
+  filename         String
+  sizeBytes        Int
+  md5              String
+  estPrintTimeSec  Int       @default(0)
+  layerHeight      Float     @default(0)
+  firstLayerHeight Float     @default(0)
+  thumbnail        String?
+  filaments        String    @default("[]")
+  webUnverified    Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  jobs             PrintJob[]
+
+  @@index([filename])
+  @@map("gcode_file")
+}
+
+model PrintJob {
+  id          String     @id @default(cuid())
+  printerId   String
+  printer     Printer    @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  fileId      String?
+  file        GcodeFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  filename    String
+  status      String     @default("printing")
+  startedAt   DateTime   @default(now())
+  finishedAt  DateTime?
+  durationSec Int?
+
+  @@index([printerId, startedAt])
+  @@map("print_job")
+}

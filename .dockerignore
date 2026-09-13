@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+**/out
+**/release
+data
+.turbo
+**/.turbo
+.git
+apps/api/src/generated
+apps/web/src/routeTree.gen.ts

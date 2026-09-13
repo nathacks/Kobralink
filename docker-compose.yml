@@ -1,0 +1,13 @@
+services:
+  kobralink:
+    build: .
+    image: kobralink:latest
+    container_name: kobralink
+    restart: unless-stopped
+    ports:
+      - "7100:7100"
+      - "7125-7130:7125-7130"
+    environment:
+      BETTER_AUTH_URL: http://localhost:7100
+    volumes:
+      - ./data:/data
