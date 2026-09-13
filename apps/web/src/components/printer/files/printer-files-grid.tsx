@@ -1,6 +1,6 @@
 import type { PrinterFileDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Download, Play, RefreshCw, Trash2 } from 'lucide-react';
+import { Check, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -204,24 +204,14 @@ function PrinterFileTile({
                         <span className="text-[10px] text-muted-foreground">{thumb.isPending ? '…' : 'GCode'}</span>
                     )}
                 </div>
-                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <a
-                        href={api.printerFiles.downloadUrl(printerId, file.filename)}
-                        download={file.filename}
-                        title="Télécharger depuis l'imprimante"
-                        className="rounded-full p-1.5 transition-colors hover:bg-background/40"
-                    >
-                        <Download className="size-4" />
-                    </a>
-                    <button
-                        type="button"
-                        onClick={onDelete}
-                        title="Supprimer de l'imprimante"
-                        className="rounded-full p-1.5 transition-colors hover:bg-background/40"
-                    >
-                        <Trash2 className="size-4" />
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={onDelete}
+                    title="Supprimer de l'imprimante"
+                    className="rounded-full p-1.5 opacity-0 transition-opacity hover:bg-background/40 group-hover:opacity-100 focus-visible:opacity-100"
+                >
+                    <Trash2 className="size-4" />
+                </button>
             </div>
             <div className="mt-auto flex items-end justify-between gap-2 pt-4">
                 <div className="min-w-0 space-y-1">

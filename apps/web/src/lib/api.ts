@@ -113,8 +113,6 @@ export const api = {
             request<void>(`/kx/printers/${id}/printer-files/delete`, json({ filenames })),
         print: (id: string, input: PrintPrinterFileInput) =>
             request<void>(`/kx/printers/${id}/printer-files/print`, json(input)),
-        downloadUrl: (id: string, filename: string) =>
-            `/kx/printers/${id}/printer-files/download?filename=${encodeURIComponent(filename)}`,
         thumbnail: (id: string, filename: string) =>
             request<{ thumbnail: string }>(
                 `/kx/printers/${id}/printer-files/thumbnail?filename=${encodeURIComponent(filename)}`,

@@ -498,8 +498,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 this.knownUrlKeys = keys;
                 this.log.log(`URLs annoncées par l'imprimante: ${JSON.stringify(d.urls)}`);
             }
-            const dl = Object.entries(d.urls).find(([k, v]) => /download/i.test(k) && typeof v === 'string');
-            this.downloadUrlTemplate = dl?.[1] ?? '';
         }
         if (d.urls?.fileUploadurl) this.uploadUrl = d.urls.fileUploadurl;
         if (d.urls?.rtspUrl) {
@@ -557,21 +555,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private knownUrlKeys = '';
-    private downloadUrlTemplate = '';
-
-    printerFileDownloadUrl(filename: string): string {
-        const encoded = encodeURIComponent(filename);
-        if (this.downloadUrlTemplate) {
-            const t = this.downloadUrlTemplate;
-            if (t.includes('{filename}')) return t.replace('{filename}', encoded);
-            return `${t}${t.includes('?') ? '&' : '?'}filename=${encoded}`;
-        }
-        if (!this.uploadUrl)
-            throw new Error("URL d'accès aux fichiers de l'imprimante inconnue (pas encore de rapport info)");
-        const u = new URL(this.uploadUrl);
-        const token = u.searchParams.get('s') ?? '';
-        return `http://${u.hostname}:${u.port || 18910}/gcode_download?s=${encodeURIComponent(token)}&filename=${encoded}`;
-    }
 
     private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();
     private readonly printerThumbs = new Map<string, string>();

@@ -289,38 +289,6 @@ export class KxController {
         await this.run(() => this.bridge(id).printPrinterFile(body.filename, body.sizeBytes ?? 0, body.autoLeveling));
     }
 
-    @Get('printer-files/download')
-    async downloadPrinterFile(@Param('id') id: string, @Query('filename') filename: string, @Res() res: Response) {
-        if (!filename) throw new BadRequestException('filename requis');
-        const url = this.run(() => this.bridge(id).printerFileDownloadUrl(filename));
-        this.log.log(`Téléchargement depuis l'imprimante: ${url}`);
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 20_000);
-        let upstream: globalThis.Response;
-        try {
-            upstream = await fetch(url, { signal: ctrl.signal });
-        } catch (e) {
-            clearTimeout(timer);
-            throw new ServiceUnavailableException(
-                `Imprimante injoignable pour le téléchargement: ${(e as Error).message}`,
-            );
-        }
-        clearTimeout(timer);
-        if (!upstream.ok || !upstream.body) {
-            const text = await upstream.text().catch(() => '');
-            this.log.warn(`Téléchargement refusé (${upstream.status}) ${url} ${text.slice(0, 200)}`);
-            throw new BadRequestException(
-                `L'imprimante a refusé le téléchargement (HTTP ${upstream.status})${text ? ` : ${text.slice(0, 120)}` : ''}`,
-            );
-        }
-        res.setHeader('content-type', upstream.headers.get('content-type') ?? 'application/octet-stream');
-        res.setHeader('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-        const len = upstream.headers.get('content-length');
-        if (len) res.setHeader('content-length', len);
-        const { Readable } = await import('node:stream');
-        Readable.fromWeb(upstream.body as import('node:stream/web').ReadableStream).pipe(res);
-    }
-
     @Get('printer-files/thumbnail')
     async printerFileThumbnail(@Param('id') id: string, @Query('filename') filename: string) {
         if (!filename) throw new BadRequestException('filename requis');
