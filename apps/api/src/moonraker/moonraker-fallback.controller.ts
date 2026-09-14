@@ -37,7 +37,7 @@ export class MoonrakerFallbackController {
 
     @All('*path')
     fallback(@Req() req: Request) {
-        this.log.warn(`Route Moonraker inconnue: ${req.method} ${req.originalUrl}`);
+        this.log.warn(`Unknown Moonraker route: ${req.method} ${req.originalUrl}`);
         return { result: {} };
     }
 }
