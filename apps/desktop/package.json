@@ -23,5 +23,7 @@
         "electron-vite": "^5.0.0",
         "typescript": "catalog:",
         "vite": "catalog:"
-    }
+    },
+    "homepage": "https://github.com/nathacks/Kobralink",
+    "author": "NatHacks"
 }

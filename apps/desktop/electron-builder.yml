@@ -1,5 +1,6 @@
 appId: dev.kobralink.desktop
 productName: Kobralink
+executableName: kobralink
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: release
@@ -31,5 +32,9 @@ nsis:
   allowToChangeInstallationDirectory: true
 linux:
   category: Utility
+  desktop:
+    entry:
+      Name: Kobralink
+      StartupWMClass: kobralink
   target: [AppImage, deb]
   maintainer: NatHacks
