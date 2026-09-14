@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Github } from '@thesvg/react';
 import { Download, ExternalLink, RefreshCw, RotateCcw, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,6 +11,8 @@ import { m } from '@/lib/i18n';
 import { backupInfoQuery, systemInfoQuery } from '@/lib/queries';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { SettingsCard, SwitchRow } from './settings-form-card';
+
+const GITHUB_URL = 'https://github.com/NatHacks/Kobralink';
 
 export function SystemCard() {
     const qc = useQueryClient();
@@ -76,6 +79,11 @@ export function SystemCard() {
                             {m.system_update_available({ version: d.update.latest })}
                         </a>
                     )}
+                    <Button asChild variant="outline" className="rounded-full">
+                        <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+                            <Github /> {m.system_github()}
+                        </a>
+                    </Button>
                     <Button
                         type="button"
                         variant="outline"

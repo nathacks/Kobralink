@@ -782,6 +782,7 @@
     "system_uptime": "Démarré depuis",
     "system_data_dir": "Dossier de données",
     "system_check_update": "Rechercher une mise à jour",
+    "system_github": "Code source sur GitHub",
     "system_update_available": "Version {version} disponible",
     "system_update_none": "Vous êtes à jour.",
     "system_update_check_failed": "Vérification impossible (hors ligne ?).",

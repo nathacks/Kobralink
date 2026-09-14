@@ -782,6 +782,7 @@
     "system_uptime": "Uptime",
     "system_data_dir": "Data directory",
     "system_check_update": "Check for updates",
+    "system_github": "Source code on GitHub",
     "system_update_available": "Version {version} available",
     "system_update_none": "You are up to date.",
     "system_update_check_failed": "Check failed (offline?).",

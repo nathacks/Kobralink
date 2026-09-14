@@ -30,6 +30,7 @@ export function AppRail() {
         <Rail
             top={
                 <>
+                    <img src="/logo-mark.svg" alt="Kobralink" className="mb-1 size-12 rounded-2xl" />
                     <RailLink to="/printers" activeOptions={{ exact: true }} title={m.nav_home()}>
                         <LayoutGrid />
                     </RailLink>

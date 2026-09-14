@@ -1,3 +1,5 @@
+<p align="center"><img src="apps/web/public/logo.svg" alt="Kobralink" width="128" /></p>
+
 # Kobralink
 
 Kobralink turns an **Anycubic Kobra X** into a **Moonraker-compatible printer** — no Klipper, no
