@@ -22,6 +22,7 @@ const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events'
     alert_bed_temp: 'alerts',
     alert_offline: 'alerts',
     alert_spool_low: 'alerts',
+    alert_print_failure: 'printFailure',
     queue_next: 'queueNext',
 };
 
@@ -243,6 +244,16 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
                 title: m.notify_alert_spool_title({ printer }),
                 body: m.notify_alert_spool_body({ spool: String(d.spool ?? ''), grams: String(d.grams ?? '') }),
             };
+        case 'alert_print_failure': {
+            const action = String(d.action ?? 'notify');
+            const body =
+                action === 'pause'
+                    ? m.notify_alert_failure_body_pause({ score: String(d.score ?? ''), filename })
+                    : action === 'cancel'
+                      ? m.notify_alert_failure_body_cancel({ score: String(d.score ?? ''), filename })
+                      : m.notify_alert_failure_body({ score: String(d.score ?? ''), filename });
+            return { title: m.notify_alert_failure_title({ printer }), body };
+        }
         case 'queue_next':
             return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_next_body({ filename }) };
     }

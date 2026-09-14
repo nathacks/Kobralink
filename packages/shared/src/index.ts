@@ -1,4 +1,5 @@
 export * from './control';
+export * from './detection';
 export * from './dry';
 export * from './events';
 export * from './filament';

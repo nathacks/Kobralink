@@ -7,6 +7,7 @@ import { SetupController } from './auth/setup.controller';
 import { BridgeModule } from './bridge/bridge.module';
 import { WriteGuard } from './common/write.guard';
 import { loadEnv } from './config/env';
+import { DetectionModule } from './detection/detection.module';
 import { DryScheduleModule } from './dry/dry-schedule.module';
 import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
@@ -36,6 +37,7 @@ const env = loadEnv();
         NotificationModule,
         LocalSpoolModule,
         TimelapseModule,
+        DetectionModule,
         QueueModule,
         MacroModule,
         HaMqttModule,

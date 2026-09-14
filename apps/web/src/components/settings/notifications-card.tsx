@@ -29,6 +29,7 @@ const EVENT_LABELS: [keyof AppSettings['notifications']['events'], () => string]
     ['dryingDone', m.notif_ev_drying_done],
     ['queueNext', m.notif_ev_queue_next],
     ['alerts', m.notif_ev_alerts],
+    ['printFailure', m.notif_ev_print_failure],
 ];
 
 export function NotificationsCard({ settings }: { settings: AppSettings }) {

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { FilamentProfilesCard } from '@/components/printer/filament-profiles-card';
+import { DetectionCard } from '@/components/settings/detection-card';
 import { DryPresetsCard } from '@/components/settings/dry-presets-card';
 import { GeneralCard } from '@/components/settings/general-card';
 import { HaMqttCard } from '@/components/settings/ha-mqtt-card';
@@ -24,7 +25,16 @@ import { m } from '@/lib/i18n';
 import { appSettingsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 
-const TABS = ['general', 'notifications', 'integrations', 'filament', 'macros', 'users', 'system'] as const;
+const TABS = [
+    'general',
+    'notifications',
+    'detection',
+    'integrations',
+    'filament',
+    'macros',
+    'users',
+    'system',
+] as const;
 type Tab = (typeof TABS)[number];
 
 export const Route = createFileRoute('/_app/settings')({
@@ -36,6 +46,7 @@ export const Route = createFileRoute('/_app/settings')({
 const TAB_LABEL: Record<Tab, () => string> = {
     general: m.settings_tab_general,
     notifications: m.settings_tab_notifications,
+    detection: m.settings_tab_detection,
     integrations: m.settings_tab_integrations,
     filament: m.settings_tab_filament,
     macros: m.settings_tab_macros,
@@ -53,18 +64,18 @@ function SettingsPage() {
     const s = settings.data;
     const tabs = TABS.filter((t) => t !== 'users' || isAdmin);
     return (
-        <div className="max-w-3xl space-y-4">
+        <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3 px-2">
                 <h2 className="text-xl font-medium">{m.bridge_settings_title()}</h2>
             </div>
-            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-full bg-secondary p-1">
+            <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-secondary p-1 [scrollbar-width:none]">
                 {tabs.map((t) => (
                     <button
                         key={t}
                         type="button"
                         onClick={() => navigate({ search: { tab: t }, replace: true })}
                         className={cn(
-                            'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                            'shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                             tab === t
                                 ? 'bg-primary text-primary-foreground'
                                 : 'text-muted-foreground hover:text-foreground',
@@ -83,6 +94,7 @@ function SettingsPage() {
                 <div key={`${tab}-${JSON.stringify(s)}`} className="space-y-4">
                     {tab === 'general' && <GeneralCard settings={s} />}
                     {tab === 'notifications' && <NotificationsCard settings={s} />}
+                    {tab === 'detection' && <DetectionCard settings={s} />}
                     {tab === 'integrations' && (
                         <>
                             <SpoolmanCard settings={s} />

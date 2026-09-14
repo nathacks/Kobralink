@@ -34,6 +34,11 @@ payloads, comportements à reproduire).
   fanout vers `/kx/printers/:id/camera/{stream,snapshot}` (dashboard) et `/api/camera/{stream,snapshot}`
   (Moonraker, annoncé par `server/webcams/list`). Binaire via `KOBRALINK_FFMPEG`, sinon `@ffmpeg-installer/ffmpeg`
   (externe dans le bundle Electron), sinon `ffmpeg` du PATH. Arrêt auto après 60 s sans consommateur.
+- Détection d'échec IA : `apps/api/src/detection/` (modèle ONNX Obico YOLOv2 ~200 Mo téléchargé à la demande dans
+  `dataDir/models/failure-detection.onnx`, inférence `onnxruntime-node` CPU, décodage `jpeg-js`, algorithme EWM d'Obico
+  dans `prediction.ts`). Opt-in global (`settings.failureDetection`) + switch par imprimante ; une image toutes les
+  `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
+  `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
 - Texte UI en français. Aucun commentaire dans le code (demande explicite).
 
 ## Commandes

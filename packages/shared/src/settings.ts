@@ -10,6 +10,7 @@ export const notificationEventsSchema = z.object({
     dryingDone: z.boolean().default(true),
     alerts: z.boolean().default(true),
     queueNext: z.boolean().default(true),
+    printFailure: z.boolean().default(true),
 });
 export type NotificationEvents = z.infer<typeof notificationEventsSchema>;
 
@@ -33,6 +34,15 @@ export const haMqttSettingsSchema = z.object({
     topicPrefix: z.string().trim().min(1).max(64).default('kobralink'),
 });
 export type HaMqttSettings = z.infer<typeof haMqttSettingsSchema>;
+
+export const failureDetectionSettingsSchema = z.object({
+    enabled: z.boolean().default(false),
+    action: z.enum(['notify', 'pause', 'cancel']).default('notify'),
+    sensitivity: z.number().min(0.5).max(2).default(1),
+    intervalSec: z.number().int().min(5).max(60).default(10),
+});
+export type FailureDetectionSettings = z.infer<typeof failureDetectionSettingsSchema>;
+export type FailureDetectionAction = FailureDetectionSettings['action'];
 
 export const aceDryPresetSchema = z.object({
     name: z.string().trim().min(1).max(32),
@@ -58,6 +68,7 @@ export const appSettingsSchema = z.object({
     notifications: notificationSettingsSchema.default(notificationSettingsSchema.parse({})),
     haMqtt: haMqttSettingsSchema.default(haMqttSettingsSchema.parse({})),
     aceDryPresets: z.array(aceDryPresetSchema).max(20).default(DEFAULT_DRY_PRESETS),
+    failureDetection: failureDetectionSettingsSchema.default(failureDetectionSettingsSchema.parse({})),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 export const updateAppSettingsSchema = appSettingsSchema.partial();

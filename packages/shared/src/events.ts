@@ -10,6 +10,7 @@ export type KobralinkEventType =
     | 'alert_bed_temp'
     | 'alert_offline'
     | 'alert_spool_low'
+    | 'alert_print_failure'
     | 'queue_next';
 
 export interface KobralinkEvent {

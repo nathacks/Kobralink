@@ -99,7 +99,7 @@ export function PrinterSettingsForm({
 
     return (
         <form
-            className="max-w-2xl space-y-4"
+            className="space-y-4"
             noValidate
             onSubmit={(e) => {
                 e.preventDefault();
@@ -338,6 +338,22 @@ export function PrinterSettingsForm({
                                     />
                                     <FieldError meta={field.state.meta} />
                                 </div>
+                            </Row>
+                        )}
+                    </form.Field>
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-0 shadow-none">
+                <CardHeader>
+                    <CardTitle>{m.settings_failure_detection()}</CardTitle>
+                    <CardDescription>{m.settings_failure_detection_hint()}</CardDescription>
+                </CardHeader>
+                <CardContent className="divide-y">
+                    <form.Field name="settings.failureDetection">
+                        {(field) => (
+                            <Row label={m.settings_failure_detection_enabled()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                             </Row>
                         )}
                     </form.Field>

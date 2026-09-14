@@ -1,11 +1,12 @@
-import { useMutation } from '@tanstack/react-query';
-import { Camera, CameraOff, Loader2, RotateCcw } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Camera, CameraOff, Loader2, RotateCcw, ScanEye } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
+import { printerDetectionQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 
 type Phase = 'off' | 'starting' | 'live' | 'error';
@@ -18,6 +19,8 @@ export function CameraCard({ printerId }: { printerId: string }) {
     const userStopped = useRef(false);
     const printing = state.printState === 'printing';
     const offline = !state.connected;
+    const detection = useQuery(printerDetectionQuery(printerId, printing)).data;
+    const watching = printing && Boolean(detection?.active);
 
     const start = useMutation({
         mutationFn: () => api.camera.start(printerId),
@@ -76,7 +79,25 @@ export function CameraCard({ printerId }: { printerId: string }) {
                                 : m.camera_stopped()}
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                    {watching && detection && (
+                        <span
+                            className={cn(
+                                'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium',
+                                detection.failing ? 'bg-destructive text-white' : 'bg-secondary text-muted-foreground',
+                            )}
+                            title={m.detection_live_score({
+                                score: Math.round(detection.score * 100),
+                                frames: detection.frames,
+                                ms: detection.lastInferenceMs,
+                            })}
+                        >
+                            <ScanEye className="size-3.5" />
+                            {detection.failing
+                                ? m.detection_badge_failing()
+                                : `${m.detection_badge_watching()} ${Math.round(detection.score * 100)} %`}
+                        </span>
+                    )}
                     {phase !== 'off' && (
                         <Button
                             variant="secondary"
@@ -118,6 +139,21 @@ export function CameraCard({ printerId }: { printerId: string }) {
                         }}
                     />
                 )}
+                {phase === 'live' &&
+                    watching &&
+                    detection?.boxes.map((b) => (
+                        <div
+                            key={`${b.x}-${b.y}-${b.w}`}
+                            className="pointer-events-none absolute rounded-md border-2 border-destructive"
+                            style={{
+                                left: `${b.x * 100}%`,
+                                top: `${b.y * 100}%`,
+                                width: `${b.w * 100}%`,
+                                height: `${b.h * 100}%`,
+                                opacity: Math.min(1, 0.3 + b.confidence),
+                            }}
+                        />
+                    ))}
                 {phase !== 'live' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         {phase === 'starting' ? (

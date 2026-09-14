@@ -8,6 +8,8 @@ import type {
     AppSettings,
     BackupInfoDto,
     CreateUserInput,
+    DetectionModelDto,
+    FailureDetectionStatusDto,
     FilamentProfile,
     FileObjectsDto,
     GcodeFileDto,
@@ -20,6 +22,7 @@ import type {
     MoveAxisInput,
     PowerState,
     Printer,
+    PrinterDetectionDto,
     PrinterFileDto,
     PrinterLiveState,
     PrintJobDto,
@@ -152,6 +155,14 @@ export const api = {
         get: () => request<AppSettings>('/kx/settings'),
         update: (input: UpdateAppSettingsInput) =>
             request<AppSettings>('/kx/settings', { method: 'PATCH', body: JSON.stringify(input) }),
+    },
+
+    detection: {
+        status: () => request<FailureDetectionStatusDto>('/kx/detection'),
+        printer: (id: string) => request<PrinterDetectionDto | null>(`/kx/printers/${id}/detection`),
+        download: () => request<DetectionModelDto>('/kx/detection/model/download', { method: 'POST' }),
+        cancelDownload: () => request<DetectionModelDto>('/kx/detection/model/cancel', { method: 'POST' }),
+        deleteModel: () => request<DetectionModelDto>('/kx/detection/model', { method: 'DELETE' }),
     },
 
     spoolman: {

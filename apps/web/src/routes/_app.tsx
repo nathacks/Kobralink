@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Outlet, redirect, useNavigate, useParams } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect, useLocation, useNavigate, useParams } from '@tanstack/react-router';
 import { BarChart3, LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { LanguageMenu } from '@/components/layout/language-menu';
@@ -42,6 +42,7 @@ function AppLayout() {
         return () => window.removeEventListener('kobralink:navigate', onNav);
     }, [navigate]);
     const { printerId } = useParams({ strict: false });
+    const onPrintersHome = useLocation({ select: (l) => l.pathname === '/printers' || l.pathname === '/printers/' });
     const online = printers.filter((p) => p.live?.connected).length ?? 0;
     const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (session.user.name || session.user.email.split('@')[0]).split(' ')[0];
@@ -117,7 +118,7 @@ function AppLayout() {
                         <p className="text-sm text-muted-foreground">{subtitle}</p>
                     </div>
                     <div className="ml-auto flex items-center gap-3">
-                        {printerId ? <PrinterSwitcher /> : <AddPrinterDialog compact />}
+                        {printerId ? <PrinterSwitcher /> : onPrintersHome ? <AddPrinterDialog compact /> : null}
                     </div>
                 </header>
                 <main className="min-w-0 flex-1 pb-6">

@@ -137,3 +137,17 @@ export const systemInfoQuery = queryOptions({ queryKey: ['system'], queryFn: api
 export const backupInfoQuery = queryOptions({ queryKey: ['system', 'backup'], queryFn: api.system.backupInfo });
 
 export const notificationsQuery = queryOptions({ queryKey: ['notifications'], queryFn: api.events.recent });
+
+export const detectionStatusQuery = queryOptions({
+    queryKey: ['detection'],
+    queryFn: api.detection.status,
+    refetchInterval: (q) => (q.state.data?.model.state === 'downloading' ? 1000 : 10_000),
+});
+
+export const printerDetectionQuery = (id: string, enabled: boolean) =>
+    queryOptions({
+        queryKey: ['printers', id, 'detection'],
+        queryFn: () => api.detection.printer(id),
+        enabled,
+        refetchInterval: 5000,
+    });

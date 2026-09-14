@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { loadEnv } from '../config/env';
+import { DetectionService } from '../detection/detection.service';
 import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
 import { HaMqttService } from '../ha/ha-mqtt.service';
@@ -30,6 +31,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         private readonly localSpools: LocalSpoolService,
         private readonly notifications: NotificationService,
         private readonly timelapses: TimelapseService,
+        private readonly detection: DetectionService,
         private readonly queue: QueueService,
         private readonly ha: HaMqttService,
     ) {}
@@ -86,6 +88,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         this.bridges.set(config.id, bridge);
         this.notifications.attach(bridge);
         this.timelapses.attach(bridge);
+        this.detection.attach(bridge);
         this.queue.attach(bridge);
         this.ha.attach(bridge);
         bridge.start();
@@ -100,6 +103,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         this.bridges.delete(id);
         this.notifications.detach(id);
         this.timelapses.detach(id);
+        this.detection.detach(id);
         this.queue.detach(id);
         this.ha.detach(id);
         await this.moonraker.stopFor(id);

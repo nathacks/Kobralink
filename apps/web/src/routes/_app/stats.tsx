@@ -278,9 +278,11 @@ function StatsBody({ data }: { data: StatsDto }) {
 
 function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardContent className="space-y-1 pt-6">
-                <div className="text-sm text-muted-foreground">{label}</div>
+        <Card className="gap-2 rounded-3xl border-0 shadow-none">
+            <CardHeader>
+                <CardTitle className="text-sm font-normal text-muted-foreground">{label}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
                 <div className="text-4xl font-semibold tracking-tight tabular-nums">{value}</div>
                 <div className="text-xs text-muted-foreground">{sub}</div>
             </CardContent>

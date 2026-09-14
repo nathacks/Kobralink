@@ -1,7 +1,7 @@
 import type { GcodeFileDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Plus, Search, Upload } from 'lucide-react';
+import { type DragEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { PrePrintSkipForm } from '@/components/printer/skip/preprint-skip-form';
@@ -30,6 +30,8 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [tab, setTab] = useState<Tab>('files');
     const [search, setSearch] = useState('');
+    const [dragging, setDragging] = useState(false);
+    const dragDepth = useRef(0);
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
     const busy = state.printState === 'printing' || state.printState === 'paused';
@@ -114,6 +116,41 @@ export function FilesCard({ printerId }: { printerId: string }) {
         onSuccess: invalidate,
         onError: (e) => toast.error(e.message),
     });
+    const isGcode = (f: File) => /\.(gcode|bgcode)$/i.test(f.name);
+    const uploadMany = async (dropped: FileList | null) => {
+        const accepted = Array.from(dropped ?? []).filter(isGcode);
+        if (!accepted.length) {
+            if (dropped?.length) toast.error(m.files_drop_invalid());
+            return;
+        }
+        for (const file of accepted) await upload.mutateAsync(file).catch(() => undefined);
+    };
+    const dropEnabled = tab === 'files' || tab === 'web';
+    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer.types).includes('Files');
+    const onDragEnter = (e: DragEvent) => {
+        if (!dropEnabled || !hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth.current += 1;
+        setDragging(true);
+    };
+    const onDragLeave = (e: DragEvent) => {
+        if (!dropEnabled || !hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+    };
+    const onDragOver = (e: DragEvent) => {
+        if (!dropEnabled || !hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+    const onDrop = (e: DragEvent) => {
+        if (!dropEnabled || !hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth.current = 0;
+        setDragging(false);
+        void uploadMany(e.dataTransfer.files);
+    };
 
     const list = (files.data ?? [])
         .filter((f) => (tab === 'web' ? f.webUnverified : true))
@@ -121,7 +158,19 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const webCount = files.data?.filter((f) => f.webUnverified).length ?? 0;
 
     return (
-        <section className="flex flex-col overflow-hidden rounded-3xl bg-card p-6 text-card-foreground">
+        <section
+            className="relative flex flex-col overflow-hidden rounded-3xl bg-card p-6 text-card-foreground"
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
+            {dragging && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary bg-card/90 text-sm text-foreground">
+                    <Upload className="size-8 text-primary" />
+                    {m.files_drop_hint()}
+                </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-medium">{m.files_title()}</h2>
                 <span className="text-sm text-muted-foreground">
@@ -162,11 +211,12 @@ export function FilesCard({ printerId }: { printerId: string }) {
                 ref={inputRef}
                 type="file"
                 accept=".gcode,.bgcode"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                    const file = e.target.files?.[0];
+                    const picked = e.target.files;
+                    void uploadMany(picked);
                     e.target.value = '';
-                    if (file) upload.mutate(file);
                 }}
             />
 

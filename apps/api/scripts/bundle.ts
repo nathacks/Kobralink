@@ -5,7 +5,7 @@ import { build } from 'esbuild';
 
 const apiRoot = path.resolve(__dirname, '..');
 const outDir = path.join(apiRoot, 'bundle');
-const externals = ['@libsql/client', 'express', 'qs', '@ffmpeg-installer/ffmpeg'];
+const externals = ['@libsql/client', 'express', 'qs', '@ffmpeg-installer/ffmpeg', 'onnxruntime-node'];
 const optionalNest = [
     '@nestjs/microservices',
     '@nestjs/microservices/microservices-module',
@@ -57,4 +57,8 @@ fs.writeFileSync(
     ),
 );
 execSync('bun install --production --no-save', { cwd: outDir, stdio: 'inherit' });
+const ortBin = path.join(outDir, 'node_modules', 'onnxruntime-node', 'bin', 'napi-v6');
+for (const platform of fs.readdirSync(ortBin)) {
+    if (platform !== process.platform) fs.rmSync(path.join(ortBin, platform), { recursive: true, force: true });
+}
 console.log(`Bundle API prêt: ${outDir}`);
