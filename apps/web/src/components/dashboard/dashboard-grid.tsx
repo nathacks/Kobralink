@@ -29,7 +29,6 @@ import {
     WIDGETS,
     type WidgetId,
 } from './layout-store';
-import 'react-grid-layout/css/styles.css';
 
 export function DashboardGrid({
     printerId,

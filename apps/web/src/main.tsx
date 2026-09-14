@@ -7,6 +7,7 @@ import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import { installI18n } from '@/lib/i18n';
 import { routeTree } from './routeTree.gen';
+import 'react-grid-layout/css/styles.css';
 import './styles.css';
 
 if ('kobralinkDesktop' in window) document.documentElement.classList.add('desktop');

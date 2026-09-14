@@ -55,7 +55,8 @@ bun run lint         # biome
 ### Docker (bridge headless)
 
 ```bash
-docker compose up -d --build     # UI http://<hôte>:7100, Moonraker :7125+
+docker compose up -d --build     # dev/local — UI http://<hôte>:7100, Moonraker :7125+
+# Production : voir infra/README.md (docker-compose.prod.yml, image ghcr, volume nommé, healthcheck)
 ```
 
 Renseignez `BETTER_AUTH_URL` avec l'URL réellement utilisée par le navigateur.

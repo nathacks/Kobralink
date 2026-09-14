@@ -197,3 +197,12 @@ html.desktop [role='dialog'] {
 .react-grid-item > * {
     overflow: hidden;
 }
+
+.react-grid-layout,
+.react-grid-item {
+    transition: none;
+}
+
+.dashboard-editing .react-grid-item:not(.react-draggable-dragging):not(.resizing) {
+    transition: transform 200ms ease, width 200ms ease, height 200ms ease;
+}

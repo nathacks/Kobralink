@@ -48,7 +48,7 @@ export function ControlsCard({ printerId }: { printerId: string }) {
             <CardHeader>
                 <CardTitle className="text-lg font-medium">{m.controls_title()}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex flex-1 flex-col justify-evenly gap-4">
                 <Row icon={<Fan />} label={m.controls_part_fan()} value={`${state.fanSpeed} %`}>
                     <Slider
                         value={[state.fanSpeed]}

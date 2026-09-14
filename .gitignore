@@ -16,3 +16,4 @@ apps/api/bundle/
 apps/web/src/paraglide/
 packages/i18n/src/paraglide/
 packages/i18n/project.inlang/cache/
+infra/.env

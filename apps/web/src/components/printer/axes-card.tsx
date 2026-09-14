@@ -46,40 +46,42 @@ export function AxesCard({ printerId }: { printerId: string }) {
                     ))}
                 </CardAction>
             </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-8">
-                <div className="grid grid-cols-3 gap-2">
-                    <span />
-                    <Jog onClick={() => jog(AXIS.Y, 1)} disabled={locked} title="Y+">
-                        <ArrowUp />
-                    </Jog>
-                    <span />
-                    <Jog onClick={() => jog(AXIS.X, 0)} disabled={locked} title="X-">
-                        <ArrowLeft />
-                    </Jog>
-                    <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title={m.axes_home()} primary>
-                        <Home />
-                    </Jog>
-                    <Jog onClick={() => jog(AXIS.X, 1)} disabled={locked} title="X+">
-                        <ArrowRight />
-                    </Jog>
-                    <span />
-                    <Jog onClick={() => jog(AXIS.Y, 0)} disabled={locked} title="Y-">
-                        <ArrowDown />
-                    </Jog>
-                    <span />
-                </div>
-                <div className="grid gap-2">
-                    <Jog onClick={() => jog(AXIS.Z, 1)} disabled={locked} title="Z+">
-                        <ArrowUp />
-                    </Jog>
-                    <span className="text-center text-xs text-muted-foreground">Z</span>
-                    <Jog onClick={() => jog(AXIS.Z, 0)} disabled={locked} title="Z-">
-                        <ArrowDown />
-                    </Jog>
+            <CardContent className="flex flex-1 flex-col gap-4">
+                <div className="flex flex-1 flex-wrap items-center justify-center gap-8">
+                    <div className="grid grid-cols-3 gap-2">
+                        <span />
+                        <Jog onClick={() => jog(AXIS.Y, 1)} disabled={locked} title="Y+">
+                            <ArrowUp />
+                        </Jog>
+                        <span />
+                        <Jog onClick={() => jog(AXIS.X, 0)} disabled={locked} title="X-">
+                            <ArrowLeft />
+                        </Jog>
+                        <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title={m.axes_home()} primary>
+                            <Home />
+                        </Jog>
+                        <Jog onClick={() => jog(AXIS.X, 1)} disabled={locked} title="X+">
+                            <ArrowRight />
+                        </Jog>
+                        <span />
+                        <Jog onClick={() => jog(AXIS.Y, 0)} disabled={locked} title="Y-">
+                            <ArrowDown />
+                        </Jog>
+                        <span />
+                    </div>
+                    <div className="grid gap-2">
+                        <Jog onClick={() => jog(AXIS.Z, 1)} disabled={locked} title="Z+">
+                            <ArrowUp />
+                        </Jog>
+                        <span className="text-center text-xs text-muted-foreground">Z</span>
+                        <Jog onClick={() => jog(AXIS.Z, 0)} disabled={locked} title="Z-">
+                            <ArrowDown />
+                        </Jog>
+                    </div>
                 </div>
                 <Button
                     variant="secondary"
-                    className="ml-auto rounded-full"
+                    className="self-end rounded-full"
                     disabled={locked}
                     onClick={() => offMut.mutate()}
                 >

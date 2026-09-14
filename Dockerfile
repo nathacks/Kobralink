@@ -37,5 +37,5 @@ COPY --from=build /repo/apps/api/tsconfig.json apps/api/
 COPY --from=build /repo/apps/web/dist apps/web/dist
 WORKDIR /repo/apps/api
 VOLUME ["/data"]
-EXPOSE 7100 7125-7130
+EXPOSE 7100 7125-7140
 CMD ["bun", "src/main.ts"]
