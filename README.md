@@ -136,6 +136,11 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`: multi-arch Docker image
 (`<version>`, `<major>.<minor>`, `latest`) and a GitHub release with the desktop builds for macOS
 (Apple Silicon + Intel), Windows and Linux. Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 
+Without an Apple certificate the macOS app is ad-hoc signed (`apps/desktop/scripts/after-sign.cjs`); Gatekeeper
+shows "unidentified developer" — right-click → Open, or `xattr -dr com.apple.quarantine /Applications/Kobralink.app`.
+To sign and notarize, add the secrets `CSC_LINK` (base64 `.p12`), `CSC_KEY_PASSWORD`, `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
+
 ## License
 
 GPL-3.0. The `apps/api/certs/anycubic_slicer.*` certificates are third-party material included solely

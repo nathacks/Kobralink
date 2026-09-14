@@ -1,11 +1,13 @@
 appId: dev.kobralink.desktop
 productName: Kobralink
-executableName: kobralink
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: release
+  buildResources: build
+afterSign: scripts/after-sign.cjs
 files:
   - out/**
+  - resources/**
 extraResources:
   - from: ../api/bundle
     to: api
@@ -25,12 +27,18 @@ mac:
     - target: zip
       arch: [arm64, x64]
   darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
 win:
   target: [nsis]
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 linux:
+  executableName: kobralink
   category: Utility
   desktop:
     entry:

@@ -3,7 +3,7 @@
     "compilerOptions": {
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "types": ["node"],
+        "types": ["node", "electron-vite/node"],
         "lib": ["ES2023", "DOM"],
         "noEmit": true
     },

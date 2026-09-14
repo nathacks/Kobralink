@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { m } from '@kobralink/i18n';
 import { app, type BrowserWindow, Menu, nativeImage, Tray } from 'electron';
+import trayIcon from '../../resources/tray.png?asset';
+import trayTemplate2x from '../../resources/trayTemplate@2x.png?asset';
+import trayTemplate1x from '../../resources/trayTemplate.png?asset';
 
 export interface TrayPrinterStatus {
     id: string;
@@ -14,33 +18,11 @@ export interface TrayPrinterStatus {
 let tray: Tray | null = null;
 let printers: TrayPrinterStatus[] = [];
 
-function icon() {
-    const size = 16;
-    const canvas = Buffer.alloc(size * size * 4, 0);
-    const set = (x: number, y: number) => {
-        if (x < 0 || y < 0 || x >= size || y >= size) return;
-        const i = (y * size + x) * 4;
-        canvas[i] = 0;
-        canvas[i + 1] = 0;
-        canvas[i + 2] = 0;
-        canvas[i + 3] = 255;
-    };
-    for (let y = 3; y <= 12; y++) {
-        set(2, y);
-        set(13, y);
-    }
-    for (let x = 2; x <= 13; x++) {
-        set(x, 3);
-        set(x, 12);
-    }
-    for (let x = 5; x <= 10; x++) set(x, 9);
-    for (let y = 6; y <= 9; y++) set(5, y);
-    set(6, 6);
-    set(7, 6);
-    set(8, 6);
-    set(9, 7);
-    set(10, 8);
-    const img = nativeImage.createFromBitmap(canvas, { width: size, height: size, scaleFactor: 1 });
+function icon(): Electron.NativeImage {
+    if (process.platform !== 'darwin') return nativeImage.createFromPath(trayIcon);
+    const img = nativeImage.createEmpty();
+    img.addRepresentation({ scaleFactor: 1, buffer: readFileSync(trayTemplate1x) });
+    img.addRepresentation({ scaleFactor: 2, buffer: readFileSync(trayTemplate2x) });
     img.setTemplateImage(true);
     return img;
 }

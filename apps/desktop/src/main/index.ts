@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { m } from '@kobralink/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
+import appIcon from '../../resources/icon.png?asset';
 import { installLocale } from '../shared/locale';
 import { apiAvailable, LOCAL_PORT, startLocalApi, stopLocalApi, waitForApi } from './api-process';
 import { setupTray, type TrayPrinterStatus, updateTray } from './tray';
@@ -21,6 +22,7 @@ function createWindow(): BrowserWindow {
         minHeight: 600,
         show: false,
         title: 'Kobralink',
+        icon: appIcon,
         titleBarStyle: 'hiddenInset',
         trafficLightPosition: { x: 14, y: 14 },
         backgroundColor: '#0f0f11',
