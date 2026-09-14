@@ -52,17 +52,27 @@ bun run build        # packages → api (prisma generate + nest build) → web �
 bun run check-types
 bun run test         # bun test (api, kobra-protocol)
 bun run lint         # biome
-bun run --filter @kobralink/desktop dist:mac   # bundles the API (esbuild) + web, then electron-builder → DMG/zip
+bun run --filter @kobralink/desktop dist       # bundles the API (esbuild) + web, then electron-builder for the current OS
 ```
 
 ### Docker (headless bridge)
 
 ```bash
-docker compose up -d --build     # dev/local — UI http://<host>:7100, Moonraker :7125+
-# Production: see infra/README.md (docker-compose.prod.yml, ghcr image, named volume, healthcheck)
+cd infra && cp .env.example .env
+docker compose up -d             # Docker Hub image nathacks/kobralink — UI http://<host>:7100, Moonraker :7125+
+docker compose up -d --build     # or build locally from infra/Dockerfile
+# Details: infra/README.md (named volume, healthcheck, reverse proxy)
 ```
 
 Set `BETTER_AUTH_URL` to the URL the browser actually uses.
+
+### Releases
+
+Pushing a `v*` tag (e.g. `git tag v0.2.0 && git push --tags`) runs `.github/workflows/release.yml`:
+multi-arch Docker image pushed to Docker Hub (`<version>`, `<major>.<minor>`, `latest`) and a GitHub
+release with the Electron builds for macOS (dmg/zip), Windows (nsis) and Linux (AppImage/deb) plus the
+`latest*.yml` files used by the in-app auto-updater. Required repository secrets: `DOCKERHUB_USERNAME`,
+`DOCKERHUB_TOKEN`.
 
 ### Adding a printer
 

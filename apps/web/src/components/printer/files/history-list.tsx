@@ -5,9 +5,9 @@ import { jobStatusLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function HistoryList({ jobs }: { jobs: PrintJobDto[] }) {
-    if (!jobs.length) return <p className="mt-5 text-sm text-muted-foreground">{m.history_empty()}</p>;
+    if (!jobs.length) return <p className="text-sm text-muted-foreground">{m.history_empty()}</p>;
     return (
-        <ul className="mt-5 divide-y divide-border">
+        <ul className="divide-y divide-border">
             {jobs.map((j) => (
                 <li key={j.id} className="flex items-center gap-4 py-3 text-sm">
                     <span

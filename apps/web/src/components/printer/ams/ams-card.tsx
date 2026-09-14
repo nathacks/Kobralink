@@ -32,7 +32,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
                     <div className="flex flex-wrap gap-3">
                         {slots.map((s) => {
                             const isLoaded = s.globalIndex === state.amsLoadedSlot;
-                            const empty = s.status !== 5;
+                            const empty = s.status !== 5 && !s.type;
                             const activity = AMS_ACTIVITY_LABEL[s.activity]?.();
                             return (
                                 <button

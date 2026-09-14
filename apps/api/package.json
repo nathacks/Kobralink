@@ -30,27 +30,27 @@
         "@prisma/adapter-libsql": "7.10.0",
         "@prisma/client": "7.10.0",
         "@thallesp/nestjs-better-auth": "^2.8.0",
-        "better-auth": "^1.7.4",
+        "better-auth": "catalog:",
         "express": "^5.1.0",
         "fflate": "^0.8.3",
         "jpeg-js": "^0.4.4",
-        "mqtt": "^5.14.0",
+        "mqtt": "catalog:",
         "multer": "^2.0.2",
         "onnxruntime-node": "^1.29.0",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.2",
         "ws": "^8.21.0",
-        "zod": "^4.1.0"
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@nestjs/cli": "^11.0.10",
         "@nestjs/schematics": "^11.0.7",
         "@types/express": "^5.0.5",
         "@types/multer": "^2.0.0",
-        "@types/node": "^24.0.0",
+        "@types/node": "catalog:",
         "@types/ws": "^8.18.1",
         "esbuild": "^0.25.12",
         "prisma": "7.10.0",
-        "typescript": "^5.9.3"
+        "typescript": "catalog:"
     }
 }

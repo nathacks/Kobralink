@@ -21,6 +21,9 @@ payloads, comportements à reproduire).
   Version `electron` pinnée (électron-builder l'exige). `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|mdp|/path"] [KOBRALINK_URL=http://…]`
   capture la fenêtre puis quitte (smoke test) ; `KOBRALINK_URL` force l'URL du bridge sans spawn.
 - `packages/kobra-protocol`, `packages/shared` — tsdown, sortie ESM + CJS.
+- `infra/` — `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `.env.example`. Pas de Dockerfile à la racine.
+- `.github/workflows/release.yml` — sur tag `v*` : image Docker Hub multi-arch (`DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN`)
+  + release GitHub avec les builds Electron mac/win/linux (`bun run --filter @kobralink/desktop dist -- --mac|--win|--linux`).
 
 ## Points d'architecture
 

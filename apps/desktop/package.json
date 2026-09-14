@@ -9,18 +9,19 @@
         "build": "bunx electron-vite build",
         "start": "bunx electron-vite preview",
         "check-types": "bunx tsc --noEmit -p tsconfig.json",
-        "dist:mac": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --mac"
+        "dist:mac": "bun run dist -- --mac",
+        "dist": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --publish never"
     },
     "dependencies": {
         "@kobralink/i18n": "workspace:*",
         "electron-updater": "^6.8.9"
     },
     "devDependencies": {
-        "@types/node": "^26.5.1",
+        "@types/node": "catalog:",
         "electron": "44.3.0",
         "electron-builder": "^26.15.3",
         "electron-vite": "^5.0.0",
-        "typescript": "^7.0.2",
-        "vite": "^8.3.0"
+        "typescript": "catalog:",
+        "vite": "catalog:"
     }
 }

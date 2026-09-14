@@ -6,13 +6,13 @@
     "license": "GPL-3.0-only",
     "type": "module",
     "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.mts",
     "exports": {
         ".": {
             "import": {
-                "types": "./dist/index.d.ts",
-                "default": "./dist/index.js"
+                "types": "./dist/index.d.mts",
+                "default": "./dist/index.mjs"
             },
             "require": {
                 "types": "./dist/index.d.cts",
@@ -30,11 +30,11 @@
         "test": "bun test"
     },
     "dependencies": {
-        "mqtt": "^5.14.0"
+        "mqtt": "catalog:"
     },
     "devDependencies": {
-        "@types/node": "^24.0.0",
-        "tsdown": "^0.15.0",
-        "typescript": "^5.9.3"
+        "@types/node": "catalog:",
+        "tsdown": "catalog:",
+        "typescript": "catalog:"
     }
 }

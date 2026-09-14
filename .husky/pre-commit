@@ -1,0 +1,4 @@
+files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|json|css)$' || true)
+[ -z "$files" ] && exit 0
+echo "$files" | xargs bunx biome check --write --no-errors-on-unmatched
+echo "$files" | xargs git add

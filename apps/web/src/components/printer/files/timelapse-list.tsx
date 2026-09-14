@@ -21,7 +21,7 @@ export function TimelapseList({ printerId }: { printerId: string }) {
     const items = list.data ?? [];
     if (!items.length) {
         return (
-            <div className="mt-5 flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
                 <Film className="size-6" />
                 {m.timelapse_empty()}
             </div>
@@ -49,7 +49,7 @@ export function TimelapseList({ printerId }: { printerId: string }) {
             ),
         });
     return (
-        <div className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
             {items.map((t) => (
                 <div key={t.id} className="group flex flex-col overflow-hidden rounded-3xl bg-secondary">
                     <button

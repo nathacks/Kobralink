@@ -1,5 +1,6 @@
 appId: dev.kobralink.desktop
 productName: Kobralink
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: release
 files:
@@ -19,3 +20,12 @@ mac:
   category: public.app-category.utilities
   target: [dmg, zip]
   darkModeSupport: true
+win:
+  target: [nsis]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  category: Utility
+  target: [AppImage, deb]
+  maintainer: NatHacks

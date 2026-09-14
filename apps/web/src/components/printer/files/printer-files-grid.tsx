@@ -64,11 +64,11 @@ export function PrinterFilesGrid({
             onAction: () => remove.mutateAsync(names),
         });
 
-    if (!connected) return <p className="mt-5 text-sm text-muted-foreground">{m.common_printer_offline()}</p>;
-    if (files.isPending) return <p className="mt-5 text-sm text-muted-foreground">{m.pfiles_reading()}</p>;
+    if (!connected) return <p className="text-sm text-muted-foreground">{m.common_printer_offline()}</p>;
+    if (files.isPending) return <p className="text-sm text-muted-foreground">{m.pfiles_reading()}</p>;
     if (files.isError)
         return (
-            <div className="mt-5 flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 {files.error.message}
                 <Button size="sm" variant="secondary" className="rounded-full" onClick={() => files.refetch()}>
                     <RefreshCw /> {m.common_retry()}
@@ -77,7 +77,7 @@ export function PrinterFilesGrid({
         );
 
     return (
-        <div className="mt-5 space-y-3">
+        <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span>
                     {search

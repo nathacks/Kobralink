@@ -2,10 +2,10 @@ name: kobralink
 
 services:
   kobralink:
-    image: ${KOBRALINK_IMAGE:-ghcr.io/nathacks/kobralink:latest}
+    image: ${KOBRALINK_IMAGE:-nathacks/kobralink:latest}
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: infra/Dockerfile
     container_name: kobralink
     restart: unless-stopped
     env_file:

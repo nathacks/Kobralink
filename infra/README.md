@@ -1,10 +1,12 @@
 # Production deployment
 
+Files: `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `.env.example`. The image is built and pushed to Docker Hub by the release workflow on every `v*` tag.
+
 ```bash
 cd infra
 cp .env.example .env          # then set BETTER_AUTH_URL
-docker compose -f docker-compose.prod.yml up -d            # ghcr image
-docker compose -f docker-compose.prod.yml up -d --build    # or local build from the repo root
+docker compose up -d            # Docker Hub image (nathacks/kobralink)
+docker compose up -d --build    # or local build from infra/Dockerfile (context = repo root)
 ```
 
 - UI + API: `http://<host>:7100`
@@ -15,8 +17,8 @@ docker compose -f docker-compose.prod.yml up -d --build    # or local build from
 ## Update
 
 ```bash
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
+docker compose pull
+docker compose up -d
 ```
 
 Prisma migrations are applied automatically at startup. The dashboard (Settings → System) also
