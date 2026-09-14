@@ -136,10 +136,48 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Write release body
+        env:
+          VERSION: ${{ github.ref_name }}
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kobralink
+        run: |
+          V="${VERSION#v}"
+          cat > body.md <<EOF
+          ## Desktop app
+
+          | Platform | File |
+          |---|---|
+          | macOS Apple Silicon | \`Kobralink-${V}-mac-arm64.dmg\` |
+          | macOS Intel | \`Kobralink-${V}-mac-x64.dmg\` |
+          | Windows | \`Kobralink-${V}-win-x64.exe\` |
+          | Linux | \`Kobralink-${V}-linux-x86_64.AppImage\` / \`Kobralink-${V}-linux-amd64.deb\` |
+
+          macOS: the app is not notarized — right-click → Open on first launch, or \`xattr -dr com.apple.quarantine /Applications/Kobralink.app\`.
+
+          ## Web server (no desktop app)
+
+          Kobralink also runs headless as a Docker container: the same dashboard is served at \`http://<host>:7100\` and the Moonraker endpoints on \`7125+\`.
+
+          \`\`\`bash
+          docker pull ${IMAGE}:${V}
+          \`\`\`
+
+          With docker compose (\`infra/docker-compose.yml\` + \`infra/.env.example\`):
+
+          \`\`\`bash
+          git clone https://github.com/${{ github.repository }}.git && cd Kobralink/infra
+          cp .env.example .env   # set BETTER_AUTH_URL to the URL your browser uses
+          KOBRALINK_IMAGE=${IMAGE}:${V} docker compose up -d
+          \`\`\`
+
+          Image tags: \`${IMAGE}:${V}\`, \`${IMAGE}:latest\` (linux/amd64, linux/arm64). See \`infra/README.md\` for updates, backups and reverse proxy.
+          EOF
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Kobralink ${{ github.ref_name }}
+          body_path: body.md
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: dist/*
