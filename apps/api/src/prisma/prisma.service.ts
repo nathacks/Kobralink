@@ -17,7 +17,7 @@ export async function initPrisma(): Promise<PrismaClient> {
 }
 
 export function getPrisma(): PrismaClient {
-    if (!singleton) throw new Error('Prisma non initialisé — appelez initPrisma() au démarrage');
+    if (!singleton) throw new Error('Prisma not initialized — call initPrisma() at startup');
     return singleton;
 }
 

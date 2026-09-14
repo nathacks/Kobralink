@@ -19,7 +19,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import { hexToRgb, rgbToHex } from '@/lib/color';
-import { filamentProfilesQuery, filamentSlotsQuery } from '@/lib/queries';
+import { m } from '@/lib/i18n';
+import { filamentProfilesQuery, filamentSlotsQuery, spoolmanSpoolsQuery, spoolmanStatusQuery } from '@/lib/queries';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
 import { usePrinter } from '@/stores/printers';
 
@@ -44,24 +45,36 @@ function SlotFormInner({
     const visibleVendors = printer?.settings.visibleVendors ?? [];
     const qc = useQueryClient();
     const profiles = useQuery(filamentProfilesQuery);
+    const spoolman = useQuery(spoolmanStatusQuery(printerId));
+    const spoolmanOn = Boolean(spoolman.data?.configured);
+    const spools = useQuery(spoolmanSpoolsQuery(spoolmanOn));
+    const currentSpool = spoolman.data?.slotSpools[String(slot.globalIndex)] ?? 0;
     const loaded = live?.amsLoadedSlot === slot.globalIndex;
     const busy = live?.printState === 'printing';
     const onClose = useConfirmationDialogStore((s) => s.closeDialog);
     const onError = (e: Error) => toast.error(e.message);
     const save = useMutation({
-        mutationFn: async (v: AmsSlotFormValues & { profile: string }) => {
+        mutationFn: async (v: AmsSlotFormValues & { profile: string; spoolId: number }) => {
             const [vendor = '', name = ''] = v.profile ? v.profile.split('|||') : [];
             const overrideKey = current?.override ? profileKey(current.override) : '';
-            await Promise.all([
+            const tasks: Promise<unknown>[] = [
                 api.ams.setSlot(printerId, { index: slot.globalIndex, type: v.type, color: hexToRgb(v.color) }),
-                v.profile !== overrideKey
-                    ? api.filament.setSlotProfile(printerId, slot.globalIndex, { vendor, name })
-                    : Promise.resolve(),
-            ]);
+            ];
+            if (v.profile !== overrideKey) {
+                tasks.push(api.filament.setSlotProfile(printerId, slot.globalIndex, { vendor, name }));
+            }
+            if (spoolmanOn && v.spoolId !== currentSpool) {
+                const map = { ...(spoolman.data?.slotSpools ?? {}) };
+                if (v.spoolId > 0) map[String(slot.globalIndex)] = v.spoolId;
+                else delete map[String(slot.globalIndex)];
+                tasks.push(api.spoolman.setSlots(printerId, map));
+            }
+            await Promise.all(tasks);
         },
         onSuccess: () => {
-            toast.success(`Slot ${slot.index + 1} mis à jour`);
+            toast.success(m.slot_updated({ n: slot.index + 1 }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'filament-slots'] });
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'spoolman'] });
             onClose();
         },
         onError,
@@ -69,7 +82,7 @@ function SlotFormInner({
     const feed = useMutation({
         mutationFn: (type: 1 | 2) => api.ams.feed(printerId, { slotIndex: slot.globalIndex, type }),
         onSuccess: (_, type) => {
-            toast.success(type === 1 ? 'Chargement du filament…' : 'Retrait du filament…');
+            toast.success(type === 1 ? m.slot_loading() : m.slot_unloading());
             onClose();
         },
         onError,
@@ -79,8 +92,9 @@ function SlotFormInner({
             type: slot.type || 'PLA',
             color: rgbToHex(slot.color),
             profile: current?.override ? profileKey(current.override) : '',
+            spoolId: currentSpool,
         },
-        validators: { onSubmit: amsSlotFormSchema.extend({ profile: z.string() }) },
+        validators: { onSubmit: amsSlotFormSchema.extend({ profile: z.string(), spoolId: z.number().int().min(0) }) },
         onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
     });
     const isKnown = (v: string) => (AMS_MATERIALS as readonly string[]).includes(v);
@@ -99,14 +113,14 @@ function SlotFormInner({
                         const custom = !isKnown(field.state.value);
                         return (
                             <div className="grid gap-2">
-                                <Label htmlFor="slot-type">Matière</Label>
+                                <Label htmlFor="slot-type">{m.slot_material()}</Label>
                                 <div className="grid gap-2 sm:grid-cols-2">
                                     <Select
                                         value={custom ? '__custom' : field.state.value}
                                         onValueChange={(v) => field.handleChange(v === '__custom' ? '' : v)}
                                     >
                                         <SelectTrigger className="rounded-full">
-                                            <SelectValue placeholder="Choisir" />
+                                            <SelectValue placeholder={m.slot_choose()} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {AMS_MATERIALS.map((m) => (
@@ -114,13 +128,13 @@ function SlotFormInner({
                                                     {m}
                                                 </SelectItem>
                                             ))}
-                                            <SelectItem value="__custom">Autre…</SelectItem>
+                                            <SelectItem value="__custom">{m.slot_other()}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {custom && (
                                         <Input
                                             id="slot-type"
-                                            placeholder="Ex. PLA-SILK"
+                                            placeholder={m.slot_custom_placeholder()}
                                             value={field.state.value}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
@@ -138,7 +152,7 @@ function SlotFormInner({
                 <form.Field name="color">
                     {(field) => (
                         <div className="grid gap-2">
-                            <Label htmlFor="slot-color">Couleur</Label>
+                            <Label htmlFor="slot-color">{m.slot_color()}</Label>
                             <div className="flex items-center gap-3">
                                 <input
                                     id="slot-color"
@@ -179,19 +193,19 @@ function SlotFormInner({
                                 const auto = current?.source === 'rfid' ? current.profile : null;
                                 return (
                                     <div className="grid gap-2">
-                                        <Label htmlFor="slot-profile">Profil OrcaSlicer</Label>
+                                        <Label htmlFor="slot-profile">{m.slot_profile()}</Label>
                                         <Select
                                             value={field.state.value || '__none'}
                                             onValueChange={(v) => field.handleChange(v === '__none' ? '' : v)}
                                         >
                                             <SelectTrigger id="slot-profile" className="rounded-full">
-                                                <SelectValue placeholder="Générique" />
+                                                <SelectValue placeholder={m.slot_generic()} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="__none">
                                                     {auto
-                                                        ? `Auto (RFID) · ${auto.vendor} ${auto.name}`
-                                                        : `Générique (${family || type})`}
+                                                        ? m.slot_auto_rfid({ vendor: auto.vendor, name: auto.name })
+                                                        : m.slot_generic_family({ family: family || type })}
                                                 </SelectItem>
                                                 {options.map((p) => (
                                                     <SelectItem key={profileKey(p)} value={profileKey(p)}>
@@ -201,15 +215,51 @@ function SlotFormInner({
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <p className="px-4 text-xs text-muted-foreground">
-                                            Envoyé à OrcaSlicer comme marque + nom de preset pour ce slot.
-                                        </p>
+                                        <p className="px-4 text-xs text-muted-foreground">{m.slot_profile_hint()}</p>
                                     </div>
                                 );
                             }}
                         </form.Subscribe>
                     )}
                 </form.Field>
+                {spoolmanOn && (
+                    <form.Field name="spoolId">
+                        {(field) => (
+                            <div className="grid gap-2">
+                                <Label htmlFor="slot-spool">{m.slot_spool()}</Label>
+                                <Select
+                                    value={String(field.state.value)}
+                                    onValueChange={(v) => field.handleChange(Number(v))}
+                                    disabled={spools.isPending}
+                                >
+                                    <SelectTrigger id="slot-spool" className="rounded-full">
+                                        <SelectValue
+                                            placeholder={
+                                                spools.isError ? m.slot_spool_unreachable() : m.slot_spool_none()
+                                            }
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0">{m.slot_spool_none()}</SelectItem>
+                                        {(spools.data ?? [])
+                                            .filter((sp) => !sp.archived)
+                                            .map((sp) => (
+                                                <SelectItem key={sp.id} value={String(sp.id)}>
+                                                    #{sp.id} ·{' '}
+                                                    {sp.filament.vendor?.name ? `${sp.filament.vendor.name} ` : ''}
+                                                    {sp.filament.name ?? sp.filament.material ?? ''}
+                                                    {sp.remaining_weight !== undefined
+                                                        ? ` · ${Math.round(sp.remaining_weight)} g`
+                                                        : ''}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="px-4 text-xs text-muted-foreground">{m.slot_spool_hint()}</p>
+                            </div>
+                        )}
+                    </form.Field>
+                )}
             </div>
             <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
                 <div className="flex gap-2">
@@ -220,7 +270,7 @@ function SlotFormInner({
                         disabled={busy || feed.isPending || slot.status !== 5 || loaded}
                         onClick={() => feed.mutate(1)}
                     >
-                        <ArrowDownToLine /> Charger
+                        <ArrowDownToLine /> {m.slot_load()}
                     </Button>
                     <Button
                         type="button"
@@ -229,13 +279,13 @@ function SlotFormInner({
                         disabled={busy || feed.isPending || !loaded}
                         onClick={() => feed.mutate(2)}
                     >
-                        <ArrowUpFromLine /> Retirer
+                        <ArrowUpFromLine /> {m.slot_unload()}
                     </Button>
                 </div>
                 <form.Subscribe selector={(s) => s.isSubmitting}>
                     {(isSubmitting) => (
                         <Button type="submit" className="rounded-full px-5" disabled={isSubmitting}>
-                            Enregistrer
+                            {m.common_save()}
                         </Button>
                     )}
                 </form.Subscribe>

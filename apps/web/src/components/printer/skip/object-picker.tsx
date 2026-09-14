@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export function ObjectPicker({
@@ -20,7 +21,7 @@ export function ObjectPicker({
                 <div className="overflow-hidden rounded-2xl bg-secondary/60 p-2">
                     <img
                         src={`data:image/svg+xml;base64,${svgB64}`}
-                        alt="Disposition des objets sur le plateau"
+                        alt={m.objects_layout_alt()}
                         className="mx-auto max-h-56 w-auto"
                     />
                 </div>
@@ -53,7 +54,9 @@ export function ObjectPicker({
                                     {on && <Check className="size-3" />}
                                 </span>
                                 <span className="truncate">{prettyName(name)}</span>
-                                {isLocked && <span className="ml-auto text-xs no-underline">ignoré</span>}
+                                {isLocked && (
+                                    <span className="ml-auto text-xs no-underline">{m.objects_skipped()}</span>
+                                )}
                             </button>
                         </li>
                     );

@@ -89,8 +89,27 @@ model Printer {
   files     GcodeFile[]
   jobs      PrintJob[]
   slotProfiles SlotProfile[]
+  spoolAssignments SpoolAssignment[]
 
   @@map("printer")
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_setting")
+}
+
+model SpoolAssignment {
+  printerId String
+  printer   Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  slotIndex Int
+  spoolId   Int
+
+  @@id([printerId, slotIndex])
+  @@map("spool_assignment")
 }
 
 model FilamentProfile {

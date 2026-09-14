@@ -5,10 +5,12 @@ import { createRoot } from 'react-dom/client';
 import { AlertConfirmationDialog } from '@/components/dialogs/alert-confirmation-dialog';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Toaster } from '@/components/ui/sonner';
+import { installI18n } from '@/lib/i18n';
 import { routeTree } from './routeTree.gen';
 import './styles.css';
 
 if ('kobralinkDesktop' in window) document.documentElement.classList.add('desktop');
+installI18n();
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: 1, staleTime: 5_000 } },

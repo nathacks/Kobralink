@@ -1,7 +1,10 @@
 import path from 'node:path';
+import { m } from '@kobralink/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
+import { installLocale } from '../shared/locale';
 import { apiAvailable, startLocalApi, stopLocalApi, waitForApi } from './api-process';
 import { type DesktopSettings, loadSettings, saveSettings } from './settings';
+import { checkForUpdates, setupUpdater } from './updater';
 
 let win: BrowserWindow | null = null;
 
@@ -57,7 +60,7 @@ async function boot(w: BrowserWindow): Promise<void> {
                 await loadLauncher(w, {
                     status: 'error',
                     url,
-                    message: 'Build API introuvable — lancez `bun run build` d’abord.',
+                    message: m.desktop_api_build_missing(),
                 });
                 return;
             }
@@ -66,7 +69,7 @@ async function boot(w: BrowserWindow): Promise<void> {
     }
     const ok = await waitForApi(url, 40000);
     if (!ok) {
-        await loadLauncher(w, { status: 'error', url, message: `Bridge injoignable sur ${url}` });
+        await loadLauncher(w, { status: 'error', url, message: m.desktop_bridge_unreachable({ url }) });
         return;
     }
     await w.loadURL(url);
@@ -78,9 +81,14 @@ function buildMenu(): void {
             label: app.name,
             submenu: [
                 { role: 'about' },
+                {
+                    label: m.desktop_menu_check_updates(),
+                    enabled: app.isPackaged,
+                    click: () => checkForUpdates(true),
+                },
                 { type: 'separator' },
                 {
-                    label: 'Changer de bridge…',
+                    label: m.desktop_menu_change_bridge(),
                     accelerator: 'Cmd+,',
                     click: () => {
                         if (win) void loadLauncher(win, { status: 'settings', ...settingsQuery() });
@@ -96,7 +104,7 @@ function buildMenu(): void {
         },
         { role: 'editMenu' },
         {
-            label: 'Affichage',
+            label: m.desktop_menu_view(),
             submenu: [
                 { role: 'reload' },
                 { role: 'toggleDevTools' },
@@ -130,8 +138,10 @@ ipcMain.handle('app:retry', async () => {
 });
 
 app.whenReady().then(async () => {
+    installLocale(app.getLocale());
     buildMenu();
     win = createWindow();
+    if (!process.env.KOBRALINK_SHOT) setupUpdater(() => win);
     await boot(win);
 
     if (process.env.KOBRALINK_SHOT && win) {

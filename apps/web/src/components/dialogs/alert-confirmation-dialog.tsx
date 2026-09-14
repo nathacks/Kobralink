@@ -9,6 +9,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { m } from '@/lib/i18n';
 import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export function AlertConfirmationDialog() {
@@ -51,7 +52,7 @@ export function AlertConfirmationDialog() {
         <AlertDialog open={isOpen} onOpenChange={(open) => !open && !isPending && closeAlertDialog()}>
             <AlertDialogContent {...props} className={props?.className ?? 'rounded-3xl'}>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{title ?? 'Confirmer'}</AlertDialogTitle>
+                    <AlertDialogTitle>{title ?? m.common_confirm()}</AlertDialogTitle>
                     {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -63,7 +64,7 @@ export function AlertConfirmationDialog() {
                                 void handleCancel();
                             }}
                         >
-                            {cancelLabel ?? 'Annuler'}
+                            {cancelLabel ?? m.common_cancel()}
                         </AlertDialogCancel>
                     )}
                     <AlertDialogAction
@@ -74,7 +75,7 @@ export function AlertConfirmationDialog() {
                         }}
                     >
                         {isPending && <Loader2 className="animate-spin" />}
-                        {actionLabel ?? 'Confirmer'}
+                        {actionLabel ?? m.common_confirm()}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

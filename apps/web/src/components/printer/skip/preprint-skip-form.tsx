@@ -4,6 +4,7 @@ import { Play } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import { m } from '@/lib/i18n';
 import { fileObjectsQuery } from '@/lib/queries';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
 import { ObjectPicker } from './object-picker';
@@ -30,13 +31,11 @@ export function PrePrintSkipForm({
             {names.length ? (
                 <ObjectPicker objects={names} selected={excluded} onToggle={toggle} svgB64={objects.data?.svgB64} />
             ) : (
-                <p className="text-sm text-muted-foreground">Chargement de la liste des objets…</p>
+                <p className="text-sm text-muted-foreground">{m.preprint_loading()}</p>
             )}
             <DialogFooter className="sm:justify-between">
                 <span className="self-center text-xs text-muted-foreground">
-                    {excluded.length
-                        ? `${remaining} objet${remaining > 1 ? 's' : ''} sur ${names.length}`
-                        : 'Tous les objets seront imprimés'}
+                    {excluded.length ? m.preprint_count({ remaining, total: names.length }) : m.preprint_all()}
                 </span>
                 <Button
                     type="button"
@@ -52,7 +51,7 @@ export function PrePrintSkipForm({
                         }
                     }}
                 >
-                    <Play /> Imprimer
+                    <Play /> {m.common_print()}
                 </Button>
             </DialogFooter>
         </div>

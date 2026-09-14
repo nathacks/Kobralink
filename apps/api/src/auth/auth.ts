@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError } from 'better-auth/api';
 import { loadEnv } from '../config/env';
+import { m } from '../i18n/locale';
 import { getPrisma } from '../prisma/prisma.service';
 
 export function createAuth() {
@@ -34,7 +35,7 @@ export function createAuth() {
                         const count = await prisma.user.count();
                         if (count > 0) {
                             throw new APIError('FORBIDDEN', {
-                                message: 'Inscription fermée : un compte existe déjà sur ce bridge.',
+                                message: m.api_signup_closed(),
                             });
                         }
                         return { data: user };

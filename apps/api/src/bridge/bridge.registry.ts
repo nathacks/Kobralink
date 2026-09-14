@@ -4,8 +4,10 @@ import { Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } 
 import { loadEnv } from '../config/env';
 import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
+import { m } from '../i18n/locale';
 import { MoonrakerHost } from '../moonraker/moonraker.host';
 import { PrintersService } from '../printers/printers.service';
+import { SpoolmanService } from '../spoolman/spoolman.service';
 import { PrinterBridge } from './printer-bridge';
 
 @Injectable()
@@ -19,6 +21,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         private readonly gcode: GcodeService,
         private readonly moonraker: MoonrakerHost,
         private readonly filaments: FilamentService,
+        private readonly spoolman: SpoolmanService,
     ) {}
 
     private loadCerts(): { cert: Buffer; key: Buffer } {
@@ -41,10 +44,10 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
             try {
                 await this.spawn(PrintersService.toBridgeConfig(row));
             } catch (e) {
-                this.log.error(`Impossible de démarrer le bridge pour ${row.name}: ${(e as Error).message}`);
+                this.log.error(`Unable to start the bridge for ${row.name}: ${(e as Error).message}`);
             }
         }
-        if (!rows.length) this.log.log('Aucune imprimante configurée — ajoutez-en une depuis l’UI');
+        if (!rows.length) this.log.log('No printer configured — add one from the UI');
     }
 
     async onModuleDestroy(): Promise<void> {
@@ -57,7 +60,7 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
 
     get(id: string): PrinterBridge {
         const b = this.bridges.get(id);
-        if (!b) throw new NotFoundException('Bridge introuvable pour cette imprimante');
+        if (!b) throw new NotFoundException(m.api_bridge_not_found());
         return b;
     }
 
@@ -67,11 +70,11 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
 
     async spawn(config: ReturnType<typeof PrintersService.toBridgeConfig>): Promise<PrinterBridge> {
         if (this.bridges.has(config.id)) return this.bridges.get(config.id) as PrinterBridge;
-        const bridge = new PrinterBridge(config, this.gcode, this.loadCerts());
+        const bridge = new PrinterBridge(config, this.gcode, this.loadCerts(), this.spoolman);
         this.bridges.set(config.id, bridge);
         bridge.start();
         await this.moonraker.startFor(bridge);
-        this.log.log(`Bridge démarré: ${config.name} (${config.ip}) → Moonraker :${config.httpPort}`);
+        this.log.log(`Bridge started: ${config.name} (${config.ip}) → Moonraker :${config.httpPort}`);
         return bridge;
     }
 
@@ -82,7 +85,8 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         await this.moonraker.stopFor(id);
         await bridge.stop();
         this.filaments.forgetPrinter(id);
-        this.log.log(`Bridge arrêté: ${bridge.config.name}`);
+        this.spoolman.forgetPrinter(id);
+        this.log.log(`Bridge stopped: ${bridge.config.name}`);
     }
 
     async refresh(id: string): Promise<void> {

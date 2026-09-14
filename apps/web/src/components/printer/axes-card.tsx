@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { useLiveState } from '@/stores/printers';
 
@@ -26,7 +27,7 @@ export function AxesCard({ printerId }: { printerId: string }) {
     return (
         <Card className="rounded-3xl border-0 shadow-none">
             <CardHeader>
-                <CardTitle className="text-lg font-medium">Axes</CardTitle>
+                <CardTitle className="text-lg font-medium">{m.axes_title()}</CardTitle>
                 <CardAction className="flex gap-1 rounded-full bg-secondary p-1">
                     {DISTANCES.map((d) => (
                         <button
@@ -55,7 +56,7 @@ export function AxesCard({ printerId }: { printerId: string }) {
                     <Jog onClick={() => jog(AXIS.X, 0)} disabled={locked} title="X-">
                         <ArrowLeft />
                     </Jog>
-                    <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title="Home XYZ" primary>
+                    <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title={m.axes_home()} primary>
                         <Home />
                     </Jog>
                     <Jog onClick={() => jog(AXIS.X, 1)} disabled={locked} title="X+">
@@ -82,7 +83,7 @@ export function AxesCard({ printerId }: { printerId: string }) {
                     disabled={locked}
                     onClick={() => offMut.mutate()}
                 >
-                    <Power /> Couper les moteurs
+                    <Power /> {m.axes_motors_off()}
                 </Button>
             </CardContent>
         </Card>

@@ -6,9 +6,10 @@ import {
     printerSettingsSchema,
     type UpdatePrinterInput,
 } from '@kobralink/shared';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type { BridgePrinterConfig } from '../bridge/printer-bridge';
 import type { Printer } from '../generated/prisma/client';
+import { m, protocolErrorMessage } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 
 export const FIRST_MOONRAKER_PORT = 7125;
@@ -62,7 +63,7 @@ export class PrintersService {
 
     async findOne(id: string): Promise<Printer> {
         const p = await this.prisma.client.printer.findUnique({ where: { id } });
-        if (!p) throw new NotFoundException('Imprimante introuvable');
+        if (!p) throw new NotFoundException(m.api_printer_not_found());
         return p;
     }
 
@@ -75,18 +76,26 @@ export class PrintersService {
         return port;
     }
 
+    private async credentials(ip: string) {
+        try {
+            return await fetchPrinterCredentials(ip);
+        } catch (e) {
+            throw new ServiceUnavailableException(protocolErrorMessage(e));
+        }
+    }
+
     async add(input: AddPrinterInput): Promise<Printer> {
-        const creds = await fetchPrinterCredentials(input.ip);
+        const creds = await this.credentials(input.ip);
         if (!creds.username || !creds.password || !creds.deviceId) {
-            throw new ConflictException("L'imprimante a répondu mais sans identifiants exploitables");
+            throw new ConflictException(m.api_no_credentials());
         }
         const existing = await this.prisma.client.printer.findFirst({
             where: { deviceId: creds.deviceId },
         });
-        if (existing) throw new ConflictException(`Cette imprimante existe déjà (${existing.name})`);
+        if (existing) throw new ConflictException(m.api_printer_exists({ name: existing.name }));
         const httpPort = input.httpPort ?? (await this.nextFreePort());
         const clash = await this.prisma.client.printer.findUnique({ where: { httpPort } });
-        if (clash) throw new ConflictException(`Le port ${httpPort} est déjà utilisé par ${clash.name}`);
+        if (clash) throw new ConflictException(m.api_port_in_use({ port: httpPort, name: clash.name }));
         return this.prisma.client.printer.create({
             data: {
                 name: input.name?.trim() || creds.model || 'Anycubic Kobra X',
@@ -108,7 +117,7 @@ export class PrintersService {
             const clash = await this.prisma.client.printer.findUnique({
                 where: { httpPort: input.httpPort },
             });
-            if (clash) throw new ConflictException(`Le port ${input.httpPort} est déjà utilisé par ${clash.name}`);
+            if (clash) throw new ConflictException(m.api_port_in_use({ port: input.httpPort, name: clash.name }));
         }
         const settings = input.settings
             ? printerSettingsSchema.parse({
@@ -129,7 +138,7 @@ export class PrintersService {
 
     async refreshCredentials(id: string): Promise<Printer> {
         const current = await this.findOne(id);
-        const creds = await fetchPrinterCredentials(current.ip);
+        const creds = await this.credentials(current.ip);
         return this.prisma.client.printer.update({
             where: { id },
             data: {

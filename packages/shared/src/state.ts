@@ -24,6 +24,22 @@ export type KobraState =
 
 export type FilamentMode = 'toolhead' | 'ace_direct' | 'ace_hub';
 
+export type ConnectionErrorCode =
+    | 'mqtt_auth'
+    | 'mqtt_refused'
+    | 'unreachable'
+    | 'unreachable_ip'
+    | 'lost'
+    | 'reconnecting'
+    | 'manual'
+    | 'other';
+
+export interface ConnectionError {
+    code: ConnectionErrorCode;
+    ip?: string;
+    detail?: string;
+}
+
 export interface AmsSlot {
     globalIndex: number;
 
@@ -57,7 +73,7 @@ export interface AceUnit {
 export interface PrinterLiveState {
     printerId: string;
     connected: boolean;
-    connectionError: string;
+    connectionError: ConnectionError | null;
     printerName: string;
     firmwareVersion: string;
     printState: KlipperPrintState;
@@ -93,6 +109,7 @@ export interface PrinterLiveState {
     aceDrying: AceDrying;
     skippedObjects: string[];
     skipTs: number;
+    manualOffline: boolean;
     storageTotalMb: number;
     storageUsedMb: number;
     updatedAt: number;

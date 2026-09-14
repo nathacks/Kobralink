@@ -11,7 +11,11 @@ extraResources:
     to: api/node_modules
   - from: ../web/dist
     to: web
+publish:
+  provider: github
+  owner: nathacks
+  repo: Kobralink
 mac:
   category: public.app-category.utilities
-  target: [dmg]
+  target: [dmg, zip]
   darkModeSupport: true

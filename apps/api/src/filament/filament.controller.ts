@@ -15,6 +15,7 @@ import {
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { ZodPipe } from '../common/zod.pipe';
+import { m } from '../i18n/locale';
 import { FilamentService } from './filament.service';
 
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
@@ -44,7 +45,7 @@ export class FilamentController {
     @Post('filament/profiles/user')
     @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 50 * 1024 * 1024, files: 200 } }))
     async importProfiles(@UploadedFiles() files: MulterFile[] | undefined) {
-        if (!files?.length) throw new BadRequestException('Aucun fichier (.zip ou .json attendu)');
+        if (!files?.length) throw new BadRequestException(m.api_no_profile_files());
         try {
             return await this.filaments.importProfiles(files);
         } catch (e) {

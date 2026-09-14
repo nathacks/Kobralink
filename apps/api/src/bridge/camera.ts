@@ -2,6 +2,7 @@ import { type ChildProcessByStdio, spawn } from 'node:child_process';
 import type { Readable } from 'node:stream';
 import type { Logger } from '@nestjs/common';
 import type { Response } from 'express';
+import { m } from '../i18n/locale';
 
 const SOI = Buffer.from([0xff, 0xd8]);
 const EOI = Buffer.from([0xff, 0xd9]);
@@ -10,7 +11,7 @@ const FIRST_FRAME_TIMEOUT_MS = 8_000;
 const MAX_BACKOFF_MS = 300_000;
 const BOUNDARY = 'kobralinkframe';
 
-type FfmpegProc = ChildProcessByStdio<null, Readable, Readable>;
+type FfmpegProc = ChildProcessByStdio<null, Readable, Readable> & { stdio: (Readable | null)[] };
 
 export function resolveFfmpeg(): string {
     if (process.env.KOBRALINK_FFMPEG) return process.env.KOBRALINK_FFMPEG;
@@ -28,6 +29,7 @@ export class CameraCache {
     private idleTimer: NodeJS.Timeout | null = null;
     private failCount = 0;
     private readonly subscribers = new Set<(frame: Buffer) => void>();
+    private readonly tsSubscribers = new Set<(chunk: Buffer) => void>();
     private readonly waiters = new Set<(frame: Buffer | null) => void>();
     private lastError = '';
     latestJpeg: Buffer | null = null;
@@ -51,7 +53,7 @@ export class CameraCache {
         const changed = Boolean(url && this.url && url !== this.url);
         this.url = url;
         if (changed) {
-            this.log.log('URL caméra changée, redémarrage ffmpeg');
+            this.log.log('Camera URL changed, restarting ffmpeg');
             this.reset();
         }
     }
@@ -88,6 +90,37 @@ export class CameraCache {
             this.subscribers.delete(fn);
             this.touch();
         };
+    }
+
+    subscribeTs(fn: (chunk: Buffer) => void): () => void {
+        this.tsSubscribers.add(fn);
+        this.ensureRunning();
+        return () => {
+            this.tsSubscribers.delete(fn);
+            this.touch();
+        };
+    }
+
+    async streamTsTo(res: Response): Promise<boolean> {
+        const first = await this.waitForFrame();
+        if (!first) return false;
+        res.writeHead(200, {
+            'Content-Type': 'video/mp2t',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+        });
+        let queued = 0;
+        const write = (chunk: Buffer) => {
+            if (res.destroyed || queued > 64) return;
+            queued += 1;
+            res.write(chunk, () => {
+                queued -= 1;
+            });
+        };
+        const unsubscribe = this.subscribeTs(write);
+        await new Promise<void>((resolve) => res.once('close', resolve));
+        unsubscribe();
+        return true;
     }
 
     waitForFrame(timeoutMs = FIRST_FRAME_TIMEOUT_MS): Promise<Buffer | null> {
@@ -138,8 +171,8 @@ export class CameraCache {
     private touch(): void {
         if (this.idleTimer) clearTimeout(this.idleTimer);
         this.idleTimer = setTimeout(() => {
-            if (this.subscribers.size === 0 && this.proc) {
-                this.log.log('Caméra inactive, arrêt de ffmpeg');
+            if (this.subscribers.size === 0 && this.tsSubscribers.size === 0 && this.proc) {
+                this.log.log('Camera idle, stopping ffmpeg');
                 this.stop();
             }
         }, IDLE_STOP_MS);
@@ -172,16 +205,24 @@ export class CameraCache {
             '-flush_packets',
             '1',
             'pipe:1',
+            '-c:v',
+            'copy',
+            '-an',
+            '-f',
+            'mpegts',
+            '-flush_packets',
+            '1',
+            'pipe:3',
         ];
         let proc: FfmpegProc;
         try {
-            proc = spawn(resolveFfmpeg(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
+            proc = spawn(resolveFfmpeg(), args, { stdio: ['ignore', 'pipe', 'pipe', 'pipe'] }) as FfmpegProc;
         } catch (e) {
             this.onExit(null, e instanceof Error ? e.message : String(e));
             return;
         }
         this.proc = proc;
-        this.log.log(`ffmpeg démarré (${url.replace(/\?.*$/, '')})`);
+        this.log.log(`ffmpeg started (${url.replace(/\?.*$/, '')})`);
 
         let buf: Buffer = Buffer.alloc(0);
         let stderr = '';
@@ -203,6 +244,10 @@ export class CameraCache {
                 buf = buf.subarray(end + 2);
                 this.onFrame(frame);
             }
+        });
+        proc.stdio[3]?.on('data', (chunk: Buffer) => {
+            if (this.proc !== proc) return;
+            for (const s of this.tsSubscribers) s(chunk);
         });
         proc.stderr.on('data', (chunk: Buffer) => {
             stderr = (stderr + chunk.toString()).slice(-2000);
@@ -233,40 +278,46 @@ export class CameraCache {
         for (const w of this.waiters) w(null);
         this.waiters.clear();
         this.failCount += 1;
-        this.lastError = detail || `ffmpeg terminé (code ${code})`;
+        this.lastError = detail || m.api_ffmpeg_exited({ code: code ?? '?' });
         const rateLimited = /4XX|429/.test(detail);
         const delay = Math.min(Math.max(2_000 * 2 ** this.failCount, rateLimited ? 30_000 : 0), MAX_BACKOFF_MS);
-        if (rateLimited)
-            this.lastError =
-                "L'imprimante refuse la connexion caméra (429) — un autre client occupe le flux ou elle est verrouillée temporairement";
-        this.log.warn(`ffmpeg terminé (code ${code}), nouvel essai dans ${Math.round(delay / 1000)} s — ${detail}`);
+        if (rateLimited) this.lastError = m.api_camera_rate_limited();
+        this.log.warn(`ffmpeg exited (code ${code}), retrying in ${Math.round(delay / 1000)} s — ${detail}`);
         this.restartTimer = setTimeout(() => {
             this.restartTimer = null;
-            if (this.subscribers.size > 0 || this.waiters.size > 0) this.spawnFfmpeg();
+            if (this.subscribers.size > 0 || this.tsSubscribers.size > 0 || this.waiters.size > 0) this.spawnFfmpeg();
         }, delay);
     }
 }
 
 export async function serveStream(cache: CameraCache, res: Response): Promise<void> {
     if (!cache.hasUrl) {
-        res.status(503).json({
-            message: "Aucune URL caméra connue — démarrez la caméra ou attendez le prochain état de l'imprimante",
-        });
+        res.status(503).json({ message: m.api_camera_no_url() });
         return;
     }
     if (!(await cache.streamTo(res))) {
-        res.status(503).json({ message: cache.error || 'Aucune image reçue de la caméra' });
+        res.status(503).json({ message: cache.error || m.api_camera_no_frame() });
+    }
+}
+
+export async function serveH264(cache: CameraCache, res: Response): Promise<void> {
+    if (!cache.hasUrl) {
+        res.status(503).json({ message: m.api_camera_no_url() });
+        return;
+    }
+    if (!(await cache.streamTsTo(res))) {
+        res.status(503).json({ message: cache.error || m.api_camera_no_frame() });
     }
 }
 
 export async function serveSnapshot(cache: CameraCache, res: Response): Promise<void> {
     if (!cache.hasUrl) {
-        res.status(503).json({ message: 'Aucune URL caméra connue' });
+        res.status(503).json({ message: m.api_camera_no_url_short() });
         return;
     }
     const frame = await cache.waitForFrame();
     if (!frame) {
-        res.status(503).json({ message: cache.error || 'Aucune image reçue de la caméra' });
+        res.status(503).json({ message: cache.error || m.api_camera_no_frame() });
         return;
     }
     const age = (Date.now() - cache.latestJpegAt) / 1000;

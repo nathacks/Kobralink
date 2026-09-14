@@ -1,9 +1,9 @@
 import type { PrinterLiveState } from '@kobralink/shared';
-import { KOBRA_STATE_LABEL } from '@/lib/labels';
+import { kobraStateLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function StatusBadge({ state, className }: { state: PrinterLiveState; className?: string }) {
-    const label = KOBRA_STATE_LABEL[state.kobraState] ?? state.kobraState;
+    const label = kobraStateLabel(state.kobraState);
     const dot = !state.connected
         ? 'bg-muted-foreground/60'
         : state.printState === 'error'

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import mqtt, { type IClientOptions, type MqttClient } from 'mqtt';
+import { KobraProtocolError } from './errors';
 import type { KobraInfoData, KobraMessage, KobraMultiColorBoxData, KobraPrintData, KobraSkipData } from './types';
 
 export interface KobraLogger {
@@ -140,7 +141,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
                 settled = true;
                 cleanup();
                 this.client = null;
-                reject(new Error('Connexion MQTT fermée pendant le handshake'));
+                reject(new KobraProtocolError('mqtt_closed_handshake', {}, 'MQTT connection closed during handshake'));
             };
             const cleanup = () => {
                 client.off('connect', onConnect);
@@ -166,7 +167,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         await new Promise<void>((resolve, reject) => {
             client.subscribe(this.subscribeTopic, { qos: 0 }, (err) => (err ? reject(err) : resolve()));
         });
-        this.log.info(`MQTT connecté à ${this.opts.host}:${this.opts.port ?? 9883}`);
+        this.log.info(`MQTT connected to ${this.opts.host}:${this.opts.port ?? 9883}`);
         this.emit('connected');
     }
 
@@ -193,7 +194,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         try {
             payload = JSON.parse(raw.toString('utf8'));
         } catch {
-            this.log.debug(`MQTT: payload non JSON sur ${topic}`);
+            this.log.debug(`MQTT: non-JSON payload on ${topic}`);
             return;
         }
         if (!payload || typeof payload !== 'object') return;

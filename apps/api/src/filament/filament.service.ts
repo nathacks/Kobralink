@@ -10,6 +10,7 @@ import type {
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { unzipSync } from 'fflate';
 import { loadEnv } from '../config/env';
+import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 import { effectiveSlotProfile, lookupFilamentId, parseOrcaProfile } from './filament-library';
 
@@ -33,7 +34,7 @@ export class FilamentService implements OnModuleInit {
         for (const r of rows) {
             this.printerMap(r.printerId).set(r.slotIndex, { vendor: r.vendor, name: r.name, id: r.filamentId });
         }
-        this.log.log(`${this.system.length} profils système, ${this.user.length} profils utilisateur`);
+        this.log.log(`${this.system.length} system profiles, ${this.user.length} user profiles`);
     }
 
     private loadSystem(): void {
@@ -48,7 +49,7 @@ export class FilamentService implements OnModuleInit {
                 color: p.color ?? '',
             }));
         } catch (e) {
-            this.log.warn(`orca_filaments.json illisible (${file}): ${(e as Error).message}`);
+            this.log.warn(`orca_filaments.json unreadable (${file}): ${(e as Error).message}`);
             this.system = [];
         }
         this.rebuild();
@@ -175,7 +176,7 @@ export class FilamentService implements OnModuleInit {
                         filter: (e) => e.name.toLowerCase().endsWith('.json'),
                     });
                 } catch {
-                    throw new Error(`Archive ZIP invalide : ${f.originalname}`);
+                    throw new Error(m.api_invalid_zip({ name: f.originalname }));
                 }
                 for (const blob of Object.values(entries)) consider(blob);
             } else if (lower.endsWith('.json')) {

@@ -1,4 +1,5 @@
 import { createDecipheriv, createHash } from 'node:crypto';
+import { KobraProtocolError } from './errors';
 
 export interface FetchedCredentials {
     printerIp: string;
@@ -36,7 +37,8 @@ async function fetchJson(url: string, init: RequestInit, timeoutMs: number): Pro
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
         const res = await fetch(url, { ...init, signal: ctrl.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status} sur ${url}`);
+        if (!res.ok)
+            throw new KobraProtocolError('http_status', { status: res.status, url }, `HTTP ${res.status} on ${url}`);
         return await res.json();
     } finally {
         clearTimeout(t);
@@ -52,7 +54,11 @@ export async function fetchPrinterCredentials(
     const info = await fetchJson(`${base}/info`, { method: 'GET' }, timeoutMs);
     const token: string = info?.token;
     if (typeof token !== 'string' || token.length < 32) {
-        throw new Error("Réponse /info invalide (token manquant) — le mode LAN est-il activé sur l'imprimante ?");
+        throw new KobraProtocolError(
+            'info_invalid',
+            {},
+            'Invalid /info response (missing token) — is LAN mode enabled?',
+        );
     }
     const ts = Date.now();
     const nonce = randomNonce();
@@ -62,7 +68,7 @@ export async function fetchPrinterCredentials(
     const encrypted = ctrl?.data?.info;
     const ctrlToken = ctrl?.data?.token;
     if (typeof encrypted !== 'string' || typeof ctrlToken !== 'string') {
-        throw new Error('Réponse /ctrl invalide');
+        throw new KobraProtocolError('ctrl_invalid', {}, 'Invalid /ctrl response');
     }
     const result = decryptInfo(encrypted, token.slice(16, 32), ctrlToken);
     if (result.error) throw new Error(String(result.error));

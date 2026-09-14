@@ -71,7 +71,7 @@ export class GcodeService {
                 createdAt: new Date(),
             },
         });
-        this.log.log(`Fichier stocké: ${safe} (${data.length} o) md5=${md5}`);
+        this.log.log(`File stored: ${safe} (${data.length} B) md5=${md5}`);
         return this.toDto(row, null);
     }
 

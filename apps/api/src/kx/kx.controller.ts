@@ -52,11 +52,12 @@ import { fromEvent, map, merge, Observable, of, throttleTime } from 'rxjs';
 import type { z } from 'zod';
 
 import { BridgeRegistry } from '../bridge/bridge.registry';
-import { serveSnapshot, serveStream } from '../bridge/camera';
+import { serveH264, serveSnapshot, serveStream } from '../bridge/camera';
 import { BridgeOfflineError, type PrinterBridge } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';
 import { ZodPipe } from '../common/zod.pipe';
 import { GcodeService } from '../gcode/gcode.service';
+import { m } from '../i18n/locale';
 
 const UPLOAD_LIMIT = 512 * 1024 * 1024;
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
@@ -188,6 +189,11 @@ export class KxController {
         return serveStream(this.bridge(id).camera, res);
     }
 
+    @Get('camera/h264')
+    cameraH264(@Param('id') id: string, @Res() res: Response) {
+        return serveH264(this.bridge(id).camera, res);
+    }
+
     @Get('camera/snapshot')
     cameraSnapshot(@Param('id') id: string, @Res() res: Response) {
         return serveSnapshot(this.bridge(id).camera, res);
@@ -230,9 +236,9 @@ export class KxController {
         @Body() body: Record<string, string>,
     ) {
         const file = files?.[0];
-        if (!file) throw new BadRequestException('Aucun fichier reçu');
+        if (!file) throw new BadRequestException(m.api_no_file());
         if (!GcodeService.isAllowedFilename(file.originalname)) {
-            throw new BadRequestException('Seuls les fichiers .gcode / .bgcode sont acceptés');
+            throw new BadRequestException(m.api_gcode_only());
         }
         const print = String(body.print ?? 'false') === 'true';
         const bridge = this.bridge(id);
@@ -253,8 +259,8 @@ export class KxController {
     async print(@Param('id') id: string, @Body(new ZodPipe(startPrintSchema)) body: StartPrintInput) {
         const bridge = this.bridge(id);
         const file = await this.gcode.get(body.fileId);
-        if (!file) throw new NotFoundException('Fichier introuvable');
-        this.log.log(`Impression demandée: ${file.filename}`);
+        if (!file) throw new NotFoundException(m.api_file_not_found());
+        this.log.log(`Print requested: ${file.filename}`);
         const serveBase = await this.serveBase(bridge);
         return this.run(() =>
             bridge.printStoredFile(file.id, {
@@ -285,13 +291,13 @@ export class KxController {
         @Param('id') id: string,
         @Body(new ZodPipe(printPrinterFileSchema)) body: PrintPrinterFileInput,
     ) {
-        this.log.log(`Impression d'un fichier de l'imprimante demandée: ${body.filename}`);
+        this.log.log(`Print of a printer file requested: ${body.filename}`);
         await this.run(() => this.bridge(id).printPrinterFile(body.filename, body.sizeBytes ?? 0, body.autoLeveling));
     }
 
     @Get('printer-files/thumbnail')
     async printerFileThumbnail(@Param('id') id: string, @Query('filename') filename: string) {
-        if (!filename) throw new BadRequestException('filename requis');
+        if (!filename) throw new BadRequestException(m.api_filename_required());
         const thumbnail = await this.run(() => this.bridge(id).printerFileThumbnail(filename));
         return { thumbnail };
     }
@@ -299,7 +305,7 @@ export class KxController {
     @Get('files/:fileId/objects')
     async fileObjects(@Param('id') id: string, @Param('fileId') fileId: string): Promise<FileObjectsDto> {
         const info = await this.gcode.objects(fileId);
-        if (!info) throw new NotFoundException('Fichier introuvable');
+        if (!info) throw new NotFoundException(m.api_file_not_found());
         if (!info.names.length) this.bridge(id).requestFileObjects(info.filename);
         return { names: info.names, svgB64: info.svgB64 };
     }

@@ -1,20 +1,21 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useParams } from '@tanstack/react-router';
-import { LayoutGrid, LogOut, Printer } from 'lucide-react';
-import { useEffect } from 'react';
+import { LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
 import { Avatar } from '@/components/layout/avatar';
+import { LanguageMenu } from '@/components/layout/language-menu';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
 import { PrinterSwitcher } from '@/components/printer/printer-switcher';
 import { usePrintersSync } from '@/hooks/use-printers-sync';
 import { authClient } from '@/lib/auth-client';
 import { greeting } from '@/lib/format';
+import { m } from '@/lib/i18n';
 import { sessionQuery } from '@/lib/session';
-import { usePrinters, usePrintersStore } from '@/stores/printers';
+import { usePrinters } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app')({
     beforeLoad: async ({ context, location }) => {
-        const session = await context.queryClient.ensureQueryData(sessionQuery);
+        const session = await context.queryClient.query({ ...sessionQuery, staleTime: 'static' });
         if (!session) throw redirect({ to: '/login', search: { redirect: location.href } });
         return { session };
     },
@@ -29,13 +30,7 @@ function AppLayout() {
     const navigate = useNavigate();
     usePrintersSync();
     const printers = usePrinters();
-    const select = usePrintersStore((s) => s.select);
     const { printerId } = useParams({ strict: false });
-
-    useEffect(() => {
-        select(printerId ?? null);
-    }, [printerId, select]);
-
     const online = printers.filter((p) => p.live?.connected).length ?? 0;
     const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (session.user.name || session.user.email.split('@')[0]).split(' ')[0];
@@ -47,10 +42,10 @@ function AppLayout() {
     };
 
     const subtitle = !printers.length
-        ? 'Ajoutez votre première imprimante pour commencer.'
+        ? m.header_no_printers()
         : printing
-          ? `${printing} impression${printing > 1 ? 's' : ''} en cours · ${online}/${printers.length} en ligne`
-          : `${online}/${printers.length} imprimante${printers.length > 1 ? 's' : ''} en ligne`;
+          ? m.header_printing({ printing, online, total: printers.length })
+          : m.header_online({ online, total: printers.length });
 
     return (
         <div className="flex min-h-svh gap-4 p-4 pt-(--inset-top)">
@@ -62,7 +57,7 @@ function AppLayout() {
                                 <KobraMark />
                             </Link>
                         </div>
-                        <RailLink to="/printers" activeOptions={{ exact: true }} title="Accueil">
+                        <RailLink to="/printers" activeOptions={{ exact: true }} title={m.nav_home()}>
                             <LayoutGrid />
                         </RailLink>
                         {printers.map((p) => (
@@ -83,7 +78,14 @@ function AppLayout() {
                 }
                 bottom={
                     <>
-                        <RailButton title="Déconnexion" onClick={logout}>
+                        <RailLink to="/settings" title={m.nav_bridge_settings()}>
+                            <Settings2 />
+                        </RailLink>
+                        <RailLink to="/logs" title={m.nav_logs()}>
+                            <ScrollText />
+                        </RailLink>
+                        <LanguageMenu />
+                        <RailButton title={m.nav_logout()} onClick={logout}>
                             <LogOut />
                         </RailButton>
                         <Avatar name={session.user.name} email={session.user.email} />
@@ -94,7 +96,7 @@ function AppLayout() {
                 <header className={`flex flex-wrap items-center gap-4 px-2 pt-2 ${isDesktop ? 'app-drag' : ''}`}>
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">
-                            {greeting()}, {firstName} !
+                            {m.header_greeting({ greeting: greeting(), name: firstName })}
                         </h1>
                         <p className="text-sm text-muted-foreground">{subtitle}</p>
                     </div>

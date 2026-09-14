@@ -5,6 +5,7 @@ import { Ring } from '@/components/viz/ring';
 import { usePrinterAction } from '@/hooks/use-printer-action';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
+import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -15,9 +16,9 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const qc = useQueryClient();
     const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
     const openDialog = useConfirmationDialogStore((s) => s.openDialog);
-    const pause = usePrinterAction(printerId, api.control.pause, 'Pause demandée');
-    const resume = usePrinterAction(printerId, api.control.resume, 'Reprise demandée');
-    const cancel = usePrinterAction(printerId, api.control.cancel, 'Annulation demandée');
+    const pause = usePrinterAction(printerId, api.control.pause, m.print_pause_requested);
+    const resume = usePrinterAction(printerId, api.control.resume, m.print_resume_requested);
+    const cancel = usePrinterAction(printerId, api.control.cancel, m.print_cancel_requested);
     const clearReady = useMutation({
         mutationFn: () => api.control.clearFileReady(printerId),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'state'] }),
@@ -39,25 +40,24 @@ export function PrintCard({ printerId }: { printerId: string }) {
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <h2 className="text-lg font-medium">Impression</h2>
+                    <h2 className="text-lg font-medium">{m.print_title()}</h2>
                     <p
                         className={cn(
                             'truncate text-sm',
                             active ? 'text-primary-foreground/70' : 'text-muted-foreground',
                         )}
                     >
-                        {state.filename || (state.connected ? 'Aucune impression en cours' : 'Imprimante hors ligne')}
+                        {state.filename || (state.connected ? m.print_none() : m.common_printer_offline())}
                     </p>
                 </div>
                 {active && (
                     <div className="flex shrink-0 gap-2">
                         <CircleButton
-                            title="Ignorer des objets"
+                            title={m.print_skip_objects()}
                             onClick={() =>
                                 openDialog({
-                                    title: 'Ignorer des objets',
-                                    description:
-                                        'Les objets sélectionnés ne seront plus imprimés à partir de la couche en cours. Irréversible pour cette impression.',
+                                    title: m.print_skip_objects(),
+                                    description: m.print_skip_objects_hint(),
                                     content: <SkipObjectsForm printerId={printerId} />,
                                 })
                             }
@@ -65,22 +65,30 @@ export function PrintCard({ printerId }: { printerId: string }) {
                             <Scissors />
                         </CircleButton>
                         {printing ? (
-                            <CircleButton title="Pause" onClick={() => pause.mutate()} disabled={pause.isPending}>
+                            <CircleButton
+                                title={m.common_pause()}
+                                onClick={() => pause.mutate()}
+                                disabled={pause.isPending}
+                            >
                                 <Pause />
                             </CircleButton>
                         ) : (
-                            <CircleButton title="Reprendre" onClick={() => resume.mutate()} disabled={resume.isPending}>
+                            <CircleButton
+                                title={m.common_resume()}
+                                onClick={() => resume.mutate()}
+                                disabled={resume.isPending}
+                            >
                                 <Play />
                             </CircleButton>
                         )}
                         <CircleButton
-                            title="Annuler"
+                            title={m.common_cancel()}
                             onClick={() =>
                                 openAlertDialog({
-                                    title: "Annuler l'impression en cours ?",
-                                    description: "L'impression sera arrêtée et ne pourra pas être reprise.",
-                                    actionLabel: "Annuler l'impression",
-                                    cancelLabel: 'Continuer',
+                                    title: m.print_cancel_title(),
+                                    description: m.print_cancel_hint(),
+                                    actionLabel: m.print_cancel_action(),
+                                    cancelLabel: m.print_cancel_keep(),
                                     onAction: () => cancel.mutateAsync(),
                                 })
                             }
@@ -103,7 +111,9 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     >
                         <div className="text-center">
                             <div className="text-3xl font-semibold tabular-nums">{pct}%</div>
-                            <div className="text-xs text-primary-foreground/70">{paused ? 'en pause' : 'en cours'}</div>
+                            <div className="text-xs text-primary-foreground/70">
+                                {paused ? m.print_paused() : m.print_in_progress()}
+                            </div>
                         </div>
                     </Ring>
                 ) : (
@@ -115,7 +125,7 @@ export function PrintCard({ printerId }: { printerId: string }) {
                                 className="size-full object-contain"
                             />
                         ) : (
-                            <span className="text-xs text-muted-foreground">Aperçu</span>
+                            <span className="text-xs text-muted-foreground">{m.print_preview()}</span>
                         )}
                     </div>
                 )}
@@ -127,10 +137,10 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     active ? 'text-primary-foreground/80' : 'text-muted-foreground',
                 )}
             >
-                <Kv k="Écoulé" v={active ? formatDuration(state.printDurationSec) : '—'} strong={active} />
-                <Kv k="Restant" v={active ? formatDuration(remaining) : '—'} strong={active} />
+                <Kv k={m.print_elapsed()} v={active ? formatDuration(state.printDurationSec) : '—'} strong={active} />
+                <Kv k={m.print_remaining()} v={active ? formatDuration(remaining) : '—'} strong={active} />
                 <Kv
-                    k="Couche"
+                    k={m.print_layer()}
                     v={state.totalLayers ? `${state.currLayer}/${state.totalLayers}` : '—'}
                     strong={active}
                 />
@@ -139,13 +149,13 @@ export function PrintCard({ printerId }: { printerId: string }) {
             {state.fileReady && !active && (
                 <div className="mt-4 flex items-center justify-between gap-2 rounded-2xl bg-primary/15 px-4 py-2 text-sm">
                     <span className="truncate">
-                        <strong>{state.fileReady}</strong> prêt sur l'imprimante
+                        <strong>{state.fileReady}</strong> {m.print_file_ready()}
                     </span>
                     <button
                         type="button"
                         className="rounded-full p-1 hover:bg-primary/20"
                         onClick={() => clearReady.mutate()}
-                        aria-label="Fermer"
+                        aria-label={m.common_close()}
                     >
                         <X className="size-4" />
                     </button>

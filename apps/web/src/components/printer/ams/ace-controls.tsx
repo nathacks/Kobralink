@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { api } from '@/lib/api';
 import { formatMinutes } from '@/lib/format';
+import { m } from '@/lib/i18n';
 
 export function AceControls({
     printerId,
@@ -30,7 +31,7 @@ export function AceControls({
     const dry = useMutation({
         mutationFn: (input: { action: 'start' | 'stop'; targetTemp?: number; duration?: number }) =>
             api.ams.dry(printerId, input),
-        onSuccess: (_, v) => toast.success(v.action === 'start' ? 'Séchage lancé' : 'Séchage arrêté'),
+        onSuccess: (_, v) => toast.success(v.action === 'start' ? m.ace_dry_started() : m.ace_dry_stopped()),
         onError,
     });
     const drying = units.find((u) => u.drying.status !== 0)?.drying ?? units[0].drying;
@@ -47,8 +48,8 @@ export function AceControls({
             {units.map((u) => (
                 <div key={u.id} className="flex items-center justify-between gap-3">
                     <div>
-                        <div className="text-sm font-medium">ACE {u.id + 1}</div>
-                        <div className="text-xs text-muted-foreground">Alimentation automatique</div>
+                        <div className="text-sm font-medium">{m.ace_unit({ n: u.id + 1 })}</div>
+                        <div className="text-xs text-muted-foreground">{m.ace_auto_feed()}</div>
                     </div>
                     <Switch
                         checked={u.autoFeed}
@@ -60,7 +61,7 @@ export function AceControls({
 
             <div className="border-t pt-3">
                 <div className="mb-2 flex items-center justify-between">
-                    <div className="text-sm font-medium">Séchage</div>
+                    <div className="text-sm font-medium">{m.ace_drying()}</div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         {drying.currentTemp !== null && (
                             <span className="flex items-center gap-1">
@@ -77,7 +78,10 @@ export function AceControls({
                 {active ? (
                     <div className="flex items-center justify-between gap-3">
                         <div className="text-sm">
-                            {drying.targetTemp} °C · {formatMinutes(drying.remainTime)} restantes
+                            {m.ace_drying_status({
+                                temp: drying.targetTemp,
+                                duration: formatMinutes(drying.remainTime),
+                            })}
                         </div>
                         <Button
                             type="button"
@@ -87,7 +91,7 @@ export function AceControls({
                             disabled={disabled || dry.isPending}
                             onClick={() => dry.mutate({ action: 'stop' })}
                         >
-                            Arrêter
+                            {m.common_stop()}
                         </Button>
                     </div>
                 ) : (
@@ -102,7 +106,7 @@ export function AceControls({
                         <form.Field name="targetTemp">
                             {(field) => (
                                 <div className="grid gap-1">
-                                    <Label className="text-xs text-muted-foreground">Température</Label>
+                                    <Label className="text-xs text-muted-foreground">{m.ace_temperature()}</Label>
                                     <Input
                                         type="number"
                                         min={30}
@@ -121,7 +125,7 @@ export function AceControls({
                         <form.Field name="duration">
                             {(field) => (
                                 <div className="grid gap-1">
-                                    <Label className="text-xs text-muted-foreground">Durée (min)</Label>
+                                    <Label className="text-xs text-muted-foreground">{m.ace_duration()}</Label>
                                     <Input
                                         type="number"
                                         min={10}
@@ -146,7 +150,7 @@ export function AceControls({
                                     className="rounded-full"
                                     disabled={disabled || busy || isSubmitting}
                                 >
-                                    Lancer
+                                    {m.ace_start()}
                                 </Button>
                             )}
                         </form.Subscribe>

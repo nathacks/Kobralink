@@ -16,10 +16,11 @@ import {
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import type { Request, Response } from 'express';
-import { serveSnapshot, serveStream } from '../bridge/camera';
+import { serveH264, serveSnapshot, serveStream } from '../bridge/camera';
 import { BridgeOfflineError } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';
 import { GcodeService } from '../gcode/gcode.service';
+import { m } from '../i18n/locale';
 import { MoonrakerGateway } from './moonraker.gateway';
 import { MoonrakerService } from './moonraker.service';
 
@@ -114,6 +115,11 @@ export class MoonrakerController {
         return serveStream(this.moon.bridge.camera, res);
     }
 
+    @Get('api/camera/h264')
+    cameraH264(@Res() res: Response) {
+        return serveH264(this.moon.bridge.camera, res);
+    }
+
     @Get('api/camera/snapshot')
     cameraSnapshot(@Res() res: Response) {
         return serveSnapshot(this.moon.bridge.camera, res);
@@ -164,7 +170,7 @@ export class MoonrakerController {
         const filename = q || body?.filename || this.moon.bridge.lastUploadedFilename;
         if (!filename) return { error: 'no filename' };
         const file = await this.gcode.getByFilename(filename);
-        if (!file) throw new NotFoundException(`Fichier inconnu du GCode store: ${filename}`);
+        if (!file) throw new NotFoundException(m.api_unknown_store_file({ name: filename }));
         await this.moon.bridge.printStoredFile(file.id, {
             serveBase: await this.publicBase(req),
             autoLeveling: body?.auto_leveling === undefined ? undefined : Boolean(body.auto_leveling),
@@ -211,7 +217,7 @@ export class MoonrakerController {
             return;
         }
         const print = String(body.print ?? query.print ?? 'false').toLowerCase() === 'true';
-        this.log.log(`Upload ${remoteName} (${file.size} o) print=${print}`);
+        this.log.log(`Upload ${remoteName} (${file.size} B) print=${print}`);
         try {
             const stored = await this.moon.bridge.uploadAndPrint(remoteName, file.buffer, {
                 print,
@@ -220,7 +226,7 @@ export class MoonrakerController {
             res.status(201).json(this.octoprintUploadResponse(req, stored.filename));
         } catch (e) {
             const msg = (e as Error).message;
-            this.log.error(`Upload échoué: ${msg}`);
+            this.log.error(`Upload failed: ${msg}`);
             res.status(e instanceof BridgeOfflineError ? 503 : 500).json({ error: msg });
         }
     }

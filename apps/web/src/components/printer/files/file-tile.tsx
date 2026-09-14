@@ -2,6 +2,8 @@ import type { GcodeFileDto } from '@kobralink/shared';
 import { Download, Play, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBytes, formatDuration } from '@/lib/format';
+import { m } from '@/lib/i18n';
+import { jobStatusLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { IconButton } from './icon-button';
 
@@ -40,12 +42,12 @@ export function FileTile({
                     )}
                 </div>
                 <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <IconButton title="Télécharger" asChild>
+                    <IconButton title={m.common_download()} asChild>
                         <a href={api.files.downloadUrl(printerId, file.id)} download>
                             <Download />
                         </a>
                     </IconButton>
-                    <IconButton title="Supprimer" onClick={onDelete}>
+                    <IconButton title={m.common_delete()} onClick={onDelete}>
                         <Trash2 />
                     </IconButton>
                 </div>
@@ -69,11 +71,7 @@ export function FileTile({
                                 highlight ? 'text-primary-foreground/80' : 'text-muted-foreground',
                             )}
                         >
-                            {file.lastJob.status === 'completed'
-                                ? 'Terminé'
-                                : file.lastJob.status === 'printing'
-                                  ? 'En cours'
-                                  : 'Annulé'}
+                            {jobStatusLabel(file.lastJob.status)}
                         </span>
                     )}
                 </div>
@@ -93,8 +91,8 @@ export function FileTile({
                         type="button"
                         onClick={onPrint}
                         disabled={!canPrint}
-                        title="Imprimer"
-                        aria-label="Imprimer"
+                        title={m.common_print()}
+                        aria-label={m.common_print()}
                         className={cn(
                             'flex size-8 items-center justify-center rounded-full transition-colors disabled:opacity-40 [&_svg]:size-3.5',
                             highlight

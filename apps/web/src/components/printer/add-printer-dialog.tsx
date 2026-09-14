@@ -9,6 +9,7 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function AddPrinterDialog({ compact = false }: { compact?: boolean }) {
@@ -19,14 +20,13 @@ export function AddPrinterDialog({ compact = false }: { compact?: boolean }) {
             size={compact ? 'default' : 'lg'}
             onClick={() =>
                 openDialog({
-                    title: 'Ajouter une imprimante',
-                    description:
-                        "Entrez uniquement l'adresse IP (sans port). Le nom d'utilisateur, le mot de passe et l'identifiant sont lus directement sur l'imprimante.",
+                    title: m.add_printer(),
+                    description: m.add_printer_hint(),
                     content: <AddPrinterForm />,
                 })
             }
         >
-            <Plus /> Ajouter une imprimante
+            <Plus /> {m.add_printer()}
         </Button>
     );
 }
@@ -39,7 +39,7 @@ function AddPrinterForm() {
         mutationFn: (input: { ip: string; name: string }) =>
             api.printers.add({ ip: input.ip.trim(), name: input.name.trim() || undefined }),
         onSuccess: (p) => {
-            toast.success(`${p.name} ajoutée (Moonraker sur le port ${p.httpPort})`);
+            toast.success(m.add_printer_added({ name: p.name, port: p.httpPort }));
             closeDialog();
             void qc.invalidateQueries({ queryKey: ['printers'] });
         },
@@ -64,7 +64,7 @@ function AddPrinterForm() {
                 <form.Field name="ip">
                     {(field) => (
                         <div className="grid gap-2">
-                            <Label htmlFor={field.name}>Adresse IP</Label>
+                            <Label htmlFor={field.name}>{m.field_ip()}</Label>
                             <Input
                                 id={field.name}
                                 name={field.name}
@@ -83,11 +83,11 @@ function AddPrinterForm() {
                 <form.Field name="name">
                     {(field) => (
                         <div className="grid gap-2">
-                            <Label htmlFor="pname">Nom (optionnel)</Label>
+                            <Label htmlFor="pname">{m.add_printer_name_optional()}</Label>
                             <Input
                                 id="pname"
                                 name={field.name}
-                                placeholder="Kobra X atelier"
+                                placeholder={m.add_printer_name_placeholder()}
                                 value={field.state.value}
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
@@ -103,7 +103,7 @@ function AddPrinterForm() {
                 <form.Subscribe selector={(s) => s.isSubmitting}>
                     {(isSubmitting) => (
                         <Button type="submit" className="rounded-full px-5" disabled={isSubmitting}>
-                            {isSubmitting ? 'Connexion à l’imprimante…' : 'Ajouter'}
+                            {isSubmitting ? m.add_printer_connecting() : m.add_printer_submit()}
                         </Button>
                     )}
                 </form.Subscribe>

@@ -1,0 +1,35 @@
+{
+    "name": "@kobralink/i18n",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "compile": "bunx paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy globalVariable baseLocale --output-structure locale-modules --emit-ts-declarations --no-emit-readme --no-emit-prettier-ignore",
+        "build": "bun run compile && bunx tsdown",
+        "dev": "bun run compile && bunx tsdown --watch",
+        "check-types": "bun run compile && bunx tsc --noEmit"
+    },
+    "devDependencies": {
+        "@inlang/paraglide-js": "^2.25.2",
+        "tsdown": "^0.15.0",
+        "typescript": "^5.9.3"
+    }
+}

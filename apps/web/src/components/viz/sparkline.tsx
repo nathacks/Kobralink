@@ -1,5 +1,6 @@
 import { Area, AreaChart, ReferenceDot, ReferenceLine, XAxis, YAxis } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { intlLocale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export interface SparklinePoint {
@@ -17,7 +18,7 @@ interface Props {
     label?: string;
 }
 
-const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const timeFmt = new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 export function Sparkline({ data, id, name, unit = '', className, color = 'var(--primary)', label }: Props) {
     const points =

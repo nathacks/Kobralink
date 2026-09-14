@@ -11,6 +11,10 @@
         "check-types": "bunx tsc --noEmit -p tsconfig.json",
         "dist:mac": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --mac"
     },
+    "dependencies": {
+        "@kobralink/i18n": "workspace:*",
+        "electron-updater": "^6.8.9"
+    },
     "devDependencies": {
         "@types/node": "^26.5.1",
         "electron": "44.3.0",

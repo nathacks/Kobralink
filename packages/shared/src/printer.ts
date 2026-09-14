@@ -9,7 +9,14 @@ export const printerSettingsSchema = z.object({
     cameraOnPrint: z.boolean().default(false),
     deletePrinterFileAfterPrint: z.boolean().default(false),
     visibleVendors: z.array(z.string().trim().min(1)).default([]),
+    powerOnUrl: z.string().trim().default(''),
+    powerOffUrl: z.string().trim().default(''),
+    powerStatusUrl: z.string().trim().default(''),
 });
+
+export const powerActionSchema = z.object({ action: z.enum(['on', 'off']) });
+export type PowerActionInput = z.infer<typeof powerActionSchema>;
+export type PowerState = 'on' | 'off' | 'unknown';
 export type PrinterSettings = z.infer<typeof printerSettingsSchema>;
 
 export const printerSchema = z.object({
@@ -30,8 +37,10 @@ export type Printer = z.infer<typeof printerSchema>;
 export const ipv4 = z
     .string()
     .trim()
-    .regex(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/, 'Adresse IP invalide')
-    .refine((v) => v.split('.').every((p) => Number(p) <= 255), 'Adresse IP invalide');
+    .refine(
+        (v) => /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(v) && v.split('.').every((p) => Number(p) <= 255),
+        { params: { i18n: 'ip' } },
+    );
 
 export const addPrinterSchema = z.object({
     ip: ipv4,

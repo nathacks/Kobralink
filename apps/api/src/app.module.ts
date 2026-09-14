@@ -9,6 +9,8 @@ import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
 import { KxModule } from './kx/kx.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SettingsModule } from './settings/settings.module';
+import { SpoolmanModule } from './spoolman/spoolman.module';
 
 const env = loadEnv();
 
@@ -17,6 +19,8 @@ const env = loadEnv();
         PrismaModule,
         AuthModule.forRoot({ auth: createAuth(), bodyParser: { json: { limit: '5mb' } } }),
         GcodeModule,
+        SettingsModule,
+        SpoolmanModule,
         FilamentModule,
         BridgeModule,
         KxModule,

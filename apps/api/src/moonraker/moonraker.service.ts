@@ -178,7 +178,7 @@ export class MoonrakerService {
                 file_position: s.progress ? Math.round(s.progress * 1_000_000) : 0,
             },
             toolhead: {
-                position: [0, 0, 0, 0],
+                position: [0, 0, s.zMm, 0],
                 homed_axes: 'xyz',
                 print_time: s.printDurationSec,
                 estimated_print_time: s.printDurationSec,
@@ -320,7 +320,9 @@ export class MoonrakerService {
                     flip_vertical: false,
                     rotation: 0,
                     target_fps: 5,
+                    target_fps_idle: 2,
                     aspect_ratio: '16:9',
+                    extra_data: { h264_url: `${baseUrl}/api/camera/h264` },
                 },
             ],
         };

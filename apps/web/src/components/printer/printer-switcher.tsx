@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { Check, ChevronDown, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,13 +9,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { usePrinters, usePrintersStore } from '@/stores/printers';
+import { usePrinters } from '@/stores/printers';
 
 export function PrinterSwitcher() {
     const navigate = useNavigate();
     const printers = usePrinters();
-    const selectedId = usePrintersStore((s) => s.selectedId);
+    const { printerId: selectedId } = useParams({ strict: false });
     const current = printers.find((p) => p.id === selectedId);
 
     return (
@@ -23,12 +24,12 @@ export function PrinterSwitcher() {
             <DropdownMenuTrigger asChild>
                 <Button variant="secondary" className="rounded-full pr-3 pl-4">
                     <Printer />
-                    <span className="max-w-48 truncate">{current?.name ?? 'Imprimante'}</span>
+                    <span className="max-w-48 truncate">{current?.name ?? m.switcher_placeholder()}</span>
                     <ChevronDown className="opacity-60" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56 rounded-2xl">
-                <DropdownMenuLabel>Changer d'imprimante</DropdownMenuLabel>
+                <DropdownMenuLabel>{m.switcher_label()}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {printers.map((p) => (
                     <DropdownMenuItem

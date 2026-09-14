@@ -76,3 +76,31 @@ export const printerFileThumbQuery = (id: string, filename: string) =>
         staleTime: Number.POSITIVE_INFINITY,
         retry: false,
     });
+
+export const powerStatusQuery = (id: string, enabled: boolean) =>
+    queryOptions({
+        queryKey: ['printers', id, 'power'],
+        queryFn: () => api.printers.powerStatus(id),
+        enabled,
+        refetchInterval: 15_000,
+        retry: false,
+    });
+
+export const appSettingsQuery = queryOptions({ queryKey: ['settings'], queryFn: api.settings.get });
+
+export const spoolmanStatusQuery = (id: string) =>
+    queryOptions({
+        queryKey: ['printers', id, 'spoolman'],
+        queryFn: () => api.spoolman.status(id),
+        staleTime: 30_000,
+        retry: false,
+    });
+
+export const spoolmanSpoolsQuery = (enabled: boolean) =>
+    queryOptions({
+        queryKey: ['spoolman', 'spools'],
+        queryFn: api.spoolman.spools,
+        enabled,
+        staleTime: 60_000,
+        retry: false,
+    });

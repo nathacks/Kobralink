@@ -1,12 +1,27 @@
 import {
     type AddPrinterInput,
     addPrinterSchema,
+    type PowerActionInput,
+    type PowerState,
+    powerActionSchema,
     type UpdatePrinterInput,
     updatePrinterSchema,
 } from '@kobralink/shared';
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    Param,
+    Patch,
+    Post,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { ZodPipe } from '../common/zod.pipe';
+import { m } from '../i18n/locale';
 import { PrintersService } from './printers.service';
 
 @Controller('kx/printers')
@@ -55,6 +70,54 @@ export class PrintersController {
         return PrintersService.toDto(row);
     }
 
+    @Post(':id/connect')
+    @HttpCode(204)
+    connect(@Param('id') id: string) {
+        this.registry.get(id).connectManual();
+    }
+
+    @Post(':id/disconnect')
+    @HttpCode(204)
+    async disconnect(@Param('id') id: string) {
+        await this.registry.get(id).disconnectManual();
+    }
+
+    @Post(':id/power')
+    async power(@Param('id') id: string, @Body(new ZodPipe(powerActionSchema)) body: PowerActionInput) {
+        const settings = this.registry.get(id).settings;
+        const url = body.action === 'on' ? settings.powerOnUrl : settings.powerOffUrl;
+        if (!url) throw new BadRequestException(m.api_no_power_url({ action: body.action }));
+        const ok = await fetchWithTimeout(url)
+            .then((r) => r.ok)
+            .catch(() => false);
+        if (!ok) throw new ServiceUnavailableException(m.api_plug_unreachable());
+        return { state: body.action };
+    }
+
+    @Get(':id/power')
+    async powerStatus(@Param('id') id: string): Promise<{ state: PowerState; configured: boolean }> {
+        const settings = this.registry.get(id).settings;
+        const configured = Boolean(settings.powerOnUrl || settings.powerOffUrl);
+        if (!settings.powerStatusUrl) return { state: 'unknown', configured };
+        let text = '';
+        try {
+            text = await fetchWithTimeout(settings.powerStatusUrl).then((r) => r.text());
+        } catch {
+            throw new ServiceUnavailableException(m.api_plug_unreachable());
+        }
+        let state: PowerState = 'unknown';
+        try {
+            const power = String((JSON.parse(text) as { POWER?: string }).POWER ?? '').toUpperCase();
+            if (power === 'ON' || power === 'OFF') state = power.toLowerCase() as PowerState;
+        } catch {}
+        if (state === 'unknown') {
+            const up = text.toUpperCase();
+            if (up.includes('ON') && !up.includes('OFF')) state = 'on';
+            else if (up.includes('OFF')) state = 'off';
+        }
+        return { state, configured };
+    }
+
     @Post(':id/reconnect')
     @HttpCode(204)
     async reconnect(@Param('id') id: string) {
@@ -67,4 +130,10 @@ export class PrintersController {
         await this.registry.despawn(id);
         await this.printers.remove(id);
     }
+}
+
+function fetchWithTimeout(url: string, ms = 5000): Promise<globalThis.Response> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }

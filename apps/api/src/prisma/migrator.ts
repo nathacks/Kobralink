@@ -26,7 +26,7 @@ export async function applyMigrations(
         const rows = await db.execute('SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL');
         const applied = new Set(rows.rows.map((r) => String(r.migration_name)));
         if (!fs.existsSync(migrationsDir)) {
-            log(`Dossier de migrations introuvable: ${migrationsDir}`);
+            log(`Migrations directory not found: ${migrationsDir}`);
             return;
         }
         const names = fs
@@ -50,7 +50,7 @@ export async function applyMigrations(
                 await tx.rollback();
                 throw e;
             }
-            log(`Migration appliquée: ${name}`);
+            log(`Migration applied: ${name}`);
         }
     } finally {
         db.close();

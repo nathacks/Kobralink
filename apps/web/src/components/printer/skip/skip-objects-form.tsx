@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { skipStateQuery } from '@/lib/queries';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
 import { ObjectPicker } from './object-picker';
@@ -23,7 +24,7 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
     const apply = useMutation({
         mutationFn: (names: string[]) => api.skip.apply(printerId, names),
         onSuccess: (_, names) => {
-            toast.success(`${names.length} objet${names.length > 1 ? 's' : ''} ignoré${names.length > 1 ? 's' : ''}`);
+            toast.success(m.skip_applied({ count: names.length }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'skip'] });
             close();
         },
@@ -37,7 +38,7 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
     return (
         <div className="grid gap-4 py-2">
             {state.isPending ? (
-                <p className="text-sm text-muted-foreground">Chargement…</p>
+                <p className="text-sm text-muted-foreground">{m.common_loading()}</p>
             ) : objects.length ? (
                 <ObjectPicker
                     objects={objects}
@@ -48,9 +49,9 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
                 />
             ) : (
                 <p className="text-sm text-muted-foreground">
-                    Aucun objet identifié pour ce fichier. Le GCode doit contenir des marqueurs
-                    <code className="mx-1 rounded bg-secondary px-1">EXCLUDE_OBJECT_DEFINE</code>(option « Étiqueter les
-                    objets » dans OrcaSlicer).
+                    {m.skip_none_before()}
+                    <code className="mx-1 rounded bg-secondary px-1">EXCLUDE_OBJECT_DEFINE</code>
+                    {m.skip_none_after()}
                 </p>
             )}
             <DialogFooter className="sm:justify-between">
@@ -62,7 +63,7 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
                     disabled={refresh.isPending}
                     onClick={() => refresh.mutate()}
                 >
-                    <RefreshCw className={refresh.isPending ? 'animate-spin' : ''} /> Resynchroniser
+                    <RefreshCw className={refresh.isPending ? 'animate-spin' : ''} /> {m.skip_resync()}
                 </Button>
                 <Button
                     type="button"
@@ -71,7 +72,7 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
                     disabled={!selected.length || remaining <= 0 || apply.isPending}
                     onClick={() => apply.mutate(selected)}
                 >
-                    Ignorer {selected.length ? `(${selected.length})` : ''}
+                    {selected.length ? m.skip_action_count({ count: selected.length }) : m.skip_action()}
                 </Button>
             </DialogFooter>
         </div>

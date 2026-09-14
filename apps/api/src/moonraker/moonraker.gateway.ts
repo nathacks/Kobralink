@@ -36,7 +36,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     handleConnection(client: WebSocket): void {
         this.clients.add(client);
-        this.log.log(`Client WS connecté (${this.clients.size})`);
+        this.log.log(`WS client connected (${this.clients.size})`);
         this.sendRaw(client, { jsonrpc: '2.0', method: 'notify_klippy_ready', params: [] });
         this.sendRaw(client, {
             jsonrpc: '2.0',
@@ -47,7 +47,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     handleDisconnect(client: WebSocket): void {
         this.clients.delete(client);
-        this.log.log(`Client WS déconnecté (${this.clients.size})`);
+        this.log.log(`WS client disconnected (${this.clients.size})`);
     }
 
     private schedulePush(): void {
@@ -160,7 +160,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
             case 'server.database.list':
                 return this.moon.databaseList();
             default:
-                this.log.debug(`Méthode RPC inconnue: ${method}`);
+                this.log.debug(`Unknown RPC method: ${method}`);
                 return {};
         }
     }

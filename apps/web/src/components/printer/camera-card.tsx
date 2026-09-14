@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { useLiveState, usePrinter } from '@/stores/printers';
 
@@ -61,18 +62,18 @@ export function CameraCard({ printerId }: { printerId: string }) {
     useEffect(() => () => setSrc(''), []);
 
     return (
-        <section className="flex flex-col overflow-hidden rounded-3xl bg-card text-card-foreground">
+        <section className="flex flex-col overflow-hidden border border-card rounded-3xl bg-card text-card-foreground">
             <div className="flex items-center justify-between gap-3 p-6 pb-3">
                 <div>
-                    <h2 className="text-lg font-medium">Caméra</h2>
+                    <h2 className="text-lg font-medium">{m.camera_title()}</h2>
                     <p className="text-sm text-muted-foreground">
                         {phase === 'live'
-                            ? 'Flux en direct'
+                            ? m.camera_live()
                             : phase === 'starting'
-                              ? 'Connexion au flux…'
+                              ? m.camera_connecting()
                               : phase === 'error'
-                                ? 'Flux indisponible'
-                                : 'Caméra arrêtée'}
+                                ? m.camera_unavailable()
+                                : m.camera_stopped()}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -81,7 +82,7 @@ export function CameraCard({ printerId }: { printerId: string }) {
                             variant="secondary"
                             size="icon"
                             className="rounded-full"
-                            title="Relancer le flux"
+                            title={m.camera_restart()}
                             onClick={() => reset.mutate()}
                             disabled={reset.isPending}
                         >
@@ -94,26 +95,26 @@ export function CameraCard({ printerId }: { printerId: string }) {
                             onClick={() => start.mutate()}
                             disabled={offline || start.isPending}
                         >
-                            <Camera /> Démarrer
+                            <Camera /> {m.common_start()}
                         </Button>
                     ) : (
                         <Button variant="secondary" className="rounded-full" onClick={turnOff}>
-                            <CameraOff /> Arrêter
+                            <CameraOff /> {m.common_stop()}
                         </Button>
                     )}
                 </div>
             </div>
-            <div className="relative aspect-video w-full bg-black/40">
+            <div className="relative min-h-0 w-full flex-1 bg-black/40 aspect-video">
                 {src && (
                     <img
                         src={src}
-                        alt="Flux caméra"
+                        alt={m.camera_alt()}
                         className={cn('size-full object-contain', phase !== 'live' && 'invisible')}
                         onLoad={() => setPhase('live')}
                         onError={() => {
                             setSrc('');
                             setPhase('error');
-                            toast.error('Flux caméra indisponible');
+                            toast.error(m.camera_stream_unavailable());
                         }}
                     />
                 )}
@@ -126,12 +127,12 @@ export function CameraCard({ printerId }: { printerId: string }) {
                         )}
                         <span className="text-sm">
                             {phase === 'starting'
-                                ? 'Démarrage de la caméra…'
+                                ? m.camera_starting()
                                 : phase === 'error'
-                                  ? 'Impossible de lire le flux'
+                                  ? m.camera_cannot_read()
                                   : offline
-                                    ? 'Imprimante hors ligne'
-                                    : 'Cliquez sur Démarrer'}
+                                    ? m.common_printer_offline()
+                                    : m.camera_click_start()}
                         </span>
                     </div>
                 )}

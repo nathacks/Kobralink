@@ -13,3 +13,6 @@ apps/api/src/generated/
 apps/web/src/routeTree.gen.ts
 *.tsbuildinfo
 apps/api/bundle/
+apps/web/src/paraglide/
+packages/i18n/src/paraglide/
+packages/i18n/project.inlang/cache/

@@ -1,0 +1,179 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { Download, Pause, Play, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api';
+import { formatTime } from '@/lib/format';
+import { m } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+
+export const Route = createFileRoute('/_app/logs')({ component: LogsPage });
+
+interface LogEntry {
+    id: number;
+    ts: number;
+    level: 'log' | 'error' | 'warn' | 'debug' | 'verbose';
+    context: string;
+    message: string;
+}
+
+const LEVELS: LogEntry['level'][] = ['error', 'warn', 'log', 'debug'];
+const LEVEL_LABEL: Record<string, () => string> = {
+    error: m.logs_level_error,
+    warn: m.logs_level_warn,
+    log: m.logs_level_log,
+    debug: m.logs_level_debug,
+    verbose: m.logs_level_verbose,
+};
+const LEVEL_CLASS: Record<string, string> = {
+    error: 'text-destructive',
+    warn: 'text-amber-500',
+    log: 'text-foreground',
+    debug: 'text-muted-foreground',
+    verbose: 'text-muted-foreground',
+};
+const MAX = 2000;
+
+function LogsPage() {
+    const [entries, setEntries] = useState<LogEntry[]>([]);
+    const [paused, setPaused] = useState(false);
+    const [filter, setFilter] = useState('');
+    const [levels, setLevels] = useState<Set<string>>(new Set(['error', 'warn', 'log']));
+    const [connected, setConnected] = useState(false);
+    const pending = useRef<LogEntry[]>([]);
+    const seq = useRef(0);
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const es = new EventSource(api.logs.streamUrl, { withCredentials: true });
+        const tag = (items: Omit<LogEntry, 'id'>[]): LogEntry[] => items.map((e) => ({ ...e, id: seq.current++ }));
+        const push = (items: LogEntry[]) => {
+            if (paused) {
+                pending.current.push(...items);
+                return;
+            }
+            setEntries((cur) => [...cur, ...items].slice(-MAX));
+        };
+        es.addEventListener('snapshot', (e) =>
+            setEntries(tag(JSON.parse((e as MessageEvent).data) as Omit<LogEntry, 'id'>[]).slice(-MAX)),
+        );
+        es.addEventListener('log', (e) => push(tag([JSON.parse((e as MessageEvent).data) as Omit<LogEntry, 'id'>])));
+        es.onopen = () => setConnected(true);
+        es.onerror = () => setConnected(false);
+        return () => es.close();
+    }, [paused]);
+
+    useEffect(() => {
+        if (!paused && pending.current.length) {
+            const items = pending.current;
+            pending.current = [];
+            setEntries((cur) => [...cur, ...items].slice(-MAX));
+        }
+    }, [paused]);
+
+    const visible = entries.filter(
+        (e) =>
+            levels.has(e.level) &&
+            (!filter || `${e.context} ${e.message}`.toLowerCase().includes(filter.toLowerCase())),
+    );
+
+    const lastId = visible.at(-1)?.id;
+    useEffect(() => {
+        if (!paused && lastId !== undefined) bottomRef.current?.scrollIntoView({ block: 'end' });
+    }, [lastId, paused]);
+
+    const toggleLevel = (l: string) =>
+        setLevels((cur) => {
+            const next = new Set(cur);
+            if (next.has(l)) next.delete(l);
+            else next.add(l);
+            return next;
+        });
+
+    return (
+        <section className="flex h-[calc(100svh-9rem)] flex-col rounded-3xl bg-card p-6 text-card-foreground">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-medium">{m.logs_title()}</h2>
+                <span className={cn('size-2 rounded-full', connected ? 'bg-primary' : 'bg-muted-foreground/50')} />
+                <span className="text-sm text-muted-foreground">
+                    {m.logs_lines({ visible: visible.length, total: entries.length })}
+                </span>
+                <div className="flex gap-1 rounded-full bg-secondary p-1">
+                    {LEVELS.map((l) => (
+                        <button
+                            key={l}
+                            type="button"
+                            onClick={() => toggleLevel(l)}
+                            className={cn(
+                                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                                levels.has(l)
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {LEVEL_LABEL[l]?.() ?? l}
+                        </button>
+                    ))}
+                </div>
+                <input
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    placeholder={m.logs_filter()}
+                    className="min-w-40 flex-1 rounded-full bg-secondary px-4 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <div className="ml-auto flex gap-2">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => setPaused((p) => !p)}
+                        title={paused ? m.logs_resume_scroll() : m.logs_pause_scroll()}
+                    >
+                        {paused ? <Play /> : <Pause />}
+                        {paused
+                            ? pending.current.length
+                                ? m.logs_resume_pending({ count: pending.current.length })
+                                : m.common_resume()
+                            : m.common_pause()}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => setEntries([])}
+                        title={m.logs_clear()}
+                    >
+                        <Trash2 />
+                    </Button>
+                    <Button asChild size="sm" className="rounded-full">
+                        <a href={api.logs.downloadUrl} download="kobralink-log.txt">
+                            <Download /> {m.common_download()}
+                        </a>
+                    </Button>
+                </div>
+            </div>
+            <div
+                ref={listRef}
+                className="mt-4 flex-1 overflow-auto rounded-2xl bg-secondary/50 p-3 font-mono text-xs leading-5"
+            >
+                {visible.length === 0 ? (
+                    <p className="p-2 text-muted-foreground">{m.logs_empty()}</p>
+                ) : (
+                    visible.map((e) => (
+                        <div
+                            key={e.id}
+                            className={cn('flex gap-3 whitespace-pre-wrap break-all', LEVEL_CLASS[e.level])}
+                        >
+                            <span className="shrink-0 tabular-nums text-muted-foreground">{formatTime(e.ts)}</span>
+                            <span className="w-16 shrink-0 uppercase text-muted-foreground">{e.level}</span>
+                            <span className="shrink-0 text-muted-foreground">[{e.context}]</span>
+                            <span>{e.message}</span>
+                        </div>
+                    ))
+                )}
+                <div ref={bottomRef} />
+            </div>
+        </section>
+    );
+}

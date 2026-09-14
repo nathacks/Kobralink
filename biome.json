@@ -13,7 +13,8 @@
             "!**/node_modules",
             "!**/src/generated",
             "!**/routeTree.gen.ts",
-            "!**/components/ui"
+            "!**/components/ui",
+            "!**/src/paraglide"
         ]
     },
     "formatter": {

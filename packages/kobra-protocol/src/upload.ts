@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
+import { KobraProtocolError } from './errors';
 
 export interface UploadResult {
     code?: number;
@@ -16,7 +17,13 @@ export function uploadGcode(
 ): Promise<UploadResult> {
     const tokenIdx = uploadUrl.indexOf('?s=');
     if (tokenIdx === -1) {
-        return Promise.reject(new Error(`URL d'upload sans token de session: ${uploadUrl}`));
+        return Promise.reject(
+            new KobraProtocolError(
+                'upload_no_token',
+                { url: uploadUrl },
+                `Upload URL without session token: ${uploadUrl}`,
+            ),
+        );
     }
     const token = uploadUrl.slice(tokenIdx + 3);
     const port = opts.port ?? 18910;
@@ -73,7 +80,14 @@ export function uploadGcode(
                     try {
                         resolve(JSON.parse(text));
                     } catch {
-                        reject(new Error(`Upload: réponse inattendue: ${text.slice(0, 200)}`));
+                        const snippet = text.slice(0, 200);
+                        reject(
+                            new KobraProtocolError(
+                                'upload_unexpected',
+                                { text: snippet },
+                                `Upload: unexpected response: ${snippet}`,
+                            ),
+                        );
                     }
                 });
                 res.on('error', reject);
@@ -82,7 +96,9 @@ export function uploadGcode(
 
         req.on('socket', (s) => s.setTimeout(opts.connectTimeoutMs ?? 30000));
         req.on('finish', () => req.socket?.setTimeout(opts.readTimeoutMs ?? 180000));
-        req.on('timeout', () => req.destroy(new Error("Timeout en attendant l'imprimante")));
+        req.on('timeout', () =>
+            req.destroy(new KobraProtocolError('upload_timeout', {}, 'Timeout waiting for the printer')),
+        );
         req.on('error', reject);
         req.end(body);
     });

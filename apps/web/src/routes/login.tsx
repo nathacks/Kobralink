@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
+import { m } from '@/lib/i18n';
 import { setupQuery } from '@/lib/queries';
 import { sessionQuery } from '@/lib/session';
 
@@ -17,7 +18,7 @@ const searchSchema = z.object({ redirect: z.string().optional() });
 export const Route = createFileRoute('/login')({
     validateSearch: searchSchema,
     beforeLoad: async ({ context, search }) => {
-        const session = await context.queryClient.ensureQueryData(sessionQuery);
+        const session = await context.queryClient.query({ ...sessionQuery, staleTime: 'static' });
         if (session) throw redirect({ to: search.redirect ?? '/printers' });
     },
     component: LoginPage,
@@ -35,11 +36,11 @@ function LoginPage() {
             const res = needsSetup
                 ? await authClient.signUp.email({ email, password, name: name || email.split('@')[0] })
                 : await authClient.signIn.email({ email, password });
-            if (res.error) throw new Error(res.error.message ?? 'Échec de la connexion');
+            if (res.error) throw new Error(res.error.message ?? m.login_failed());
         },
         onSuccess: async () => {
             qc.removeQueries({ queryKey: ['session'] });
-            await qc.fetchQuery({ ...sessionQuery, staleTime: 0 });
+            await qc.query({ ...sessionQuery, staleTime: 0 });
             await navigate({ to: target ?? '/printers', replace: true });
         },
         onError: (e) => toast.error(e.message),
@@ -57,11 +58,9 @@ function LoginPage() {
                 <div className="mb-6 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold">
                     K
                 </div>
-                <h1 className="text-2xl font-semibold">{needsSetup ? 'Bienvenue !' : 'Bon retour !'}</h1>
+                <h1 className="text-2xl font-semibold">{needsSetup ? m.login_welcome() : m.login_welcome_back()}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    {needsSetup
-                        ? 'Premier démarrage : créez le compte propriétaire de ce bridge.'
-                        : 'Connectez-vous pour piloter vos imprimantes.'}
+                    {needsSetup ? m.login_setup_hint() : m.login_hint()}
                 </p>
                 <form
                     className="mt-6 grid gap-4"
@@ -75,7 +74,7 @@ function LoginPage() {
                         <form.Field name="name">
                             {(field) => (
                                 <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>Nom</Label>
+                                    <Label htmlFor={field.name}>{m.login_name()}</Label>
                                     <Input
                                         id={field.name}
                                         name={field.name}
@@ -94,7 +93,7 @@ function LoginPage() {
                     <form.Field name="email">
                         {(field) => (
                             <div className="grid gap-2">
-                                <Label htmlFor={field.name}>E-mail</Label>
+                                <Label htmlFor={field.name}>{m.login_email()}</Label>
                                 <Input
                                     id={field.name}
                                     name={field.name}
@@ -113,7 +112,7 @@ function LoginPage() {
                     <form.Field name="password">
                         {(field) => (
                             <div className="grid gap-2">
-                                <Label htmlFor={field.name}>Mot de passe</Label>
+                                <Label htmlFor={field.name}>{m.login_password()}</Label>
                                 <Input
                                     id={field.name}
                                     name={field.name}
@@ -137,7 +136,7 @@ function LoginPage() {
                                 className="mt-2 rounded-full"
                                 disabled={isSubmitting || setup.isLoading}
                             >
-                                {needsSetup ? 'Créer le compte' : 'Se connecter'}
+                                {needsSetup ? m.login_create_account() : m.login_sign_in()}
                             </Button>
                         )}
                     </form.Subscribe>

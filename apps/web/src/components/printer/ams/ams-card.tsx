@@ -1,5 +1,6 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { rgbCss, textOn } from '@/lib/color';
+import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -18,21 +19,21 @@ export function AmsCard({ printerId }: { printerId: string }) {
     return (
         <Card className="rounded-3xl border-0 shadow-none">
             <CardHeader>
-                <CardTitle className="text-lg font-medium">Filaments</CardTitle>
-                <CardDescription>{FILAMENT_MODE_LABEL[state.filamentMode]}</CardDescription>
+                <CardTitle className="text-lg font-medium">{m.ams_title()}</CardTitle>
+                <CardDescription>{FILAMENT_MODE_LABEL[state.filamentMode]?.()}</CardDescription>
                 <CardAction className="text-sm text-muted-foreground">
-                    {loaded ? `${loaded.type || '?'} chargé` : 'Aucun chargé'}
+                    {loaded ? m.ams_loaded_type({ type: loaded.type || '?' }) : m.ams_none_loaded()}
                 </CardAction>
             </CardHeader>
             <CardContent className="space-y-5">
                 {slots.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Aucun slot détecté.</p>
+                    <p className="text-sm text-muted-foreground">{m.ams_no_slots()}</p>
                 ) : (
                     <div className="flex flex-wrap gap-3">
                         {slots.map((s) => {
                             const isLoaded = s.globalIndex === state.amsLoadedSlot;
                             const empty = s.status !== 5;
-                            const activity = AMS_ACTIVITY_LABEL[s.activity];
+                            const activity = AMS_ACTIVITY_LABEL[s.activity]?.();
                             return (
                                 <button
                                     type="button"
@@ -40,14 +41,16 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                     disabled={offline}
                                     onClick={() =>
                                         openDialog({
-                                            title: `Slot ${s.index + 1} · ${s.boxId >= 0 ? `ACE ${s.boxId + 1}` : 'Tête'}`,
-                                            description:
-                                                "Matière et couleur sont écrites sur l'écran de l'imprimante. Le chargement déplace le filament jusqu'à la buse.",
+                                            title: m.ams_slot_title({
+                                                n: s.index + 1,
+                                                unit: s.boxId >= 0 ? m.ace_unit({ n: s.boxId + 1 }) : m.ams_toolhead(),
+                                            }),
+                                            description: m.ams_slot_hint(),
                                             content: <SlotForm key={s.globalIndex} printerId={printerId} slot={s} />,
                                         })
                                     }
                                     className="group flex w-14 cursor-pointer flex-col items-center gap-1.5 rounded-2xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                                    title={empty ? 'Slot vide' : `${s.type} — modifier`}
+                                    title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
                                 >
                                     <div
                                         className={cn(
@@ -66,7 +69,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
                                         {s.index + 1}
                                     </div>
                                     <div className="w-full truncate text-center text-xs text-muted-foreground">
-                                        {empty ? 'Vide' : activity && !isLoaded ? activity : s.type || '?'}
+                                        {empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'}
                                     </div>
                                 </button>
                             );

@@ -7,12 +7,14 @@ import { StatusBadge } from '@/components/printer/status-badge';
 import { Ring } from '@/components/viz/ring';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
+import { m } from '@/lib/i18n';
+import { connectionErrorText } from '@/lib/labels';
 import { printersQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { usePrinters } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app/printers/')({
-    loader: ({ context }) => context.queryClient.ensureQueryData(printersQuery),
+    loader: ({ context }) => context.queryClient.query({ ...printersQuery, staleTime: 'static' }),
     component: PrintersPage,
 });
 
@@ -22,7 +24,7 @@ function PrintersPage() {
     const reconnect = useMutation({
         mutationFn: api.printers.reconnect,
         onSuccess: () => {
-            toast.success('Reconnexion demandée');
+            toast.success(m.printers_reconnect_requested());
             void qc.invalidateQueries({ queryKey: ['printers'] });
         },
         onError: (e) => toast.error(e.message),
@@ -34,11 +36,8 @@ function PrintersPage() {
                 <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-primary">
                     <Printer className="size-7" />
                 </div>
-                <h2 className="text-xl font-medium">Aucune imprimante</h2>
-                <p className="max-w-md text-sm text-muted-foreground">
-                    Activez le mode LAN sur la Kobra X (Réglages → Mode LAN) puis ajoutez-la avec son adresse IP. Les
-                    identifiants MQTT sont récupérés automatiquement.
-                </p>
+                <h2 className="text-xl font-medium">{m.printers_empty_title()}</h2>
+                <p className="max-w-md text-sm text-muted-foreground">{m.printers_empty_hint()}</p>
                 <AddPrinterDialog />
             </div>
         );
@@ -72,8 +71,8 @@ function PrintersPage() {
                             <Link
                                 to="/printers/$printerId"
                                 params={{ printerId: p.id }}
-                                title="Ouvrir"
-                                aria-label="Ouvrir"
+                                title={m.common_open()}
+                                aria-label={m.common_open()}
                                 className={cn(
                                     'flex size-10 shrink-0 items-center justify-center rounded-full transition-colors',
                                     printing
@@ -116,7 +115,7 @@ function PrintersPage() {
                                             {live.filename}
                                         </div>
                                         <div className="text-primary-foreground/80">
-                                            Restant {formatDuration(live.remainTimeSec)}
+                                            {m.printers_remaining({ duration: formatDuration(live.remainTimeSec) })}
                                         </div>
                                         <div className="text-primary-foreground/80">
                                             {Math.round(live.nozzleTemp)}° / {Math.round(live.bedTemp)}°
@@ -125,11 +124,15 @@ function PrintersPage() {
                                 ) : (
                                     <>
                                         <div className="text-muted-foreground">
-                                            Buse {Math.round(live?.nozzleTemp ?? 0)}° · Plateau{' '}
-                                            {Math.round(live?.bedTemp ?? 0)}°
+                                            {m.printers_temps({
+                                                nozzle: Math.round(live?.nozzleTemp ?? 0),
+                                                bed: Math.round(live?.bedTemp ?? 0),
+                                            })}
                                         </div>
                                         {live?.connectionError && (
-                                            <div className="text-destructive">{live.connectionError}</div>
+                                            <div className="text-destructive">
+                                                {connectionErrorText(live.connectionError)}
+                                            </div>
                                         )}
                                     </>
                                 )}
@@ -148,7 +151,7 @@ function PrintersPage() {
                             <div className="flex gap-1">
                                 <SmallButton
                                     onClick={() => reconnect.mutate(p.id)}
-                                    title="Reconnecter"
+                                    title={m.printers_reconnect()}
                                     inverse={printing}
                                 >
                                     <RefreshCw />
@@ -156,8 +159,8 @@ function PrintersPage() {
                                 <Link
                                     to="/printers/$printerId/settings"
                                     params={{ printerId: p.id }}
-                                    title="Réglages"
-                                    aria-label="Réglages"
+                                    title={m.common_settings()}
+                                    aria-label={m.common_settings()}
                                     className={cn(
                                         'flex size-8 items-center justify-center rounded-full [&_svg]:size-3.5',
                                         printing

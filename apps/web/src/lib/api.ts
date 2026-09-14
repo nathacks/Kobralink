@@ -4,11 +4,13 @@ import type {
     AddPrinterInput,
     AmsFeedInput,
     AmsSetSlotInput,
+    AppSettings,
     FilamentProfile,
     FileObjectsDto,
     GcodeFileDto,
     ImportProfilesResult,
     MoveAxisInput,
+    PowerState,
     Printer,
     PrinterFileDto,
     PrinterLiveState,
@@ -22,9 +24,13 @@ import type {
     SkipStateDto,
     SlotFilamentInfo,
     SlotProfileRef,
+    SpoolmanSpool,
+    SpoolmanStatus,
     StartPrintInput,
+    UpdateAppSettingsInput,
     UpdatePrinterInput,
 } from '@kobralink/shared';
+import { getLocale } from '@/lib/i18n';
 
 export class ApiError extends Error {
     constructor(
@@ -41,6 +47,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
         credentials: 'include',
         ...init,
         headers: {
+            'accept-language': getLocale(),
             ...(init.body && !(init.body instanceof FormData) ? { 'content-type': 'application/json' } : {}),
             ...(init.headers ?? {}),
         },
@@ -80,6 +87,11 @@ export const api = {
             request<Printer>(`/kx/printers/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
         remove: (id: string) => request<void>(`/kx/printers/${id}`, { method: 'DELETE' }),
         reconnect: (id: string) => request<void>(`/kx/printers/${id}/reconnect`, { method: 'POST' }),
+        connect: (id: string) => request<void>(`/kx/printers/${id}/connect`, { method: 'POST' }),
+        disconnect: (id: string) => request<void>(`/kx/printers/${id}/disconnect`, { method: 'POST' }),
+        power: (id: string, action: 'on' | 'off') =>
+            request<{ state: PowerState }>(`/kx/printers/${id}/power`, json({ action })),
+        powerStatus: (id: string) => request<{ state: PowerState; configured: boolean }>(`/kx/printers/${id}/power`),
         refreshCredentials: (id: string) =>
             request<Printer>(`/kx/printers/${id}/refresh-credentials`, { method: 'POST' }),
         state: (id: string) => request<PrinterLiveState>(`/kx/printers/${id}/state`),
@@ -117,6 +129,25 @@ export const api = {
             request<{ thumbnail: string }>(
                 `/kx/printers/${id}/printer-files/thumbnail?filename=${encodeURIComponent(filename)}`,
             ),
+    },
+
+    settings: {
+        get: () => request<AppSettings>('/kx/settings'),
+        update: (input: UpdateAppSettingsInput) =>
+            request<AppSettings>('/kx/settings', { method: 'PATCH', body: JSON.stringify(input) }),
+    },
+
+    spoolman: {
+        spools: () => request<SpoolmanSpool[]>('/kx/spoolman/spools'),
+        health: () => request<{ reachable: boolean; configured: boolean }>('/kx/spoolman/health'),
+        status: (id: string) => request<SpoolmanStatus>(`/kx/printers/${id}/spoolman`),
+        setSlots: (id: string, slotMap: Record<string, number>) =>
+            request<{ slotSpools: Record<string, number> }>(`/kx/printers/${id}/spoolman/slots`, json({ slotMap })),
+    },
+
+    logs: {
+        streamUrl: '/kx/logs/stream',
+        downloadUrl: '/kx/logs/download',
     },
 
     skip: {

@@ -16,6 +16,7 @@ import {
     ACTIVE_PRINT_STATES,
     type AceDrying,
     type AmsSlot,
+    type ConnectionError,
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
     PRE_PRINT_STATES,
@@ -26,6 +27,8 @@ import {
 } from '@kobralink/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
+import { connectionErrorMessage, m, protocolErrorMessage } from '../i18n/locale';
+import type { SpoolmanService } from '../spoolman/spoolman.service';
 import {
     aggregateAceUnits,
     aggregateSlots,
@@ -93,6 +96,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         public config: BridgePrinterConfig,
         private readonly gcode: GcodeService,
         private readonly certs: { cert: Buffer; key: Buffer },
+        private readonly spoolman: SpoolmanService | null = null,
     ) {
         super();
         this.log = new Logger(`Bridge:${config.name}`);
@@ -100,7 +104,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.s = {
             printerId: config.id,
             connected: false,
-            connectionError: '',
+            connectionError: null,
             printerName: config.name,
             firmwareVersion: 'unknown',
             printState: 'error',
@@ -134,6 +138,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             aceDrying: EMPTY_DRYING,
             skippedObjects: [],
             skipTs: 0,
+            manualOffline: false,
             storageTotalMb: 0,
             storageUsedMb: 0,
             updatedAt: Date.now(),
@@ -163,7 +168,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         client.on('report', (suffix, payload) => this.onReport(suffix, payload));
         client.on('disconnected', (reason) => {
             if (reason === 'requested' || !this.running) return;
-            this.markOffline(`Connexion MQTT perdue (${this.config.ip})`);
+            this.markOffline({ code: 'lost', ip: this.config.ip });
             this.wakeLoop();
         });
         return client;
@@ -210,7 +215,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             prev.modeId !== next.modeId;
         if (reconnect && this.running) {
             await this.client.disconnect();
-            this.markOffline('Reconnexion…');
+            this.markOffline({ code: 'reconnecting' });
             this.wakeLoop();
         }
         this.publish();
@@ -233,7 +238,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         });
     }
 
-    private markOffline(error: string): void {
+    private markOffline(error: ConnectionError): void {
         this.offline = true;
         this.s.connected = false;
         this.s.printState = 'error';
@@ -258,25 +263,29 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private async pollLoop(): Promise<void> {
         const probeInterval = 10000;
         while (this.running) {
+            if (this.paused) {
+                await this.sleep(probeInterval);
+                continue;
+            }
             if (this.offline) {
                 if (!(await this.printerReachable())) {
                     await this.sleep(probeInterval);
                     continue;
                 }
                 try {
-                    this.log.log('Imprimante joignable — ouverture de la session MQTT…');
+                    this.log.log('Printer reachable — opening MQTT session…');
                     await this.client.connect();
                     this.offline = false;
                     this.s.connected = true;
-                    this.s.connectionError = '';
+                    this.s.connectionError = null;
                     this.s.printState = 'standby';
                     this.s.kobraState = 'free';
                     this.publish();
                 } catch (e) {
-                    const msg = mqttErrorMessage(e);
-                    this.s.connectionError = msg;
+                    const err = mqttConnectionError(e);
+                    this.s.connectionError = err;
                     this.publish();
-                    this.log.warn(`Connexion échouée: ${msg}`);
+                    this.log.warn(`Connection failed: ${err.detail ?? err.code}`);
                     await this.sleep(probeInterval);
                     continue;
                 }
@@ -287,8 +296,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 if (info) {
                     this.onInfo(info);
                 } else if (!this.client.connected) {
-                    this.log.warn('Session MQTT morte (aucune réponse) — passage hors ligne');
-                    this.markOffline(`Connexion MQTT perdue (${this.config.ip})`);
+                    this.log.warn('MQTT session dead (no response) — going offline');
+                    this.markOffline({ code: 'lost', ip: this.config.ip });
                     await this.client.disconnect();
                     await this.sleep(this.pollIntervalMs());
                     continue;
@@ -300,9 +309,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 const box = await this.client.queryMultiColorBox();
                 if (box) this.onMultiColorBox(box);
             } catch (e) {
-                this.log.warn(`Erreur de poll: ${(e as Error).message}`);
+                this.log.warn(`Poll error: ${(e as Error).message}`);
                 if (!(await this.printerReachable())) {
-                    this.markOffline(`Imprimante injoignable (${this.config.ip})`);
+                    this.markOffline({ code: 'unreachable_ip', ip: this.config.ip });
                     await this.client.disconnect();
                 }
             }
@@ -366,7 +375,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (kobraState === 'printing') {
             if (this.config.settings.cameraOnPrint && !this.cameraAutostarted && !this.cameraUserStopped) {
                 this.cameraAutostarted = true;
-                void this.client.startCamera().catch((e) => this.log.warn(`Caméra auto: ${String(e)}`));
+                void this.client.startCamera().catch((e) => this.log.warn(`Camera autostart: ${String(e)}`));
             }
         } else if (kobraState === 'free' || TERMINAL_PRINT_STATES.has(kobraState)) {
             this.cameraAutostarted = false;
@@ -378,12 +387,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const d = p.data ?? {};
         const kobraState = p.state ?? '';
         if (kobraState) this.applyKobraState(kobraState, 'printing');
+        if (d.supplies_usage !== undefined) this.suppliesUsageMm = Number(d.supplies_usage) || 0;
 
         if (kobraState === 'pause' || kobraState === 'paused') {
             if (p.msg) {
                 this.s.errorCode = Number(p.code ?? 0);
                 this.s.pauseMsg = p.msg;
-                this.log.warn(`Imprimante en pause: [${this.s.errorCode}] ${p.msg}`);
+                this.log.warn(`Printer paused: [${this.s.errorCode}] ${p.msg}`);
             }
         } else if (['resuming', 'resumed', 'printing', 'finished', 'stoped', 'canceled'].includes(kobraState)) {
             this.s.errorCode = 0;
@@ -393,24 +403,28 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (kobraState === 'printing' && !this.currentJobId) {
             const filename = d.filename ?? this.s.filename;
             if (filename) void this.beginJob(filename);
+            this.resetSpoolUsage();
         }
 
+        if ((kobraState === 'finished' || kobraState === 'stoped' || kobraState === 'canceled') && this.currentJobId) {
+            this.spoolmanReport(0.1);
+        }
         if (kobraState === 'finished' && this.currentJobId) {
             void this.gcode.finishJob(this.currentJobId, 'completed');
-            this.log.log(`Impression terminée: ${this.currentJobFilename}`);
+            this.log.log(`Print finished: ${this.currentJobFilename}`);
             if (this.config.settings.deletePrinterFileAfterPrint && this.currentJobFilename) {
                 const name = this.currentJobFilename;
                 setTimeout(() => {
                     this.deletePrinterFiles([name])
-                        .then(() => this.log.log(`Fichier supprimé de l'imprimante: ${name}`))
-                        .catch((e) => this.log.warn(`Suppression sur l'imprimante impossible (${name}): ${e.message}`));
+                        .then(() => this.log.log(`File deleted from the printer: ${name}`))
+                        .catch((e) => this.log.warn(`Unable to delete from the printer (${name}): ${e.message}`));
                 }, 3000);
             }
             this.currentJobId = '';
             this.currentJobFilename = '';
         } else if ((kobraState === 'stoped' || kobraState === 'canceled') && this.currentJobId) {
             void this.gcode.finishJob(this.currentJobId, 'cancelled');
-            this.log.log(`Impression annulée: ${this.currentJobFilename}`);
+            this.log.log(`Print cancelled: ${this.currentJobFilename}`);
             this.currentJobId = '';
             this.currentJobFilename = '';
         }
@@ -431,6 +445,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private resetPrintFields(): void {
+        this.suppliesUsageMm = 0;
+        this.spoolUsage.clear();
+        this.spoolReported.clear();
+        this.spoolLastUsage = 0;
         this.s.progress = 0;
         this.s.filename = '';
         this.s.fileReady = '';
@@ -450,7 +468,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobId = await this.gcode.startJob(this.config.id, filename, file?.id ?? null);
         this.currentJobFilename = filename;
         if (file) this.adoptFileMeta(file);
-        this.log.log(`Job démarré: ${filename}`);
+        this.log.log(`Job started: ${filename}`);
     }
 
     private adoptFileMeta(file: StoredFile): void {
@@ -496,7 +514,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             const keys = Object.keys(d.urls).sort().join(',');
             if (keys !== this.knownUrlKeys) {
                 this.knownUrlKeys = keys;
-                this.log.log(`URLs annoncées par l'imprimante: ${JSON.stringify(d.urls)}`);
+                this.log.log(`URLs announced by the printer: ${JSON.stringify(d.urls)}`);
             }
         }
         if (d.urls?.fileUploadurl) this.uploadUrl = d.urls.fileUploadurl;
@@ -514,7 +532,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private onMultiColorBox(p: KobraMessage<KobraMultiColorBoxData>): void {
         if (p.state === 'failed') {
-            this.log.warn(`multiColorBox rejeté par l'imprimante: ${JSON.stringify(p.data)}`);
+            this.log.warn(`multiColorBox rejected by the printer: ${JSON.stringify(p.data)}`);
             return;
         }
         const boxes = p.data?.multi_color_box ?? [];
@@ -524,6 +542,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const { slots, loaded } = aggregateSlots(boxes, this.filamentMode);
         const activity = slotActivityMap(boxes, loaded, this.filamentMode);
         for (const s of slots) s.activity = activity.get(s.globalIndex) ?? '';
+        this.spoolmanAttribute(loaded, activity);
 
         for (const box of boxes) {
             const fs = box.feed_status;
@@ -554,7 +573,72 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.publish();
     }
 
+    private suppliesUsageMm = 0;
+    private readonly spoolUsage = new Map<number, number>();
+    private readonly spoolReported = new Map<number, number>();
+    private spoolLastUsage = 0;
+    private spoolLastSync = 0;
+
+    resetSpoolUsage(): void {
+        this.spoolUsage.clear();
+        this.spoolReported.clear();
+        this.spoolLastUsage = this.suppliesUsageMm;
+        this.spoolLastSync = Date.now();
+    }
+
+    private spoolMap(): ReadonlyMap<number, number> {
+        return this.spoolman?.slotMap(this.config.id) ?? new Map();
+    }
+
+    private spoolmanAttribute(loaded: number, activity: Map<number, string>): void {
+        if (!this.spoolman || !this.spoolMap().size) return;
+        if (this.s.printState !== 'printing') return;
+        const current = this.suppliesUsageMm;
+        const delta = current - this.spoolLastUsage;
+        this.spoolLastUsage = current;
+        if (delta <= 0 || loaded < 0) return;
+        const act = activity.get(loaded);
+        if (act === 'feeding' || act === 'retracting') return;
+        this.spoolUsage.set(loaded, (this.spoolUsage.get(loaded) ?? 0) + delta);
+        const rate = this.spoolman.syncRateSec;
+        if (rate > 0 && Date.now() - this.spoolLastSync >= rate * 1000) {
+            this.spoolLastSync = Date.now();
+            this.spoolmanReport(10);
+        }
+    }
+
+    private spoolmanUnreported(): Map<number, number> {
+        const map = this.spoolMap();
+        const out = new Map<number, number>();
+        if (this.spoolUsage.size) {
+            for (const slot of map.keys()) {
+                out.set(slot, (this.spoolUsage.get(slot) ?? 0) - (this.spoolReported.get(slot) ?? 0));
+            }
+            return out;
+        }
+        if (map.size === 1) {
+            const slot = [...map.keys()][0];
+            out.set(slot, this.suppliesUsageMm - (this.spoolReported.get(slot) ?? 0));
+        }
+        return out;
+    }
+
+    private spoolmanReport(minMm: number): void {
+        const sm = this.spoolman;
+        if (!sm) return;
+        const map = this.spoolMap();
+        for (const [slot, mm] of this.spoolmanUnreported()) {
+            const spoolId = map.get(slot);
+            if (!spoolId || mm < minMm) continue;
+            this.spoolReported.set(slot, (this.spoolReported.get(slot) ?? 0) + mm);
+            sm.useFilament(spoolId, mm)
+                .then(() => this.log.log(`Spoolman: ${mm.toFixed(1)} mm → spool ${spoolId} (slot ${slot + 1})`))
+                .catch((e) => this.log.warn(`Spoolman: report failed (spool ${spoolId}): ${(e as Error).message}`));
+        }
+    }
+
     private knownUrlKeys = '';
+    private paused = false;
 
     private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();
     private readonly printerThumbs = new Map<string, string>();
@@ -582,7 +666,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async listPrinterFiles(): Promise<PrinterFileDto[]> {
         const res = await this.waitFileAction('listLocal', () => this.client.listLocalFiles(), 15000);
-        if (res?.code !== 200) throw new Error("L'imprimante n'a pas renvoyé la liste de ses fichiers");
+        if (res?.code !== 200) throw new Error(m.api_printer_no_file_list());
         return (res.data?.records ?? [])
             .filter((r) => !r.is_dir)
             .map((r) => ({ filename: r.filename, sizeBytes: Number(r.size ?? 0), timestamp: Number(r.timestamp ?? 0) }))
@@ -591,7 +675,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async deletePrinterFiles(filenames: string[]): Promise<void> {
         const res = await this.waitFileAction('deleteBatch', () => this.client.deleteLocalFiles(filenames));
-        if (res?.state !== 'success') throw new Error("Suppression refusée par l'imprimante");
+        if (res?.state !== 'success') throw new Error(m.api_delete_refused());
         for (const f of filenames) this.printerThumbs.delete(f);
     }
 
@@ -599,7 +683,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const cached = this.printerThumbs.get(filename);
         if (cached !== undefined) return cached;
         const res = await this.waitFileAction('fileDetails', () => this.client.requestFileDetails(filename), 5000);
-        if (!res) throw new Error('Miniature indisponible');
+        if (!res) throw new Error(m.api_thumbnail_unavailable());
         const thumb = res.data?.file_details?.thumbnail ?? res.data?.file_details?.png_image ?? '';
         this.printerThumbs.set(filename, thumb);
         return thumb;
@@ -621,7 +705,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const objects = details.objects_skip_parts ?? [];
         if (objects.length && fileName) {
             void this.gcode.updateObjects(fileName, objects, details.svg_image ?? '').catch((e) => {
-                this.log.warn(`Mise à jour des objets impossible pour ${fileName}: ${(e as Error).message}`);
+                this.log.warn(`Unable to update objects for ${fileName}: ${(e as Error).message}`);
             });
         }
     }
@@ -653,8 +737,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     async skipObjects(names: string[]): Promise<void> {
         this.ensureConnected();
         const res = await this.client.skipObjects(names);
-        if (!res) throw new Error("Pas de réponse de l'imprimante (skip)");
-        if (res.state === 'failed') throw new Error(`Skip refusé par l'imprimante`);
+        if (!res) throw new Error(m.api_skip_no_response());
+        if (res.state === 'failed') throw new Error(m.api_skip_refused());
     }
 
     async querySkip(): Promise<void> {
@@ -677,7 +761,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             if (this.s.printState === 'printing' || this.s.printState === 'paused') {
                 const res = await this.client.skipObjects(names).catch(() => null);
                 if (res) {
-                    this.log.log(`Skip pré-impression appliqué (${names.length} objets)`);
+                    this.log.log(`Pre-print skip applied (${names.length} objects)`);
                     this.pendingPreprintSkip = [];
                     this.pendingPreprintDeadline = 0;
                     return;
@@ -685,7 +769,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             }
             await this.sleep(750);
         }
-        this.log.warn('Skip pré-impression non confirmé');
+        this.log.warn('Pre-print skip not confirmed');
         this.pendingPreprintSkip = [];
         this.pendingPreprintDeadline = 0;
     }
@@ -760,7 +844,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private ensureConnected(): void {
-        if (!this.client.connected) throw new BridgeOfflineError(this.s.connectionError || 'Imprimante hors ligne');
+        if (!this.client.connected) throw new BridgeOfflineError(connectionErrorMessage(this.s.connectionError));
     }
 
     setTemperature(nozzle?: number, bed?: number): void {
@@ -838,9 +922,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (!ids.length)
             ids = [...new Set(this.s.amsSlots.filter((x) => x.boxId >= 0 && x.boxId <= 3).map((x) => x.boxId))];
         if (!ids.length && this.filamentMode !== 'toolhead') ids = [0];
-        if (!ids.length) throw new BridgeOfflineError('Aucun ACE détecté');
+        if (!ids.length) throw new BridgeOfflineError(m.api_no_ace());
         if (opts.aceId !== undefined) {
-            if (!ids.includes(opts.aceId)) throw new BridgeOfflineError(`ACE ${opts.aceId + 1} non détecté`);
+            if (!ids.includes(opts.aceId)) throw new BridgeOfflineError(m.api_ace_not_detected({ n: opts.aceId + 1 }));
             ids = [opts.aceId];
         }
         const drying =
@@ -878,7 +962,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     async startCamera(): Promise<string> {
         this.ensureConnected();
         const result = await this.client.startCamera();
-        this.log.log(`Caméra startCapture: state=${result?.state ?? 'timeout'}`);
+        this.log.log(`Camera startCapture: state=${result?.state ?? 'timeout'}`);
         this.cameraUserStopped = false;
         this.camera.reset();
         await new Promise((r) => setTimeout(r, 1500));
@@ -903,9 +987,29 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     async reconnectNow(): Promise<void> {
+        this.paused = false;
         await this.client.disconnect();
-        this.markOffline('Reconnexion…');
+        this.markOffline({ code: 'reconnecting' });
         this.wakeLoop();
+    }
+
+    async disconnectManual(): Promise<void> {
+        this.paused = true;
+        this.camera.stop();
+        await this.client.disconnect();
+        this.markOffline({ code: 'manual' });
+        this.s.manualOffline = true;
+        this.publish();
+        this.log.log('MQTT session closed manually');
+    }
+
+    connectManual(): void {
+        if (!this.paused) return;
+        this.paused = false;
+        this.s.manualOffline = false;
+        this.publish();
+        this.wakeLoop();
+        this.log.log('Manual reconnection requested');
     }
 
     async uploadAndPrint(
@@ -929,11 +1033,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (!this.uploadUrl) {
             const info = await this.client.queryInfo();
             const url = info?.data?.urls?.fileUploadurl;
-            if (!url) throw new Error("L'imprimante n'a pas fourni d'URL d'upload (info/report)");
+            if (!url) throw new Error(m.api_no_upload_url());
             this.uploadUrl = url;
         }
-        this.log.log(`Upload vers l'imprimante: ${file.filename} (${data.length} o)`);
-        const result = await uploadGcode(this.config.ip, this.uploadUrl, file.filename, data);
+        this.log.log(`Uploading to the printer: ${file.filename} (${data.length} B)`);
+        const result = await uploadGcode(this.config.ip, this.uploadUrl, file.filename, data).catch((e) => {
+            throw new Error(protocolErrorMessage(e));
+        });
         this.log.log(`Upload OK: ${JSON.stringify(result)}`);
         this.lastUpload = { filename: file.filename, url: '', md5: file.md5, size: file.sizeBytes };
 
@@ -947,7 +1053,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     ): Promise<StoredFile> {
         this.ensureConnected();
         const loaded = await this.gcode.readData(fileId);
-        if (!loaded) throw new Error('Fichier introuvable dans le GCode store');
+        if (!loaded) throw new Error(m.api_file_not_in_store());
         await this.pushToPrinter(loaded.file, loaded.data);
         await this.startPrint(loaded.file, opts);
         return loaded.file;
@@ -959,7 +1065,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (wanted === 'auto') return all;
         const fixed = all.filter((s) => s.globalIndex === wanted);
         if (fixed.length) return fixed;
-        this.log.warn(`Slot par défaut ${wanted} vide — retour au mode auto`);
+        this.log.warn(`Default slot ${wanted} empty — falling back to auto`);
         return all;
     }
 
@@ -983,13 +1089,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         };
         this.s.slicerTimeSec = 0;
         this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
-        this.log.log(`print/start (fichier imprimante) → ${filename}  ams=${mapping.length} slots`);
+        this.log.log(`print/start (printer file) → ${filename}  ams=${mapping.length} slots`);
         const result = await this.client.startPrint(payload);
-        if (!result) throw new Error("Pas de réponse de l'imprimante au démarrage de l'impression");
+        if (!result) throw new Error(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            this.log.warn(`print/start local refusé: ${JSON.stringify(result)}`);
+            this.log.warn(`local print/start refused: ${JSON.stringify(result)}`);
             throw new Error(
-                `Démarrage refusé par l'imprimante (code ${result.code ?? '?'}): ${result.msg ?? JSON.stringify(result.data)}`,
+                m.api_print_refused_code({ code: result.code ?? '?', msg: result.msg ?? JSON.stringify(result.data) }),
             );
         }
         this.currentJobId = await this.gcode.startJob(this.config.id, filename, null);
@@ -1043,9 +1149,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
         this.log.log(`print/start → ${file.filename}  ams=${mapping.length} slots  mode=${this.filamentMode}`);
         const result = await this.client.startPrint(payload);
-        if (!result) throw new Error("Pas de réponse de l'imprimante au démarrage de l'impression");
+        if (!result) throw new Error(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            throw new Error(`Démarrage refusé par l'imprimante: ${result.msg ?? JSON.stringify(result.data)}`);
+            throw new Error(m.api_print_refused({ msg: result.msg ?? JSON.stringify(result.data) }));
         }
         this.currentJobId = await this.gcode.startJob(this.config.id, file.filename, file.id);
         this.currentJobFilename = file.filename;
@@ -1057,12 +1163,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
 export class BridgeOfflineError extends Error {}
 
-function mqttErrorMessage(e: unknown): string {
+function mqttConnectionError(e: unknown): ConnectionError {
     const msg = e instanceof Error ? e.message : String(e);
-    if (/Not authorized|Bad username|code 4|code 5/i.test(msg)) {
-        return "Identifiants MQTT refusés — ré-ajoutez l'imprimante pour rafraîchir les identifiants";
-    }
-    if (/ECONNREFUSED/.test(msg)) return "Port MQTT fermé — le mode LAN est-il activé sur l'imprimante ?";
-    if (/ETIMEDOUT|EHOSTUNREACH/.test(msg)) return 'Imprimante injoignable sur le réseau';
-    return msg;
+    if (/Not authorized|Bad username|code 4|code 5/i.test(msg)) return { code: 'mqtt_auth', detail: msg };
+    if (/ECONNREFUSED/.test(msg)) return { code: 'mqtt_refused', detail: msg };
+    if (/ETIMEDOUT|EHOSTUNREACH/.test(msg)) return { code: 'unreachable', detail: msg };
+    return { code: 'other', detail: msg };
 }

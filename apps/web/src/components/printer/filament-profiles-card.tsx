@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { userProfilesQuery } from '@/lib/queries';
 
 export function FilamentProfilesCard() {
@@ -19,8 +20,8 @@ export function FilamentProfilesCard() {
         onSuccess: (r) => {
             toast.success(
                 r.added
-                    ? `${r.added} profil${r.added > 1 ? 's' : ''} importé${r.added > 1 ? 's' : ''}${r.skipped ? ` (${r.skipped} ignoré${r.skipped > 1 ? 's' : ''})` : ''}`
-                    : 'Aucun profil filament reconnu dans les fichiers',
+                    ? `${m.profiles_imported({ added: r.added })}${r.skipped ? ` ${m.profiles_skipped({ skipped: r.skipped })}` : ''}`
+                    : m.profiles_none_recognized(),
             );
             void invalidate();
         },
@@ -41,11 +42,11 @@ export function FilamentProfilesCard() {
     return (
         <Card className="rounded-3xl border-0 shadow-none">
             <CardHeader>
-                <CardTitle>Profils filament OrcaSlicer</CardTitle>
+                <CardTitle>{m.profiles_title()}</CardTitle>
                 <CardDescription>
-                    Importez vos profils personnalisés (ZIP ou fichiers .json du dossier{' '}
-                    <code className="rounded bg-secondary px-1">OrcaSlicer/user/&lt;id&gt;/filament/</code>). Ils
-                    apparaissent dans le choix de profil par slot, marqués ★, et servent au matching RFID.
+                    {m.profiles_hint_before()}{' '}
+                    <code className="rounded bg-secondary px-1">OrcaSlicer/user/&lt;id&gt;/filament/</code>
+                    {m.profiles_hint_after()}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -61,7 +62,7 @@ export function FilamentProfilesCard() {
                     }}
                 >
                     <Upload className="size-5" />
-                    {importMut.isPending ? 'Import en cours…' : 'Déposer un ZIP ou des .json, ou cliquer pour choisir'}
+                    {importMut.isPending ? m.profiles_importing() : m.profiles_drop()}
                 </button>
                 <input
                     ref={fileRef}
@@ -89,7 +90,7 @@ export function FilamentProfilesCard() {
                                     className="rounded-full"
                                     disabled={remove.isPending}
                                     onClick={() => remove.mutate({ vendor: p.vendor, name: p.name })}
-                                    title="Supprimer ce profil"
+                                    title={m.profiles_delete()}
                                 >
                                     <Trash2 />
                                 </Button>
@@ -97,7 +98,7 @@ export function FilamentProfilesCard() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-sm text-muted-foreground">Aucun profil personnalisé importé.</p>
+                    <p className="text-sm text-muted-foreground">{m.profiles_empty()}</p>
                 )}
             </CardContent>
         </Card>

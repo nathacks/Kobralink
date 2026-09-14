@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { api, type PrinterWithLive } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { filamentVendorsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
@@ -47,15 +48,29 @@ export function PrinterSettingsForm({
                 settings: value.settings,
             }),
         onSuccess: () => {
-            toast.success('Réglages enregistrés');
+            toast.success(m.settings_saved());
             onSaved();
         },
+        onError: (e) => toast.error(e.message),
+    });
+    const connect = useMutation({
+        mutationFn: () =>
+            printer.live?.manualOffline ? api.printers.connect(printer.id) : api.printers.disconnect(printer.id),
+        onSuccess: () => {
+            toast.success(printer.live?.manualOffline ? m.printers_reconnect_requested() : m.settings_mqtt_closed());
+            onSaved();
+        },
+        onError: (e) => toast.error(e.message),
+    });
+    const restart = useMutation({
+        mutationFn: () => api.printers.reconnect(printer.id),
+        onSuccess: () => toast.success(m.settings_mqtt_restarted()),
         onError: (e) => toast.error(e.message),
     });
     const refresh = useMutation({
         mutationFn: () => api.printers.refreshCredentials(printer.id),
         onSuccess: () => {
-            toast.success("Identifiants rafraîchis depuis l'imprimante");
+            toast.success(m.settings_credentials_refreshed());
             onSaved();
         },
         onError: (e) => toast.error(e.message),
@@ -64,7 +79,7 @@ export function PrinterSettingsForm({
     const remove = useMutation({
         mutationFn: () => api.printers.remove(printer.id),
         onSuccess: () => {
-            toast.success('Imprimante supprimée');
+            toast.success(m.settings_printer_deleted());
             onSaved();
             onDeleted();
         },
@@ -91,21 +106,24 @@ export function PrinterSettingsForm({
                 void form.handleSubmit();
             }}
         >
-            <h2 className="px-2 text-xl font-medium">Réglages · {printer.name}</h2>
+            <h2 className="px-2 text-xl font-medium">{m.settings_title({ name: printer.name })}</h2>
 
             <Card className="rounded-3xl border-0 shadow-none">
                 <CardHeader>
-                    <CardTitle>Connexion</CardTitle>
+                    <CardTitle>{m.settings_connection()}</CardTitle>
                     <CardDescription>
-                        Identifiant {printer.deviceId.slice(0, 8)}… · utilisateur {printer.username} · modèle{' '}
-                        {printer.model}
+                        {m.settings_connection_hint({
+                            deviceId: printer.deviceId.slice(0, 8),
+                            username: printer.username,
+                            model: printer.model,
+                        })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <form.Field name="name">
                         {(field) => (
                             <div className="grid gap-2">
-                                <Label htmlFor={field.name}>Nom</Label>
+                                <Label htmlFor={field.name}>{m.field_name()}</Label>
                                 <Input
                                     id={field.name}
                                     name={field.name}
@@ -123,7 +141,7 @@ export function PrinterSettingsForm({
                         <form.Field name="ip">
                             {(field) => (
                                 <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>Adresse IP</Label>
+                                    <Label htmlFor={field.name}>{m.field_ip()}</Label>
                                     <Input
                                         id={field.name}
                                         name={field.name}
@@ -140,7 +158,7 @@ export function PrinterSettingsForm({
                         <form.Field name="httpPort">
                             {(field) => (
                                 <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>Port Moonraker</Label>
+                                    <Label htmlFor={field.name}>{m.settings_moonraker_port()}</Label>
                                     <Input
                                         id={field.name}
                                         name={field.name}
@@ -158,7 +176,7 @@ export function PrinterSettingsForm({
                             )}
                         </form.Field>
                     </div>
-                    <div>
+                    <div className="flex flex-wrap gap-2">
                         <Button
                             type="button"
                             variant="secondary"
@@ -167,7 +185,27 @@ export function PrinterSettingsForm({
                             onClick={() => refresh.mutate()}
                             disabled={refresh.isPending}
                         >
-                            Rafraîchir les identifiants
+                            {m.settings_refresh_credentials()}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="rounded-full"
+                            onClick={() => restart.mutate()}
+                            disabled={restart.isPending || printer.live?.manualOffline}
+                        >
+                            {m.settings_restart_mqtt()}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={printer.live?.manualOffline ? 'default' : 'outline'}
+                            size="sm"
+                            className="rounded-full"
+                            onClick={() => connect.mutate()}
+                            disabled={connect.isPending}
+                        >
+                            {printer.live?.manualOffline ? m.settings_reconnect() : m.settings_disconnect()}
                         </Button>
                     </div>
                 </CardContent>
@@ -175,33 +213,33 @@ export function PrinterSettingsForm({
 
             <Card className="rounded-3xl border-0 shadow-none">
                 <CardHeader>
-                    <CardTitle>Impression</CardTitle>
+                    <CardTitle>{m.settings_print()}</CardTitle>
                 </CardHeader>
                 <CardContent className="divide-y">
                     <form.Field name="settings.autoLeveling">
                         {(field) => (
-                            <Row label="Auto-nivellement" hint="Avant chaque impression">
+                            <Row label={m.settings_auto_leveling()} hint={m.settings_auto_leveling_hint()}>
                                 <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                             </Row>
                         )}
                     </form.Field>
                     <form.Field name="settings.vibrationCompensation">
                         {(field) => (
-                            <Row label="Compensation des vibrations">
+                            <Row label={m.settings_vibration()}>
                                 <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                             </Row>
                         )}
                     </form.Field>
                     <form.Field name="settings.cameraOnPrint">
                         {(field) => (
-                            <Row label="Caméra au démarrage" hint="Active le flux caméra quand une impression commence">
+                            <Row label={m.settings_camera_on_print()} hint={m.settings_camera_on_print_hint()}>
                                 <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                             </Row>
                         )}
                     </form.Field>
                     <form.Field name="settings.defaultAmsSlot">
                         {(field) => (
-                            <Row label="Slot AMS par défaut" hint="auto = tous les slots utilisés par le GCode">
+                            <Row label={m.settings_default_slot()} hint={m.settings_default_slot_hint()}>
                                 <Select
                                     value={String(field.state.value)}
                                     onValueChange={(v) => field.handleChange(v === 'auto' ? 'auto' : Number(v))}
@@ -213,7 +251,7 @@ export function PrinterSettingsForm({
                                         <SelectItem value="auto">auto</SelectItem>
                                         {SLOT_CHOICES.map((i) => (
                                             <SelectItem key={`slot-${i}`} value={String(i)}>
-                                                Slot {i + 1}
+                                                {m.settings_slot_n({ n: i + 1 })}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -223,7 +261,7 @@ export function PrinterSettingsForm({
                     </form.Field>
                     <form.Field name="settings.pollIntervalSec">
                         {(field) => (
-                            <Row label="Intervalle de sondage" hint="Secondes entre deux requêtes d'état MQTT">
+                            <Row label={m.settings_poll_interval()} hint={m.settings_poll_interval_hint()}>
                                 <div className="grid gap-1">
                                     <Input
                                         type="number"
@@ -245,11 +283,56 @@ export function PrinterSettingsForm({
 
             <Card className="rounded-3xl border-0 shadow-none">
                 <CardHeader>
-                    <CardTitle>Marques visibles</CardTitle>
-                    <CardDescription>
-                        Filtre le choix de profil OrcaSlicer par slot. Aucune sélection = toutes les marques. Vos
-                        profils importés restent toujours visibles.
-                    </CardDescription>
+                    <CardTitle>{m.settings_power()}</CardTitle>
+                    <CardDescription>{m.settings_power_hint()}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    {(
+                        [
+                            [
+                                'settings.powerOnUrl',
+                                m.settings_power_on_url(),
+                                'http://192.168.1.50/cm?cmnd=Power%20On',
+                            ],
+                            [
+                                'settings.powerOffUrl',
+                                m.settings_power_off_url(),
+                                'http://192.168.1.50/cm?cmnd=Power%20Off',
+                            ],
+                            [
+                                'settings.powerStatusUrl',
+                                m.settings_power_status_url(),
+                                'http://192.168.1.50/cm?cmnd=Power',
+                            ],
+                        ] as const
+                    ).map(([name, label, placeholder]) => (
+                        <form.Field key={name} name={name}>
+                            {(field) => (
+                                <div className="grid gap-2">
+                                    <Label htmlFor={field.name}>{label}</Label>
+                                    <Input
+                                        id={field.name}
+                                        name={field.name}
+                                        type="url"
+                                        placeholder={placeholder}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        aria-invalid={fieldInvalid(field.state.meta)}
+                                        className="rounded-full px-4"
+                                    />
+                                    <FieldError meta={field.state.meta} />
+                                </div>
+                            )}
+                        </form.Field>
+                    ))}
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-0 shadow-none">
+                <CardHeader>
+                    <CardTitle>{m.settings_vendors()}</CardTitle>
+                    <CardDescription>{m.settings_vendors_hint()}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form.Field name="settings.visibleVendors">
@@ -262,7 +345,7 @@ export function PrinterSettingsForm({
                 <form.Subscribe selector={(s) => s.isSubmitting}>
                     {(isSubmitting) => (
                         <Button type="submit" className="rounded-full px-6" disabled={isSubmitting}>
-                            Enregistrer
+                            {m.common_save()}
                         </Button>
                     )}
                 </form.Subscribe>
@@ -272,14 +355,14 @@ export function PrinterSettingsForm({
                     className="ml-auto rounded-full"
                     onClick={() =>
                         openAlertDialog({
-                            title: `Supprimer ${printer.name} ?`,
-                            description: 'Les fichiers stockés sont conservés.',
-                            actionLabel: 'Supprimer',
+                            title: m.settings_delete_title({ name: printer.name }),
+                            description: m.settings_delete_hint(),
+                            actionLabel: m.common_delete(),
                             onAction: () => remove.mutateAsync(),
                         })
                     }
                 >
-                    Supprimer l'imprimante
+                    {m.settings_delete_printer()}
                 </Button>
             </div>
         </form>
@@ -288,7 +371,7 @@ export function PrinterSettingsForm({
 
 function VendorPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
     const vendors = useQuery(filamentVendorsQuery);
-    if (!vendors.data) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+    if (!vendors.data) return <p className="text-sm text-muted-foreground">{m.common_loading()}</p>;
     const toggle = (v: string) => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
     return (
         <div className="flex flex-wrap gap-2">
@@ -317,7 +400,7 @@ function VendorPicker({ value, onChange }: { value: string[]; onChange: (v: stri
                     onClick={() => onChange([])}
                     className="rounded-full px-3 py-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
                 >
-                    Tout afficher
+                    {m.settings_show_all()}
                 </button>
             )}
         </div>

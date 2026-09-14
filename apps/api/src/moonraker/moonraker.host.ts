@@ -37,7 +37,7 @@ export class MoonrakerHost {
             await app.listen(bridge.config.httpPort, '0.0.0.0');
         } catch (e) {
             this.log.error(
-                `Port Moonraker ${bridge.config.httpPort} indisponible pour ${bridge.config.name}: ${(e as Error).message}`,
+                `Moonraker port ${bridge.config.httpPort} unavailable for ${bridge.config.name}: ${(e as Error).message}`,
             );
             await app.close().catch(() => undefined);
             return;

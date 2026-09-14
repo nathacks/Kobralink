@@ -38,7 +38,7 @@ export function startLocalApi(port: number): UtilityProcess {
     child.stdout?.on('data', (d) => process.stdout.write(`[api] ${d}`));
     child.stderr?.on('data', (d) => process.stderr.write(`[api] ${d}`));
     child.on('exit', (code) => {
-        console.log(`[api] terminé (code ${code})`);
+        console.log(`[api] exited (code ${code})`);
         child = null;
     });
     return child;

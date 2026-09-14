@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { m } from '@/lib/i18n';
 import { useLiveState } from '@/stores/printers';
 
 const PRESETS = [
-    { label: 'PLA', nozzle: 210, bed: 60 },
-    { label: 'PETG', nozzle: 235, bed: 75 },
-    { label: 'ABS', nozzle: 250, bed: 95 },
-    { label: 'Off', nozzle: 0, bed: 0 },
+    { label: () => 'PLA', nozzle: 210, bed: 60 },
+    { label: () => 'PETG', nozzle: 235, bed: 75 },
+    { label: () => 'ABS', nozzle: 250, bed: 95 },
+    { label: m.temp_preset_off, nozzle: 0, bed: 0 },
 ];
 
 export function TemperatureCard({ printerId }: { printerId: string }) {
@@ -26,24 +27,24 @@ export function TemperatureCard({ printerId }: { printerId: string }) {
     return (
         <Card className="rounded-3xl border-0 shadow-none">
             <CardHeader>
-                <CardTitle className="text-lg font-medium">Températures</CardTitle>
+                <CardTitle className="text-lg font-medium">{m.temp_title()}</CardTitle>
                 <CardAction className="flex gap-1 rounded-full bg-secondary p-1">
                     {PRESETS.map((p) => (
                         <button
-                            key={p.label}
+                            key={p.nozzle}
                             type="button"
                             disabled={!state.connected || set.isPending}
                             onClick={() => set.mutate({ nozzle: p.nozzle, bed: p.bed })}
                             className="rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
                         >
-                            {p.label}
+                            {p.label()}
                         </button>
                     ))}
                 </CardAction>
             </CardHeader>
             <CardContent className="space-y-4">
                 <HeaterRow
-                    label="Buse"
+                    label={m.activity_nozzle()}
                     current={state.nozzleTemp}
                     target={state.nozzleTarget}
                     max={320}
@@ -51,7 +52,7 @@ export function TemperatureCard({ printerId }: { printerId: string }) {
                     disabled={!state.connected}
                 />
                 <HeaterRow
-                    label="Plateau"
+                    label={m.activity_bed()}
                     current={state.bedTemp}
                     target={state.bedTarget}
                     max={120}
@@ -84,7 +85,7 @@ function HeaterRow({
             onSubmit: ({ value }) =>
                 Number.isFinite(value.value) && value.value >= 0 && value.value <= max
                     ? undefined
-                    : { fields: { value: `Entre 0 et ${max} °C` } },
+                    : { fields: { value: m.temp_range({ max }) } },
         },
         onSubmit: ({ value }) => onSet(value.value),
     });
@@ -121,7 +122,7 @@ function HeaterRow({
                     )}
                 </form.Field>
                 <Button type="submit" size="sm" variant="secondary" className="rounded-full" disabled={disabled}>
-                    Régler
+                    {m.temp_set()}
                 </Button>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-secondary">
