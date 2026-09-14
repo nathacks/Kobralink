@@ -51,6 +51,6 @@
         "@types/ws": "^8.18.1",
         "esbuild": "^0.25.12",
         "prisma": "7.10.0",
-        "typescript": "catalog:"
+        "typescript": "catalog:nest"
     }
 }
