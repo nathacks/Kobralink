@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { build } from 'esbuild';
 
@@ -57,6 +58,35 @@ fs.writeFileSync(
     ),
 );
 execSync('bun install --production --no-save', { cwd: outDir, stdio: 'inherit' });
+
+const extraArchs = (process.env.KOBRALINK_BUNDLE_ARCHS ?? '')
+    .split(',')
+    .map((a) => a.trim())
+    .filter((a) => a && a !== process.arch);
+for (const arch of extraArchs) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `kobralink-bundle-${arch}-`));
+    fs.copyFileSync(path.join(outDir, 'package.json'), path.join(tmp, 'package.json'));
+    execSync(`bun install --production --no-save --os ${process.platform} --cpu ${arch}`, {
+        cwd: tmp,
+        stdio: 'inherit',
+    });
+    copyMissing(path.join(tmp, 'node_modules'), path.join(outDir, 'node_modules'));
+    fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+function copyMissing(from: string, to: string): void {
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name === '.bin') continue;
+        const src = path.join(from, entry.name);
+        const dest = path.join(to, entry.name);
+        if (entry.name.startsWith('@')) {
+            fs.mkdirSync(dest, { recursive: true });
+            copyMissing(src, dest);
+        } else if (!fs.existsSync(dest)) {
+            fs.cpSync(src, dest, { recursive: true });
+        }
+    }
+}
 const ortBin = path.join(outDir, 'node_modules', 'onnxruntime-node', 'bin', 'napi-v6');
 for (const platform of fs.readdirSync(ortBin)) {
     if (platform !== process.platform) fs.rmSync(path.join(ortBin, platform), { recursive: true, force: true });

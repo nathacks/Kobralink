@@ -70,7 +70,7 @@ Set `BETTER_AUTH_URL` to the URL the browser actually uses.
 
 Pushing a `v*` tag (e.g. `git tag v0.2.0 && git push --tags`) runs `.github/workflows/release.yml`:
 multi-arch Docker image pushed to Docker Hub (`<version>`, `<major>.<minor>`, `latest`) and a GitHub
-release with the Electron builds for macOS (dmg/zip), Windows (nsis) and Linux (AppImage/deb) plus the
+release with the Electron builds for macOS (dmg/zip, Apple Silicon + Intel), Windows (nsis) and Linux (AppImage/deb) plus the
 `latest*.yml` files used by the in-app auto-updater. Required repository secrets: `DOCKERHUB_USERNAME`,
 `DOCKERHUB_TOKEN`.
 

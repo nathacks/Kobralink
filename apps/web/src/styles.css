@@ -171,6 +171,11 @@ html.desktop [role='dialog'] {
     -webkit-app-region: no-drag;
 }
 
+.react-grid-layout,
+.react-grid-item {
+    transition: none;
+}
+
 .dashboard-editing .react-grid-item {
     outline: 2px dashed color-mix(in oklab, var(--primary) 50%, transparent);
     outline-offset: -2px;
@@ -203,11 +208,6 @@ html.desktop [role='dialog'] {
 
 .react-grid-item > * {
     overflow: hidden;
-}
-
-.react-grid-layout,
-.react-grid-item {
-    transition: none;
 }
 
 .dashboard-editing .react-grid-item:not(.react-draggable-dragging):not(.resizing) {

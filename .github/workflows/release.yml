@@ -54,6 +54,7 @@ jobs:
         include:
           - os: macos-latest
             args: --mac
+            bundle_archs: arm64,x64
           - os: windows-latest
             args: --win
           - os: ubuntu-latest
@@ -89,6 +90,7 @@ jobs:
         run: bun run --filter @kobralink/desktop dist -- ${{ matrix.args }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KOBRALINK_BUNDLE_ARCHS: ${{ matrix.bundle_archs }}
 
       - uses: actions/upload-artifact@v4
         with:

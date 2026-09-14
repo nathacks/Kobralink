@@ -24,6 +24,7 @@ payloads, comportements à reproduire).
 - `infra/` — `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `.env.example`. Pas de Dockerfile à la racine.
 - `.github/workflows/release.yml` — sur tag `v*` : image Docker Hub multi-arch (`DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN`)
   + release GitHub avec les builds Electron mac/win/linux (`bun run --filter @kobralink/desktop dist -- --mac|--win|--linux`).
+  macOS = arm64 + x64 dans un seul job (`KOBRALINK_BUNDLE_ARCHS=arm64,x64` fait installer les natifs libsql/ffmpeg des deux archs dans `apps/api/bundle`).
 
 ## Points d'architecture
 

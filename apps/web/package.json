@@ -5,9 +5,10 @@
     "type": "module",
     "scripts": {
         "dev": "bunx --bun vite --port 5173 --strictPort",
+        "generate": "bunx tsr generate && bunx paraglide-js compile --project ../../packages/i18n/project.inlang --outdir ./src/paraglide --strategy localStorage preferredLanguage baseLocale --output-structure message-modules --emit-ts-declarations --no-emit-readme --no-emit-prettier-ignore",
         "build": "bunx --bun vite build && bunx tsc -b",
         "preview": "bunx --bun vite preview",
-        "check-types": "bunx tsc -b"
+        "check-types": "bun run generate && bunx tsc -b"
     },
     "dependencies": {
         "@fontsource-variable/outfit": "^5.3.0",
@@ -38,6 +39,7 @@
         "@inlang/paraglide-js": "catalog:",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/react-router-devtools": "^1.167.2",
+        "@tanstack/router-cli": "^1.167.36",
         "@tanstack/router-plugin": "^1.168.38",
         "@types/node": "catalog:",
         "@types/react": "^19.3.0",
