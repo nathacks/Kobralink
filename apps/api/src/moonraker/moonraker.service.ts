@@ -12,6 +12,8 @@ import {
     TRAY_INFO_IDX,
 } from '../filament/filament-library';
 import { GcodeService } from '../gcode/gcode.service';
+import { MacroService } from '../macros/macro.service';
+import { QueueService } from '../queue/queue.service';
 
 export const PRINTER_BRIDGE = Symbol('PRINTER_BRIDGE');
 
@@ -28,6 +30,8 @@ export class MoonrakerService {
         @Inject(PRINTER_BRIDGE) readonly bridge: PrinterBridge,
         readonly gcode: GcodeService,
         readonly filaments: FilamentService,
+        readonly queue: QueueService,
+        readonly macros: MacroService,
     ) {}
 
     private slotFilament(slot: AmsSlot): { material: string; name: string; vendor: string; trayInfoIdx: string } {
@@ -62,7 +66,7 @@ export class MoonrakerService {
         return {
             klippy_connected: true,
             klippy_state: 'ready',
-            components: ['file_manager', 'job_state', 'virtual_sdcard'],
+            components: ['file_manager', 'job_state', 'job_queue', 'virtual_sdcard'],
             failed_components: [],
             registered_directories: ['gcodes'],
             warnings: [],
@@ -421,10 +425,29 @@ export class MoonrakerService {
         };
     }
 
+    async jobQueueStatus() {
+        const items = await this.queue.list(this.bridge.id);
+        return {
+            queued_jobs: items.map((i) => ({
+                filename: i.filename,
+                job_id: i.id,
+                time_added: new Date(i.createdAt).getTime() / 1000,
+                time_in_queue: (Date.now() - new Date(i.createdAt).getTime()) / 1000,
+            })),
+            queue_state: this.bridge.settings.queueAutoStart ? 'ready' : 'paused',
+        };
+    }
+
     async execGcodeScript(script: string): Promise<string> {
         const s = (script ?? '').trim().toUpperCase();
         if (!s) return 'ok';
         const bridge = this.bridge;
+        const macroName = s.split(/\s+/)[0] ?? '';
+        const macro = await this.macros.findByName(macroName);
+        if (macro) {
+            await this.macros.run(bridge, macro).catch(() => undefined);
+            return 'ok';
+        }
         const marlinTemp = (line: string) => {
             const m = /S(\d+)/.exec(line);
             return m ? Number(m[1]) : undefined;

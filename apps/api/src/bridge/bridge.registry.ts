@@ -4,10 +4,15 @@ import { Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } 
 import { loadEnv } from '../config/env';
 import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
+import { HaMqttService } from '../ha/ha-mqtt.service';
 import { m } from '../i18n/locale';
 import { MoonrakerHost } from '../moonraker/moonraker.host';
+import { NotificationService } from '../notifications/notification.service';
 import { PrintersService } from '../printers/printers.service';
+import { QueueService } from '../queue/queue.service';
 import { SpoolmanService } from '../spoolman/spoolman.service';
+import { LocalSpoolService } from '../spools/local-spool.service';
+import { TimelapseService } from '../timelapse/timelapse.service';
 import { PrinterBridge } from './printer-bridge';
 
 @Injectable()
@@ -22,6 +27,11 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         private readonly moonraker: MoonrakerHost,
         private readonly filaments: FilamentService,
         private readonly spoolman: SpoolmanService,
+        private readonly localSpools: LocalSpoolService,
+        private readonly notifications: NotificationService,
+        private readonly timelapses: TimelapseService,
+        private readonly queue: QueueService,
+        private readonly ha: HaMqttService,
     ) {}
 
     private loadCerts(): { cert: Buffer; key: Buffer } {
@@ -39,6 +49,8 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleInit(): Promise<void> {
+        const stale = await this.gcode.closeStaleJobs();
+        if (stale) this.log.warn(`${stale} job(s) left open by a previous run marked as error`);
         const rows = await this.printers.findAll();
         for (const row of rows) {
             try {
@@ -70,8 +82,12 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
 
     async spawn(config: ReturnType<typeof PrintersService.toBridgeConfig>): Promise<PrinterBridge> {
         if (this.bridges.has(config.id)) return this.bridges.get(config.id) as PrinterBridge;
-        const bridge = new PrinterBridge(config, this.gcode, this.loadCerts(), this.spoolman);
+        const bridge = new PrinterBridge(config, this.gcode, this.loadCerts(), [this.spoolman, this.localSpools]);
         this.bridges.set(config.id, bridge);
+        this.notifications.attach(bridge);
+        this.timelapses.attach(bridge);
+        this.queue.attach(bridge);
+        this.ha.attach(bridge);
         bridge.start();
         await this.moonraker.startFor(bridge);
         this.log.log(`Bridge started: ${config.name} (${config.ip}) → Moonraker :${config.httpPort}`);
@@ -82,10 +98,15 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
         const bridge = this.bridges.get(id);
         if (!bridge) return;
         this.bridges.delete(id);
+        this.notifications.detach(id);
+        this.timelapses.detach(id);
+        this.queue.detach(id);
+        this.ha.detach(id);
         await this.moonraker.stopFor(id);
         await bridge.stop();
         this.filaments.forgetPrinter(id);
         this.spoolman.forgetPrinter(id);
+        this.localSpools.forgetPrinter(id);
         this.log.log(`Bridge stopped: ${bridge.config.name}`);
     }
 

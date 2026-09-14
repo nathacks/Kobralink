@@ -142,6 +142,25 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 const base = `http://${localIpFor(bridge.config.ip)}:${bridge.config.httpPort}`;
                 return this.moon.webcams(base);
             }
+            case 'server.job_queue.status':
+                return this.moon.jobQueueStatus();
+            case 'server.job_queue.post_job': {
+                const names = (params.filenames as string[] | undefined) ?? [];
+                for (const n of names) await this.moon.queue.addByFilename(bridge.id, String(n));
+                return this.moon.jobQueueStatus();
+            }
+            case 'server.job_queue.delete_job': {
+                if (params.all) await this.moon.queue.clear(bridge.id);
+                else
+                    for (const id of (params.job_ids as string[] | undefined) ?? [])
+                        await this.moon.queue.remove(bridge.id, String(id));
+                return this.moon.jobQueueStatus();
+            }
+            case 'server.job_queue.start':
+                await this.moon.queue.startNext(bridge.id).catch(() => undefined);
+                return this.moon.jobQueueStatus();
+            case 'server.job_queue.pause':
+                return this.moon.jobQueueStatus();
             case 'server.history.list':
                 return this.moon.historyList(Number(params.limit) || 50);
             case 'machine.update.status':

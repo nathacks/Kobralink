@@ -1,17 +1,19 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useParams } from '@tanstack/react-router';
-import { LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
-import { Avatar } from '@/components/layout/avatar';
+import { createFileRoute, Outlet, redirect, useNavigate, useParams } from '@tanstack/react-router';
+import { BarChart3, LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { LanguageMenu } from '@/components/layout/language-menu';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
 import { PrinterSwitcher } from '@/components/printer/printer-switcher';
+import { useGlobalEvents } from '@/hooks/use-global-events';
+import { usePrinters } from '@/hooks/use-printers';
 import { usePrintersSync } from '@/hooks/use-printers-sync';
 import { authClient } from '@/lib/auth-client';
 import { greeting } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { sessionQuery } from '@/lib/session';
-import { usePrinters } from '@/stores/printers';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export const Route = createFileRoute('/_app')({
     beforeLoad: async ({ context, location }) => {
@@ -29,17 +31,33 @@ function AppLayout() {
     const qc = useQueryClient();
     const navigate = useNavigate();
     usePrintersSync();
+    useGlobalEvents();
     const printers = usePrinters();
+    useEffect(() => {
+        const onNav = (ev: Event) => {
+            const to = (ev as CustomEvent<string>).detail;
+            if (typeof to === 'string') void navigate({ to });
+        };
+        window.addEventListener('kobralink:navigate', onNav);
+        return () => window.removeEventListener('kobralink:navigate', onNav);
+    }, [navigate]);
     const { printerId } = useParams({ strict: false });
     const online = printers.filter((p) => p.live?.connected).length ?? 0;
     const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (session.user.name || session.user.email.split('@')[0]).split(' ')[0];
 
-    const logout = async () => {
-        await authClient.signOut();
-        qc.setQueryData(['session'], null);
-        await navigate({ to: '/login' });
-    };
+    const logout = () =>
+        alertConfirmationDialogStore.actions.openAlertDialog({
+            title: m.logout_confirm_title(),
+            description: m.logout_confirm_hint(),
+            actionLabel: m.logout_confirm_action(),
+            cancelLabel: m.logout_confirm_cancel(),
+            onAction: async () => {
+                await authClient.signOut();
+                qc.setQueryData(['session'], null);
+                await navigate({ to: '/login' });
+            },
+        });
 
     const subtitle = !printers.length
         ? m.header_no_printers()
@@ -52,11 +70,6 @@ function AppLayout() {
             <Rail
                 top={
                     <>
-                        <div className="mb-2 flex size-12 items-center justify-center text-primary">
-                            <Link to="/printers" title="Kobralink" aria-label="Kobralink">
-                                <KobraMark />
-                            </Link>
-                        </div>
                         <RailLink to="/printers" activeOptions={{ exact: true }} title={m.nav_home()}>
                             <LayoutGrid />
                         </RailLink>
@@ -69,15 +82,15 @@ function AppLayout() {
                                 className="relative"
                             >
                                 <Printer />
-                                <span
-                                    className={`absolute right-2 top-2 size-2 rounded-full ring-2 ring-sidebar ${p.live?.connected ? 'bg-primary' : 'bg-muted-foreground/50'}`}
-                                />
                             </RailLink>
                         ))}
                     </>
                 }
                 bottom={
                     <>
+                        <RailLink to="/stats" title={m.nav_stats()}>
+                            <BarChart3 />
+                        </RailLink>
                         <RailLink to="/settings" title={m.nav_bridge_settings()}>
                             <Settings2 />
                         </RailLink>
@@ -85,10 +98,13 @@ function AppLayout() {
                             <ScrollText />
                         </RailLink>
                         <LanguageMenu />
-                        <RailButton title={m.nav_logout()} onClick={logout}>
+                        <RailButton
+                            title={m.nav_logout()}
+                            onClick={logout}
+                            className="text-destructive hover:bg-destructive/15 hover:text-destructive"
+                        >
                             <LogOut />
                         </RailButton>
-                        <Avatar name={session.user.name} email={session.user.email} />
                     </>
                 }
             />
@@ -109,13 +125,5 @@ function AppLayout() {
                 </main>
             </div>
         </div>
-    );
-}
-
-function KobraMark() {
-    return (
-        <svg viewBox="0 0 24 24" className="size-7" fill="currentColor" role="img" aria-label="Kobralink">
-            <path d="M5 3h4v7.2l6.2-7.2h4.9l-7.4 8.4L21 21h-5l-5.6-6.6L9 16.1V21H5z" />
-        </svg>
     );
 }

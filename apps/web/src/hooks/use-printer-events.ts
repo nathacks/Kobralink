@@ -1,7 +1,7 @@
 import type { PrinterLiveState } from '@kobralink/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { usePrintersStore } from '@/stores/printers';
+import { printersStore } from '@/stores/printers';
 
 export function usePrinterEvents(printerId: string | undefined) {
     const qc = useQueryClient();
@@ -16,7 +16,7 @@ export function usePrinterEvents(printerId: string | undefined) {
                 return;
             }
             qc.setQueryData(['printers', printerId, 'state'], state);
-            usePrintersStore.getState().setLiveState(printerId, state);
+            printersStore.actions.setLiveState(printerId, state);
         });
         return () => es.close();
     }, [printerId, qc]);

@@ -9,7 +9,7 @@ import { formatBytes, formatShortDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { printerFilesQuery, printerFileThumbQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
-import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 const PAGE = 24;
 
@@ -28,7 +28,7 @@ export function PrinterFilesGrid({
     const files = useQuery(printerFilesQuery(printerId, connected));
     const [visible, setVisible] = useState(PAGE);
     const [selected, setSelected] = useState<string[]>([]);
-    const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
+    const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const remove = useMutation({
         mutationFn: (names: string[]) => api.printerFiles.remove(printerId, names),
         onSuccess: (_, names) => {

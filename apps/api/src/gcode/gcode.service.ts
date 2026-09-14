@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseGcodeMetadata } from '@kobralink/kobra-protocol';
-import type { GcodeFilament, GcodeFileDto, PrintJobDto } from '@kobralink/shared';
+import type { GcodeFilament, GcodeFileDto, PrintJobDto, SpoolUsageEntry } from '@kobralink/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env';
 import type { GcodeFile, PrintJob } from '../generated/prisma/client';
@@ -157,7 +157,12 @@ export class GcodeService {
         return job.id;
     }
 
-    async finishJob(jobId: string, status: 'completed' | 'cancelled' | 'error'): Promise<void> {
+    async finishJob(
+        jobId: string,
+        status: 'completed' | 'cancelled' | 'error',
+        filamentMm = 0,
+        spoolUsage: SpoolUsageEntry[] = [],
+    ): Promise<void> {
         const job = await this.prisma.client.printJob.findUnique({ where: { id: jobId } });
         if (!job) return;
         const now = new Date();
@@ -167,8 +172,18 @@ export class GcodeService {
                 status,
                 finishedAt: now,
                 durationSec: Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000)),
+                filamentMm: Math.max(0, Math.round(filamentMm)),
+                spoolUsage: JSON.stringify(spoolUsage),
             },
         });
+    }
+
+    async closeStaleJobs(): Promise<number> {
+        const r = await this.prisma.client.printJob.updateMany({
+            where: { status: 'printing' },
+            data: { status: 'error', finishedAt: new Date() },
+        });
+        return r.count;
     }
 
     async listJobs(printerId: string | undefined, limit = 50, offset = 0): Promise<PrintJobDto[]> {
@@ -177,8 +192,9 @@ export class GcodeService {
             orderBy: { startedAt: 'desc' },
             take: limit,
             skip: offset,
+            include: { file: { select: { thumbnail: true } } },
         });
-        return rows.map(toJobDto);
+        return rows.map((r) => toJobDto(r, r.file?.thumbnail ?? null));
     }
 
     private toDto(row: GcodeFile, lastJob: PrintJob | null): StoredFile {
@@ -215,7 +231,14 @@ export class GcodeService {
     }
 }
 
-function toJobDto(j: PrintJob): PrintJobDto {
+export function toJobDto(j: PrintJob, thumbnail: string | null = null): PrintJobDto {
+    let spoolUsage: SpoolUsageEntry[] = [];
+    try {
+        const v = JSON.parse(j.spoolUsage);
+        if (Array.isArray(v)) spoolUsage = v;
+    } catch {
+        spoolUsage = [];
+    }
     return {
         id: j.id,
         printerId: j.printerId,
@@ -225,6 +248,9 @@ function toJobDto(j: PrintJob): PrintJobDto {
         startedAt: j.startedAt.toISOString(),
         finishedAt: j.finishedAt?.toISOString() ?? null,
         durationSec: j.durationSec,
+        filamentMm: j.filamentMm,
+        spoolUsage,
+        thumbnail,
     };
 }
 

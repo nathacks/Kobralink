@@ -1,10 +1,10 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLiveState } from '@/hooks/use-printers';
 import { rgbCss, textOn } from '@/lib/color';
 import { m } from '@/lib/i18n';
 import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
-import { useLiveState } from '@/stores/printers';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
 import { SlotForm } from './slot-form';
 
@@ -12,7 +12,7 @@ export function AmsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
     const slots = [...state.amsSlots].sort((a, b) => a.globalIndex - b.globalIndex);
     const loaded = slots.find((s) => s.globalIndex === state.amsLoadedSlot);
-    const openDialog = useConfirmationDialogStore((s) => s.openDialog);
+    const openDialog = confirmationDialogStore.actions.openDialog;
     const offline = !state.connected;
     const busy = state.printState === 'printing';
 

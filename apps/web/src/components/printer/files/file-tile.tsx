@@ -1,5 +1,5 @@
 import type { GcodeFileDto } from '@kobralink/shared';
-import { Download, Play, Trash2 } from 'lucide-react';
+import { Download, Eye, ListPlus, Play, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBytes, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -14,6 +14,8 @@ export function FileTile({
     canPrint,
     onPrint,
     onDelete,
+    onQueue,
+    onPreview,
 }: {
     file: GcodeFileDto;
     printerId: string;
@@ -21,6 +23,8 @@ export function FileTile({
     canPrint: boolean;
     onPrint: () => void;
     onDelete: () => void;
+    onQueue: () => void;
+    onPreview: () => void;
 }) {
     return (
         <div
@@ -42,6 +46,12 @@ export function FileTile({
                     )}
                 </div>
                 <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <IconButton title={m.files_preview()} onClick={onPreview}>
+                        <Eye />
+                    </IconButton>
+                    <IconButton title={m.queue_add()} onClick={onQueue}>
+                        <ListPlus />
+                    </IconButton>
                     <IconButton title={m.common_download()} asChild>
                         <a href={api.files.downloadUrl(printerId, file.id)} download>
                             <Download />

@@ -6,9 +6,9 @@ import { fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
-import { useLiveState } from '@/stores/printers';
 
 const PRESETS = [
     { label: () => 'PLA', nozzle: 210, bed: 60 },

@@ -1,32 +1,37 @@
+import type { GcodeFileDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { PrePrintSkipForm } from '@/components/printer/skip/preprint-skip-form';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
-import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
-import { useLiveState } from '@/stores/printers';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { FileTile } from './file-tile';
 import { HistoryList } from './history-list';
 import { PrinterFilesGrid } from './printer-files-grid';
 import { TabButton } from './tab-button';
+import { TimelapseList } from './timelapse-list';
+import { UploadReadyForm } from './upload-ready-form';
 
-type Tab = 'files' | 'web' | 'printer' | 'history';
+type Tab = 'files' | 'web' | 'printer' | 'history' | 'timelapses';
 
 export function FilesCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
+    const printer = usePrinter(printerId);
     const qc = useQueryClient();
     const files = useQuery(filesQuery(printerId));
     const jobs = useQuery(historyQuery(printerId));
     const inputRef = useRef<HTMLInputElement>(null);
     const [tab, setTab] = useState<Tab>('files');
     const [search, setSearch] = useState('');
-    const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
-    const openDialog = useConfirmationDialogStore((s) => s.openDialog);
+    const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
+    const openDialog = confirmationDialogStore.actions.openDialog;
     const busy = state.printState === 'printing' || state.printState === 'paused';
     const canPrint = state.connected && !busy;
 
@@ -34,11 +39,11 @@ export function FilesCard({ printerId }: { printerId: string }) {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'files'] });
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
-    const upload = useMutation({
-        mutationFn: (file: File) => api.files.upload(printerId, file, false),
-        onSuccess: (f) => {
-            toast.success(m.files_added({ name: f.filename }));
-            invalidate();
+    const enqueue = useMutation({
+        mutationFn: (input: { fileId: string; excludedObjects?: string[] }) => api.queue.add(printerId, input),
+        onSuccess: (item) => {
+            toast.success(m.queue_added({ name: item.filename }));
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
         },
         onError: (e) => toast.error(e.message),
     });
@@ -47,6 +52,60 @@ export function FilesCard({ printerId }: { printerId: string }) {
         onSuccess: (f) => {
             toast.success(m.files_print_started({ name: f.filename }));
             invalidate();
+        },
+        onError: (e) => toast.error(e.message),
+    });
+    const requestPrint = (f: GcodeFileDto) => {
+        const go = () =>
+            f.objects.length
+                ? openDialog({
+                      title: m.files_print_title({ name: f.filename }),
+                      description: m.files_print_hint(),
+                      content: (
+                          <PrePrintSkipForm
+                              printerId={printerId}
+                              file={f}
+                              onPrint={(excludedObjects) => print.mutateAsync({ fileId: f.id, excludedObjects })}
+                          />
+                      ),
+                  })
+                : print.mutate({ fileId: f.id });
+        if (f.webUnverified && (printer?.settings.webUploadWarning ?? true)) {
+            openAlertDialog({
+                title: m.files_web_warning_title(),
+                description: m.files_web_warning_hint({ name: f.filename }),
+                actionLabel: m.files_web_warning_action(),
+                onAction: async () => {
+                    await api.files.verify(printerId, f.id).catch(() => undefined);
+                    invalidate();
+                    go();
+                },
+            });
+            return;
+        }
+        go();
+    };
+    const upload = useMutation({
+        mutationFn: (file: File) => api.files.upload(printerId, file, false),
+        onSuccess: (f) => {
+            invalidate();
+            if (printer?.settings.printStartDialog ?? true) {
+                openDialog({
+                    title: m.files_added({ name: f.filename }),
+                    content: (
+                        <UploadReadyForm
+                            file={f}
+                            canPrint={canPrint}
+                            onPrint={() => requestPrint(f)}
+                            onQueue={() => enqueue.mutate({ fileId: f.id })}
+                        />
+                    ),
+                });
+            } else {
+                toast.success(m.files_added({ name: f.filename }), {
+                    action: canPrint ? { label: m.common_print(), onClick: () => requestPrint(f) } : undefined,
+                });
+            }
         },
         onError: (e) => toast.error(e.message),
     });
@@ -83,8 +142,11 @@ export function FilesCard({ printerId }: { printerId: string }) {
                 <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
                     {m.files_tab_history()}
                 </TabButton>
+                <TabButton active={tab === 'timelapses'} onClick={() => setTab('timelapses')}>
+                    {m.files_tab_timelapses()}
+                </TabButton>
             </div>
-            {tab !== 'history' && (
+            {tab !== 'history' && tab !== 'timelapses' && (
                 <label className="mt-3 flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm">
                     <Search className="size-4 text-muted-foreground" />
                     <input
@@ -111,6 +173,8 @@ export function FilesCard({ printerId }: { printerId: string }) {
             <ScrollArea className="min-h-0 flex-1">
                 {tab === 'history' ? (
                     <HistoryList jobs={jobs.data ?? []} />
+                ) : tab === 'timelapses' ? (
+                    <TimelapseList printerId={printerId} />
                 ) : tab === 'printer' ? (
                     <PrinterFilesGrid
                         printerId={printerId}
@@ -127,22 +191,14 @@ export function FilesCard({ printerId }: { printerId: string }) {
                                 printerId={printerId}
                                 highlight={i === 0 && !!f.lastJob && f.lastJob.status === 'printing'}
                                 canPrint={canPrint && !print.isPending}
-                                onPrint={() =>
-                                    f.objects.length
-                                        ? openDialog({
-                                              title: m.files_print_title({ name: f.filename }),
-                                              description: m.files_print_hint(),
-                                              content: (
-                                                  <PrePrintSkipForm
-                                                      printerId={printerId}
-                                                      file={f}
-                                                      onPrint={(excludedObjects) =>
-                                                          print.mutateAsync({ fileId: f.id, excludedObjects })
-                                                      }
-                                                  />
-                                              ),
-                                          })
-                                        : print.mutate({ fileId: f.id })
+                                onPrint={() => requestPrint(f)}
+                                onQueue={() => enqueue.mutate({ fileId: f.id })}
+                                onPreview={() =>
+                                    openDialog({
+                                        title: f.filename,
+                                        props: { className: 'rounded-3xl sm:max-w-4xl' },
+                                        content: <GcodePreview printerId={printerId} file={f} />,
+                                    })
                                 }
                                 onDelete={() =>
                                     openAlertDialog({

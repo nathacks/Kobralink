@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { AlertConfirmationDialog } from '@/components/dialogs/alert-confirmation-dialog';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Toaster } from '@/components/ui/sonner';
-import { installI18n } from '@/lib/i18n';
+import { installI18n, useLocale } from '@/lib/i18n';
 import { routeTree } from './routeTree.gen';
 import 'react-grid-layout/css/styles.css';
 import './styles.css';
@@ -30,13 +30,20 @@ declare module '@tanstack/react-router' {
     }
 }
 
-createRoot(document.getElementById('root') as HTMLElement).render(
-    <StrictMode>
+function App() {
+    const locale = useLocale();
+    return (
         <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
+            <RouterProvider key={locale} router={router} />
             <Toaster position="bottom-right" />
             <ConfirmationDialog />
             <AlertConfirmationDialog />
         </QueryClientProvider>
+    );
+}
+
+createRoot(document.getElementById('root') as HTMLElement).render(
+    <StrictMode>
+        <App />
     </StrictMode>,
 );

@@ -1,8 +1,10 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { useConfirmationDialog } from '@/hooks/use-confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function ConfirmationDialog() {
-    const { isOpen, title, description, closeDialog, content, closeOnBackground, props } = useConfirmationDialogStore();
+    const { isOpen, title, description, content, closeOnBackground, props } = useConfirmationDialog();
+    const { closeDialog } = confirmationDialogStore.actions;
 
     return (
         <Dialog open={isOpen} onOpenChange={closeDialog}>

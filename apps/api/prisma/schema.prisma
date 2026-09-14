@@ -15,6 +15,7 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  role          String    @default("admin")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
@@ -90,6 +91,10 @@ model Printer {
   jobs      PrintJob[]
   slotProfiles SlotProfile[]
   spoolAssignments SpoolAssignment[]
+  localSpoolAssignments LocalSpoolAssignment[]
+  timelapses Timelapse[]
+  queueItems QueueItem[]
+  scheduledDries ScheduledDry[]
 
   @@map("printer")
 }
@@ -154,6 +159,7 @@ model GcodeFile {
   webUnverified    Boolean   @default(false)
   createdAt        DateTime  @default(now())
   jobs             PrintJob[]
+  queueItems       QueueItem[]
 
   @@index([filename])
   @@map("gcode_file")
@@ -170,7 +176,95 @@ model PrintJob {
   startedAt   DateTime   @default(now())
   finishedAt  DateTime?
   durationSec Int?
+  filamentMm  Float      @default(0)
+  spoolUsage  String     @default("[]")
+  timelapses  Timelapse[]
 
   @@index([printerId, startedAt])
   @@map("print_job")
+}
+
+model Timelapse {
+  id          String    @id @default(cuid())
+  printerId   String
+  printer     Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  jobId       String?
+  job         PrintJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  filename    String
+  frames      Int       @default(0)
+  sizeBytes   Int       @default(0)
+  durationSec Float     @default(0)
+  status      String    @default("recording")
+  createdAt   DateTime  @default(now())
+
+  @@index([printerId, createdAt])
+  @@map("timelapse")
+}
+
+model QueueItem {
+  id              String    @id @default(cuid())
+  printerId       String
+  printer         Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  fileId          String
+  file            GcodeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  position        Int
+  excludedObjects String    @default("[]")
+  createdAt       DateTime  @default(now())
+
+  @@index([printerId, position])
+  @@map("queue_item")
+}
+
+model LocalSpool {
+  id             String    @id @default(cuid())
+  name           String
+  vendor         String    @default("")
+  material       String
+  colorHex       String    @default("#808080")
+  diameterMm     Float     @default(1.75)
+  densityGcm3    Float     @default(1.24)
+  initialWeightG Float     @default(1000)
+  usedMm         Float     @default(0)
+  archived       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  lastUsedAt     DateTime?
+  assignments    LocalSpoolAssignment[]
+
+  @@map("local_spool")
+}
+
+model LocalSpoolAssignment {
+  printerId String
+  printer   Printer    @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  slotIndex Int
+  spoolId   String
+  spool     LocalSpool @relation(fields: [spoolId], references: [id], onDelete: Cascade)
+
+  @@id([printerId, slotIndex])
+  @@map("local_spool_assignment")
+}
+
+model Macro {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String   @default("zap")
+  actions   String   @default("[]")
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("macro")
+}
+
+model ScheduledDry {
+  id         String   @id @default(cuid())
+  printerId  String
+  printer    Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  aceId      Int?
+  startAt    DateTime
+  targetTemp Int
+  duration   Int
+  createdAt  DateTime @default(now())
+
+  @@index([printerId, startAt])
+  @@map("scheduled_dry")
 }

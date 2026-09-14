@@ -18,8 +18,6 @@ interface Props {
     label?: string;
 }
 
-const timeFmt = new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
 export function Sparkline({ data, id, name, unit = '', className, color = 'var(--primary)', label }: Props) {
     const points =
         data.length >= 2
@@ -64,7 +62,7 @@ export function Sparkline({ data, id, name, unit = '', className, color = 'var(-
                             indicator="dot"
                             labelFormatter={(_, payload) => {
                                 const t = payload?.[0]?.payload?.t as number | undefined;
-                                return t && t > 1 ? timeFmt.format(new Date(t)) : name;
+                                return t && t > 1 ? new Date(t).toLocaleTimeString(intlLocale()) : name;
                             }}
                             formatter={(value) => (
                                 <div className="flex flex-1 items-center justify-between gap-3">

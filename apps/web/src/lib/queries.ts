@@ -104,3 +104,36 @@ export const spoolmanSpoolsQuery = (enabled: boolean) =>
         staleTime: 60_000,
         retry: false,
     });
+
+export const spoolsQuery = (archived = false) =>
+    queryOptions({ queryKey: ['spools', archived], queryFn: () => api.spools.list(archived) });
+
+export const spoolAssignmentsQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'spools'], queryFn: () => api.spools.assignments(id) });
+
+export const timelapsesQuery = (id?: string) =>
+    queryOptions({
+        queryKey: ['timelapses', id ?? 'all'],
+        queryFn: () => api.timelapses.list(id),
+        refetchInterval: (q) =>
+            q.state.data?.some((t) => t.status !== 'ready' && t.status !== 'error') ? 5000 : false,
+    });
+
+export const statsQuery = (printerId: string | undefined, days: number) =>
+    queryOptions({ queryKey: ['stats', printerId ?? 'all', days], queryFn: () => api.stats(printerId, days) });
+
+export const queueQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'queue'], queryFn: () => api.queue.list(id) });
+
+export const macrosQuery = queryOptions({ queryKey: ['macros'], queryFn: api.macros.list });
+
+export const dryScheduleQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'dry-schedule'], queryFn: () => api.drySchedule.list(id) });
+
+export const usersQuery = queryOptions({ queryKey: ['users'], queryFn: api.users.list, retry: false });
+
+export const systemInfoQuery = queryOptions({ queryKey: ['system'], queryFn: api.system.info, staleTime: 60_000 });
+
+export const backupInfoQuery = queryOptions({ queryKey: ['system', 'backup'], queryFn: api.system.backupInfo });
+
+export const notificationsQuery = queryOptions({ queryKey: ['notifications'], queryFn: api.events.recent });

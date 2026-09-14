@@ -9,8 +9,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAlertConfirmationDialog } from '@/hooks/use-alert-confirmation-dialog';
 import { m } from '@/lib/i18n';
-import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export function AlertConfirmationDialog() {
     const {
@@ -25,9 +26,8 @@ export function AlertConfirmationDialog() {
         disableActionButton,
         onAction,
         onCancel,
-        closeAlertDialog,
-        setPending,
-    } = useAlertConfirmationDialogStore();
+    } = useAlertConfirmationDialog();
+    const { closeAlertDialog, setPending } = alertConfirmationDialogStore.actions;
 
     const handleCancel = async () => {
         if (onCancel) await onCancel();
@@ -68,6 +68,7 @@ export function AlertConfirmationDialog() {
                         </AlertDialogCancel>
                     )}
                     <AlertDialogAction
+                        variant={'destructive'}
                         disabled={disableActionButton || isPending}
                         onClick={(e) => {
                             e.preventDefault();

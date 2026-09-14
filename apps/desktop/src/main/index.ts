@@ -2,15 +2,15 @@ import path from 'node:path';
 import { m } from '@kobralink/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import { installLocale } from '../shared/locale';
-import { apiAvailable, startLocalApi, stopLocalApi, waitForApi } from './api-process';
-import { type DesktopSettings, loadSettings, saveSettings } from './settings';
+import { apiAvailable, LOCAL_PORT, startLocalApi, stopLocalApi, waitForApi } from './api-process';
+import { setupTray, type TrayPrinterStatus, updateTray } from './tray';
 import { checkForUpdates, setupUpdater } from './updater';
 
 let win: BrowserWindow | null = null;
 
-function baseUrl(s: DesktopSettings): string {
+function baseUrl(): string {
     if (process.env.KOBRALINK_URL) return process.env.KOBRALINK_URL.replace(/\/$/, '');
-    return s.mode === 'remote' ? s.remoteUrl.replace(/\/$/, '') : `http://localhost:${s.localPort}`;
+    return `http://localhost:${LOCAL_PORT}`;
 }
 
 function createWindow(): BrowserWindow {
@@ -31,6 +31,9 @@ function createWindow(): BrowserWindow {
         },
     });
     w.once('ready-to-show', () => w.show());
+    w.on('closed', () => {
+        if (win === w) win = null;
+    });
     w.webContents.setWindowOpenHandler(({ url }) => {
         void shell.openExternal(url);
         return { action: 'deny' };
@@ -49,27 +52,22 @@ async function loadLauncher(w: BrowserWindow, query: Record<string, string> = {}
 }
 
 async function boot(w: BrowserWindow): Promise<void> {
-    const settings = loadSettings();
-    const url = baseUrl(settings);
-    await loadLauncher(w, { status: 'starting', url });
+    const url = baseUrl();
+    await loadLauncher(w, { status: 'starting' });
 
-    if (settings.mode === 'local' && !process.env.KOBRALINK_URL) {
+    if (!process.env.KOBRALINK_URL) {
         const alreadyUp = await waitForApi(url, 1500);
         if (!alreadyUp) {
             if (!apiAvailable()) {
-                await loadLauncher(w, {
-                    status: 'error',
-                    url,
-                    message: m.desktop_api_build_missing(),
-                });
+                await loadLauncher(w, { status: 'error', message: m.desktop_api_build_missing() });
                 return;
             }
-            startLocalApi(settings.localPort);
+            startLocalApi(LOCAL_PORT);
         }
     }
     const ok = await waitForApi(url, 40000);
     if (!ok) {
-        await loadLauncher(w, { status: 'error', url, message: m.desktop_bridge_unreachable({ url }) });
+        await loadLauncher(w, { status: 'error', message: m.desktop_bridge_unreachable({ url }) });
         return;
     }
     await w.loadURL(url);
@@ -85,14 +83,6 @@ function buildMenu(): void {
                     label: m.desktop_menu_check_updates(),
                     enabled: app.isPackaged,
                     click: () => checkForUpdates(true),
-                },
-                { type: 'separator' },
-                {
-                    label: m.desktop_menu_change_bridge(),
-                    accelerator: 'Cmd+,',
-                    click: () => {
-                        if (win) void loadLauncher(win, { status: 'settings', ...settingsQuery() });
-                    },
                 },
                 { type: 'separator' },
                 { role: 'hide' },
@@ -121,19 +111,19 @@ function buildMenu(): void {
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function settingsQuery(): Record<string, string> {
-    const s = loadSettings();
-    return { mode: s.mode, remoteUrl: s.remoteUrl, localPort: String(s.localPort) };
+function ensureWindow(): BrowserWindow {
+    if (win && !win.isDestroyed()) return win;
+    win = createWindow();
+    void boot(win);
+    return win;
 }
 
-ipcMain.handle('settings:get', () => loadSettings());
-ipcMain.handle('settings:save', async (_e, next: Partial<DesktopSettings>) => {
-    const saved = saveSettings(next);
-    stopLocalApi();
-    if (win) await boot(win);
-    return saved;
+ipcMain.on('tray:status', (_e, printers: TrayPrinterStatus[]) => {
+    updateTray(Array.isArray(printers) ? printers : [], ensureWindow);
 });
+
 ipcMain.handle('app:retry', async () => {
+    stopLocalApi();
     if (win) await boot(win);
 });
 
@@ -141,7 +131,10 @@ app.whenReady().then(async () => {
     installLocale(app.getLocale());
     buildMenu();
     win = createWindow();
-    if (!process.env.KOBRALINK_SHOT) setupUpdater(() => win);
+    if (!process.env.KOBRALINK_SHOT) {
+        setupUpdater(() => win);
+        setupTray(ensureWindow);
+    }
     await boot(win);
 
     if (process.env.KOBRALINK_SHOT && win) {
@@ -152,7 +145,7 @@ app.whenReady().then(async () => {
             await win.webContents.executeJavaScript(
                 `fetch('/api/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:${JSON.stringify(login[0])},password:${JSON.stringify(login[1])}})}).then(r=>r.status)`,
             );
-            await win.loadURL(`${baseUrl(loadSettings())}${login[2]}`);
+            await win.loadURL(`${baseUrl()}${login[2]}`);
             await new Promise((r) => setTimeout(r, 2500));
         }
         if (process.env.KOBRALINK_SHOT_JS) {

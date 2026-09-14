@@ -5,6 +5,8 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
+import { MacroService } from '../macros/macro.service';
+import { QueueService } from '../queue/queue.service';
 import { MoonrakerAppModule } from './moonraker-app.module';
 
 @Injectable()
@@ -15,12 +17,14 @@ export class MoonrakerHost {
     constructor(
         private readonly gcode: GcodeService,
         private readonly filaments: FilamentService,
+        private readonly queue: QueueService,
+        private readonly macros: MacroService,
     ) {}
 
     async startFor(bridge: PrinterBridge): Promise<void> {
         if (this.apps.has(bridge.id)) return;
         const app = await NestFactory.create<NestExpressApplication>(
-            MoonrakerAppModule.forPrinter(bridge, this.gcode, this.filaments),
+            MoonrakerAppModule.forPrinter(bridge, this.gcode, this.filaments, this.queue, this.macros),
             {
                 logger: ['error', 'warn', 'log'],
                 bodyParser: true,

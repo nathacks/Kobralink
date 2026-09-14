@@ -2,13 +2,21 @@ import type {
     AceAutoFeedInput,
     AceDryInput,
     AddPrinterInput,
+    AddQueueItemInput,
     AmsFeedInput,
     AmsSetSlotInput,
     AppSettings,
+    BackupInfoDto,
+    CreateUserInput,
     FilamentProfile,
     FileObjectsDto,
     GcodeFileDto,
     ImportProfilesResult,
+    KobralinkEvent,
+    LocalSpoolDto,
+    LocalSpoolInput,
+    MacroDto,
+    MacroInput,
     MoveAxisInput,
     PowerState,
     Printer,
@@ -16,6 +24,9 @@ import type {
     PrinterLiveState,
     PrintJobDto,
     PrintPrinterFileInput,
+    QueueItemDto,
+    ScheduleDryInput,
+    ScheduledDryDto,
     SetFanInput,
     SetLightInput,
     SetSlotProfileInput,
@@ -27,8 +38,14 @@ import type {
     SpoolmanSpool,
     SpoolmanStatus,
     StartPrintInput,
+    StatsDto,
+    SystemInfoDto,
+    TimelapseDto,
     UpdateAppSettingsInput,
+    UpdateLocalSpoolInput,
     UpdatePrinterInput,
+    UpdateUserInput,
+    UserDto,
 } from '@kobralink/shared';
 import { getLocale } from '@/lib/i18n';
 
@@ -148,6 +165,91 @@ export const api = {
     logs: {
         streamUrl: '/kx/logs/stream',
         downloadUrl: '/kx/logs/download',
+    },
+
+    events: {
+        streamUrl: '/kx/events',
+        recent: () => request<KobralinkEvent[]>('/kx/notifications'),
+        test: () =>
+            request<{ delivered: string[]; failed: { channel: string; error: string }[] }>('/kx/notifications/test', {
+                method: 'POST',
+            }),
+    },
+
+    spools: {
+        list: (archived = false) => request<LocalSpoolDto[]>(`/kx/spools?archived=${archived}`),
+        create: (input: LocalSpoolInput) => request<LocalSpoolDto>('/kx/spools', json(input)),
+        update: (id: string, input: UpdateLocalSpoolInput) =>
+            request<LocalSpoolDto>(`/kx/spools/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+        remove: (id: string) => request<void>(`/kx/spools/${id}`, { method: 'DELETE' }),
+        assignments: (printerId: string) =>
+            request<{ slotSpools: Record<string, string> }>(`/kx/printers/${printerId}/spools`),
+        assign: (printerId: string, slotMap: Record<string, string | null>) =>
+            request<{ slotSpools: Record<string, string> }>(`/kx/printers/${printerId}/spools`, json({ slotMap })),
+    },
+
+    timelapses: {
+        list: (printerId?: string) =>
+            request<TimelapseDto[]>(printerId ? `/kx/printers/${printerId}/timelapses` : '/kx/timelapses'),
+        remove: (id: string) => request<void>(`/kx/timelapses/${id}`, { method: 'DELETE' }),
+        videoUrl: (id: string) => `/kx/timelapses/${id}/video`,
+        posterUrl: (id: string) => `/kx/timelapses/${id}/poster`,
+    },
+
+    stats: (printerId?: string, days = 0) =>
+        request<StatsDto>(`/kx/stats?printerId=${encodeURIComponent(printerId ?? '')}&days=${days}`),
+
+    queue: {
+        list: (printerId: string) => request<QueueItemDto[]>(`/kx/printers/${printerId}/queue`),
+        add: (printerId: string, input: AddQueueItemInput) =>
+            request<QueueItemDto>(`/kx/printers/${printerId}/queue`, json(input)),
+        reorder: (printerId: string, ids: string[]) =>
+            request<QueueItemDto[]>(`/kx/printers/${printerId}/queue/reorder`, json({ ids })),
+        start: (printerId: string) =>
+            request<QueueItemDto>(`/kx/printers/${printerId}/queue/start`, { method: 'POST' }),
+        remove: (printerId: string, itemId: string) =>
+            request<void>(`/kx/printers/${printerId}/queue/${itemId}`, { method: 'DELETE' }),
+        clear: (printerId: string) => request<void>(`/kx/printers/${printerId}/queue`, { method: 'DELETE' }),
+    },
+
+    macros: {
+        list: () => request<MacroDto[]>('/kx/macros'),
+        create: (input: MacroInput) => request<MacroDto>('/kx/macros', json(input)),
+        update: (id: string, input: MacroInput) =>
+            request<MacroDto>(`/kx/macros/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+        remove: (id: string) => request<void>(`/kx/macros/${id}`, { method: 'DELETE' }),
+        reorder: (ids: string[]) => request<MacroDto[]>('/kx/macros/reorder', json({ ids })),
+        run: (printerId: string, macroId: string) =>
+            request<void>(`/kx/printers/${printerId}/macros/${macroId}/run`, { method: 'POST' }),
+    },
+
+    drySchedule: {
+        list: (printerId: string) => request<ScheduledDryDto[]>(`/kx/printers/${printerId}/dry-schedule`),
+        create: (printerId: string, input: ScheduleDryInput) =>
+            request<ScheduledDryDto>(`/kx/printers/${printerId}/dry-schedule`, json(input)),
+        remove: (printerId: string, id: string) =>
+            request<void>(`/kx/printers/${printerId}/dry-schedule/${id}`, { method: 'DELETE' }),
+    },
+
+    users: {
+        list: () => request<UserDto[]>('/kx/users'),
+        create: (input: CreateUserInput) => request<UserDto>('/kx/users', json(input)),
+        update: (id: string, input: UpdateUserInput) =>
+            request<UserDto>(`/kx/users/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+        remove: (id: string) => request<void>(`/kx/users/${id}`, { method: 'DELETE' }),
+    },
+
+    system: {
+        info: () => request<SystemInfoDto>('/kx/system'),
+        checkUpdate: () => request<SystemInfoDto['update']>('/kx/system/update-check', { method: 'POST' }),
+        backupInfo: () => request<BackupInfoDto>('/kx/system/backup/info'),
+        backupUrl: (timelapses: boolean) => `/kx/system/backup?timelapses=${timelapses}`,
+        restore: (file: File) => {
+            const fd = new FormData();
+            fd.append('file', file, file.name);
+            return request<{ files: number; restarting: boolean }>('/kx/system/restore', { method: 'POST', body: fd });
+        },
+        restart: () => request<{ restarting: boolean }>('/kx/system/restart', { method: 'POST' }),
     },
 
     skip: {

@@ -3,10 +3,10 @@ import { Camera, CameraOff, Loader2, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { useLiveState, usePrinter } from '@/stores/printers';
 
 type Phase = 'off' | 'starting' | 'live' | 'error';
 

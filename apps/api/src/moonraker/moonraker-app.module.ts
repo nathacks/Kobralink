@@ -2,6 +2,8 @@ import { DynamicModule, Module } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { FilamentService } from '../filament/filament.service';
 import { GcodeService } from '../gcode/gcode.service';
+import { MacroService } from '../macros/macro.service';
+import { QueueService } from '../queue/queue.service';
 import { MoonrakerController } from './moonraker.controller';
 import { MoonrakerGateway } from './moonraker.gateway';
 import { MoonrakerService, PRINTER_BRIDGE } from './moonraker.service';
@@ -9,7 +11,13 @@ import { MoonrakerFallbackController } from './moonraker-fallback.controller';
 
 @Module({})
 export class MoonrakerAppModule {
-    static forPrinter(bridge: PrinterBridge, gcode: GcodeService, filaments: FilamentService): DynamicModule {
+    static forPrinter(
+        bridge: PrinterBridge,
+        gcode: GcodeService,
+        filaments: FilamentService,
+        queue: QueueService,
+        macros: MacroService,
+    ): DynamicModule {
         return {
             module: MoonrakerAppModule,
             controllers: [MoonrakerController, MoonrakerFallbackController],
@@ -17,6 +25,8 @@ export class MoonrakerAppModule {
                 { provide: PRINTER_BRIDGE, useValue: bridge },
                 { provide: GcodeService, useValue: gcode },
                 { provide: FilamentService, useValue: filaments },
+                { provide: QueueService, useValue: queue },
+                { provide: MacroService, useValue: macros },
                 MoonrakerService,
                 MoonrakerGateway,
             ],

@@ -7,14 +7,14 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { skipStateQuery } from '@/lib/queries';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { ObjectPicker } from './object-picker';
 
 export function SkipObjectsForm({ printerId }: { printerId: string }) {
     const qc = useQueryClient();
     const state = useQuery(skipStateQuery(printerId));
     const [selected, setSelected] = useState<string[]>([]);
-    const close = useConfirmationDialogStore((s) => s.closeDialog);
+    const close = confirmationDialogStore.actions.closeDialog;
     const onError = (e: Error) => toast.error(e.message);
     const refresh = useMutation({
         mutationFn: () => api.skip.query(printerId),

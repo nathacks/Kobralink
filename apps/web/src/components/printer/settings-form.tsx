@@ -14,7 +14,7 @@ import { api, type PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { filamentVendorsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
-import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 const SLOT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -75,7 +75,7 @@ export function PrinterSettingsForm({
         },
         onError: (e) => toast.error(e.message),
     });
-    const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
+    const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const remove = useMutation({
         mutationFn: () => api.printers.remove(printer.id),
         onSuccess: () => {
@@ -259,6 +259,34 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Field name="settings.webUploadWarning">
+                        {(field) => (
+                            <Row label={m.settings_web_upload_warning()} hint={m.settings_web_upload_warning_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
+                    <form.Field name="settings.printStartDialog">
+                        {(field) => (
+                            <Row label={m.settings_print_start_dialog()} hint={m.settings_print_start_dialog_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
+                    <form.Field name="settings.queueAutoStart">
+                        {(field) => (
+                            <Row label={m.settings_queue_auto_start()} hint={m.settings_queue_auto_start_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
+                    <form.Field name="settings.deletePrinterFileAfterPrint">
+                        {(field) => (
+                            <Row label={m.settings_delete_after_print()} hint={m.settings_delete_after_print_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
                     <form.Field name="settings.pollIntervalSec">
                         {(field) => (
                             <Row label={m.settings_poll_interval()} hint={m.settings_poll_interval_hint()}>
@@ -278,6 +306,78 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-0 shadow-none">
+                <CardHeader>
+                    <CardTitle>{m.settings_timelapse()}</CardTitle>
+                    <CardDescription>{m.settings_timelapse_hint()}</CardDescription>
+                </CardHeader>
+                <CardContent className="divide-y">
+                    <form.Field name="settings.timelapseEnabled">
+                        {(field) => (
+                            <Row label={m.settings_timelapse_enabled()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
+                    <form.Field name="settings.timelapseFps">
+                        {(field) => (
+                            <Row label={m.settings_timelapse_fps()} hint={m.settings_timelapse_fps_hint()}>
+                                <div className="grid gap-1">
+                                    <Input
+                                        type="number"
+                                        min={5}
+                                        max={60}
+                                        className="w-24"
+                                        value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                                        aria-invalid={fieldInvalid(field.state.meta)}
+                                    />
+                                    <FieldError meta={field.state.meta} />
+                                </div>
+                            </Row>
+                        )}
+                    </form.Field>
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-0 shadow-none">
+                <CardHeader>
+                    <CardTitle>{m.settings_alerts()}</CardTitle>
+                    <CardDescription>{m.settings_alerts_hint()}</CardDescription>
+                </CardHeader>
+                <CardContent className="divide-y">
+                    {(
+                        [
+                            ['settings.alerts.nozzleMaxC', m.settings_alert_nozzle(), 0, 350],
+                            ['settings.alerts.bedMaxC', m.settings_alert_bed(), 0, 150],
+                            ['settings.alerts.offlineMinutes', m.settings_alert_offline(), 0, 1440],
+                            ['settings.alerts.spoolLowG', m.settings_alert_spool(), 0, 1000],
+                        ] as const
+                    ).map(([name, label, min, max]) => (
+                        <form.Field key={name} name={name}>
+                            {(field) => (
+                                <Row label={label} hint={m.settings_alert_zero_hint()}>
+                                    <div className="grid gap-1">
+                                        <Input
+                                            type="number"
+                                            min={min}
+                                            max={max}
+                                            className="w-24"
+                                            value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                                            aria-invalid={fieldInvalid(field.state.meta)}
+                                        />
+                                        <FieldError meta={field.state.meta} />
+                                    </div>
+                                </Row>
+                            )}
+                        </form.Field>
+                    ))}
                 </CardContent>
             </Card>
 

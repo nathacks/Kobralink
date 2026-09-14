@@ -1,11 +1,13 @@
 import type { SpoolmanSpool, SpoolmanStatus } from '@kobralink/shared';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { FilamentUsageSink } from '../bridge/printer-bridge';
 import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
-export class SpoolmanService implements OnModuleInit {
+export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
+    readonly name = 'spoolman';
     private readonly log = new Logger(SpoolmanService.name);
     private reachable = false;
     private lastCheck = 0;
@@ -93,7 +95,7 @@ export class SpoolmanService implements OnModuleInit {
         return spools;
     }
 
-    async useFilament(spoolId: number, lengthMm: number): Promise<void> {
+    async useFilament(spoolId: string | number, lengthMm: number): Promise<void> {
         await this.req('PUT', `/api/v1/spool/${spoolId}/use`, { use_length: Math.round(lengthMm * 100) / 100 });
     }
 

@@ -1,11 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { baseLocale, isLocale, type Locale, m, overwriteGetLocale } from '@kobralink/i18n';
+import { isLocale, type Locale, m, overwriteGetLocale } from '@kobralink/i18n';
 import { KobraProtocolError } from '@kobralink/kobra-protocol';
 import type { ConnectionError } from '@kobralink/shared';
 import type { NextFunction, Request, Response } from 'express';
 import type { z } from 'zod';
 
 const store = new AsyncLocalStorage<Locale>();
+const fallbackLocale: Locale = 'en';
 
 export { m };
 
@@ -15,7 +16,7 @@ export function localeFromHeader(header: string | string[] | null | undefined): 
         const tag = part.split(';')[0]?.trim().toLowerCase().split('-')[0] ?? '';
         if (isLocale(tag)) return tag;
     }
-    return baseLocale;
+    return fallbackLocale;
 }
 
 export function runWithLocale<T>(locale: Locale, fn: () => T): T {
@@ -23,7 +24,7 @@ export function runWithLocale<T>(locale: Locale, fn: () => T): T {
 }
 
 export function installI18n(): void {
-    overwriteGetLocale(() => store.getStore() ?? baseLocale);
+    overwriteGetLocale(() => store.getStore() ?? fallbackLocale);
 }
 
 export function localeMiddleware(req: Request, _res: Response, next: NextFunction): void {

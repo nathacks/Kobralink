@@ -9,9 +9,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { usePrinters } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { usePrinters } from '@/stores/printers';
 
 export function PrinterSwitcher() {
     const navigate = useNavigate();

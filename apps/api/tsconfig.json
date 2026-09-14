@@ -9,7 +9,6 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "outDir": "./dist",
-        "baseUrl": "./",
         "sourceMap": true,
         "incremental": true,
         "strictPropertyInitialization": false,

@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { powerStatusQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
-import { useLiveState, usePrinter, usePrintersStore } from '@/stores/printers';
+import { printersStore } from '@/stores/printers';
 
 const SPEED_MODES = [
     { value: 1, label: m.controls_speed_quiet },
@@ -21,7 +22,7 @@ export function ControlsCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
     const offline = !state.connected;
     const busy = state.printState === 'printing';
-    const patchLiveState = usePrintersStore((s) => s.patchLiveState);
+    const patchLiveState = printersStore.actions.patchLiveState;
     const qc = useQueryClient();
     const printer = usePrinter(printerId);
     const powerConfigured = Boolean(printer?.settings.powerOnUrl || printer?.settings.powerOffUrl);

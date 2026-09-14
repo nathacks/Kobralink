@@ -6,10 +6,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getLocale, LOCALE_LABEL, locales, m, setLocale } from '@/lib/i18n';
+import { LOCALE_LABEL, locales, m, setLocale, useLocale } from '@/lib/i18n';
 
 export function LanguageMenu() {
-    const current = getLocale();
+    const current = useLocale();
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>

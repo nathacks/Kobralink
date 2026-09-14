@@ -1,5 +1,5 @@
+import { createStore } from '@tanstack/react-store';
 import type { ComponentProps, ReactElement } from 'react';
-import { create } from 'zustand';
 import type { AlertDialogContent } from '@/components/ui/alert-dialog';
 
 export interface AlertConfirmationDialogState {
@@ -16,14 +16,6 @@ export interface AlertConfirmationDialogState {
     onCancel?: () => Promise<unknown>;
 }
 
-export interface AlertConfirmationDialogActions {
-    openAlertDialog: (data: Omit<AlertConfirmationDialogState, 'isOpen' | 'isPending'>) => void;
-    closeAlertDialog: () => void;
-    setPending: (isPending: boolean) => void;
-}
-
-export type AlertConfirmationDialogStore = AlertConfirmationDialogState & AlertConfirmationDialogActions;
-
 const defaultAlertState: AlertConfirmationDialogState = {
     isOpen: false,
     title: undefined,
@@ -38,14 +30,13 @@ const defaultAlertState: AlertConfirmationDialogState = {
     onCancel: undefined,
 };
 
-export const useAlertConfirmationDialogStore = create<AlertConfirmationDialogStore>((set) => ({
-    ...defaultAlertState,
-    openAlertDialog: (data) =>
-        set({
+export const alertConfirmationDialogStore = createStore(defaultAlertState, ({ setState }) => ({
+    openAlertDialog: (data: Omit<AlertConfirmationDialogState, 'isOpen' | 'isPending'>) =>
+        setState(() => ({
             ...defaultAlertState,
             isOpen: true,
             ...data,
-        }),
-    closeAlertDialog: () => set({ isOpen: false, isPending: false }),
-    setPending: (isPending) => set({ isPending }),
+        })),
+    closeAlertDialog: () => setState((prev) => ({ ...prev, isOpen: false, isPending: false })),
+    setPending: (isPending: boolean) => setState((prev) => ({ ...prev, isPending })),
 }));

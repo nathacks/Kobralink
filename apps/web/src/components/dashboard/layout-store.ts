@@ -1,8 +1,29 @@
 import type { Layout } from 'react-grid-layout';
 
-export type WidgetId = 'activity' | 'print' | 'camera' | 'ams' | 'controls' | 'files' | 'axes' | 'temperature';
+export type WidgetId =
+    | 'activity'
+    | 'print'
+    | 'camera'
+    | 'ams'
+    | 'controls'
+    | 'files'
+    | 'axes'
+    | 'temperature'
+    | 'queue'
+    | 'macros';
 
-export const WIDGETS: WidgetId[] = ['activity', 'print', 'camera', 'ams', 'controls', 'files', 'axes', 'temperature'];
+export const WIDGETS: WidgetId[] = [
+    'activity',
+    'print',
+    'camera',
+    'ams',
+    'controls',
+    'files',
+    'axes',
+    'temperature',
+    'queue',
+    'macros',
+];
 
 export const COLS = 12;
 export const ROW_HEIGHT = 24;
@@ -13,9 +34,11 @@ export const DEFAULT_LAYOUT: Layout = [
     { i: 'camera', x: 0, y: 10, w: 8, h: 15, minW: 4, minH: 8 },
     { i: 'ams', x: 8, y: 10, w: 4, h: 6, minW: 3, minH: 6 },
     { i: 'controls', x: 8, y: 16, w: 4, h: 8, minW: 3, minH: 8 },
-    { i: 'temperature', x: 0, y: 25, w: 8, h: 7, minW: 4, minH: 7 },
+    { i: 'temperature', x: 0, y: 25, w: 8, h: 8, minW: 4, minH: 7 },
     { i: 'axes', x: 8, y: 24, w: 4, h: 9, minW: 3, minH: 9 },
-    { i: 'files', x: 0, y: 34, w: 12, h: 10, minW: 4, minH: 10 },
+    { i: 'macros', x: 0, y: 33, w: 4, h: 7, minW: 3, minH: 5 },
+    { i: 'queue', x: 4, y: 33, w: 8, h: 7, minW: 4, minH: 6 },
+    { i: 'files', x: 0, y: 40, w: 12, h: 10, minW: 4, minH: 10 },
 ];
 
 export interface LayoutPreset {

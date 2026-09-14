@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { useLiveState } from '@/stores/printers';
 
 const AXIS = { Y: 1, X: 2, Z: 3, ALL: 4 } as const;
 const DISTANCES = [1, 10, 50];

@@ -16,6 +16,7 @@
         "@tanstack/react-form": "^1.33.5",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.36",
+        "@tanstack/react-store": "^0.11.1",
         "better-auth": "^1.7.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -28,8 +29,7 @@
         "recharts": "3.8.0",
         "sonner": "^2.0.8",
         "tailwind-merge": "^3.7.0",
-        "zod": "^4.6.4",
-        "zustand": "^5.0.15"
+        "zod": "^4.6.4"
     },
     "devDependencies": {
         "@inlang/paraglide-js": "^2.25.2",

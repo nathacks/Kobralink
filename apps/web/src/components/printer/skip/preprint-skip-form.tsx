@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { m } from '@/lib/i18n';
 import { fileObjectsQuery } from '@/lib/queries';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { ObjectPicker } from './object-picker';
 
 export function PrePrintSkipForm({
@@ -21,7 +21,7 @@ export function PrePrintSkipForm({
     const objects = useQuery(fileObjectsQuery(printerId, file.id));
     const [excluded, setExcluded] = useState<string[]>([]);
     const [pending, setPending] = useState(false);
-    const close = useConfirmationDialogStore((s) => s.closeDialog);
+    const close = confirmationDialogStore.actions.closeDialog;
     const names = objects.data?.names.length ? objects.data.names : file.objects;
     const toggle = (n: string) => setExcluded((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
     const remaining = names.length - excluded.length;

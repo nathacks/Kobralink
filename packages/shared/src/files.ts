@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SpoolUsageEntry } from './spools';
 
 export interface GcodeFilament {
     slotIndex: number;
@@ -34,6 +35,9 @@ export interface PrintJobDto {
     startedAt: string;
     finishedAt: string | null;
     durationSec: number | null;
+    filamentMm: number;
+    spoolUsage: SpoolUsageEntry[];
+    thumbnail: string | null;
 }
 
 export const startPrintSchema = z.object({

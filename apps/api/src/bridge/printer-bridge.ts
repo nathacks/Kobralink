@@ -19,16 +19,17 @@ import {
     type ConnectionError,
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
+    type KobralinkEventType,
     PRE_PRINT_STATES,
     type PrinterFileDto,
     type PrinterLiveState,
     type PrinterSettings,
+    type SpoolUsageEntry,
     TERMINAL_PRINT_STATES,
 } from '@kobralink/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
 import { connectionErrorMessage, m, protocolErrorMessage } from '../i18n/locale';
-import type { SpoolmanService } from '../spoolman/spoolman.service';
 import {
     aggregateAceUnits,
     aggregateSlots,
@@ -54,9 +55,24 @@ export interface BridgePrinterConfig {
     settings: PrinterSettings;
 }
 
+export interface BridgeDomainEvent {
+    type: KobralinkEventType;
+    data?: Record<string, string | number | boolean | null>;
+}
+
+export interface FilamentUsageSink {
+    readonly name: string;
+    slotMap(printerId: string): ReadonlyMap<number, string | number>;
+    readonly syncRateSec: number;
+    useFilament(spoolId: string | number, mm: number): Promise<void>;
+}
+
 export interface BridgeEvents {
     state: [state: PrinterLiveState];
     log: [line: string];
+    event: [event: BridgeDomainEvent];
+    layer: [layer: number, total: number];
+    job: [phase: 'start' | 'end', jobId: string, filename: string];
 }
 
 interface LastUpload {
@@ -96,7 +112,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         public config: BridgePrinterConfig,
         private readonly gcode: GcodeService,
         private readonly certs: { cert: Buffer; key: Buffer },
-        private readonly spoolman: SpoolmanService | null = null,
+        private readonly sinks: FilamentUsageSink[] = [],
     ) {
         super();
         this.log = new Logger(`Bridge:${config.name}`);
@@ -239,8 +255,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private markOffline(error: ConnectionError): void {
+        const wasConnected = this.s.connected;
         this.offline = true;
         this.s.connected = false;
+        if (wasConnected && error.code !== 'manual' && error.code !== 'reconnecting') {
+            this.offlineSince = Date.now();
+            this.emitEvent('printer_offline', { reason: error.code });
+        }
         this.s.printState = 'error';
         this.s.kobraState = 'offline';
         this.s.connectionError = error;
@@ -269,6 +290,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             }
             if (this.offline) {
                 if (!(await this.printerReachable())) {
+                    this.checkAlerts();
                     await this.sleep(probeInterval);
                     continue;
                 }
@@ -280,7 +302,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     this.s.connectionError = null;
                     this.s.printState = 'standby';
                     this.s.kobraState = 'free';
+                    this.offlineSince = 0;
+                    this.offlineAlerted = false;
                     this.publish();
+                    this.emitEvent('printer_online');
                 } catch (e) {
                     const err = mqttConnectionError(e);
                     this.s.connectionError = err;
@@ -315,7 +340,40 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     await this.client.disconnect();
                 }
             }
+            this.checkAlerts();
             await this.sleep(this.pollIntervalMs());
+        }
+    }
+
+    private offlineSince = 0;
+    private offlineAlerted = false;
+    private nozzleAlerted = false;
+    private bedAlerted = false;
+
+    emitEvent(type: KobralinkEventType, data?: BridgeDomainEvent['data']): void {
+        this.emit('event', { type, data });
+    }
+
+    checkAlerts(): void {
+        const a = this.config.settings.alerts;
+        if (a.nozzleMaxC > 0) {
+            if (this.s.nozzleTemp > a.nozzleMaxC && !this.nozzleAlerted) {
+                this.nozzleAlerted = true;
+                this.emitEvent('alert_nozzle_temp', { temp: Math.round(this.s.nozzleTemp), max: a.nozzleMaxC });
+            } else if (this.s.nozzleTemp < a.nozzleMaxC - 10) this.nozzleAlerted = false;
+        }
+        if (a.bedMaxC > 0) {
+            if (this.s.bedTemp > a.bedMaxC && !this.bedAlerted) {
+                this.bedAlerted = true;
+                this.emitEvent('alert_bed_temp', { temp: Math.round(this.s.bedTemp), max: a.bedMaxC });
+            } else if (this.s.bedTemp < a.bedMaxC - 10) this.bedAlerted = false;
+        }
+        if (a.offlineMinutes > 0 && this.offlineSince && !this.offlineAlerted && !this.paused) {
+            const minutes = (Date.now() - this.offlineSince) / 60_000;
+            if (minutes >= a.offlineMinutes) {
+                this.offlineAlerted = true;
+                this.emitEvent('alert_offline', { minutes: Math.round(minutes) });
+            }
         }
     }
 
@@ -391,9 +449,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
         if (kobraState === 'pause' || kobraState === 'paused') {
             if (p.msg) {
+                const changed = this.s.pauseMsg !== p.msg;
                 this.s.errorCode = Number(p.code ?? 0);
                 this.s.pauseMsg = p.msg;
                 this.log.warn(`Printer paused: [${this.s.errorCode}] ${p.msg}`);
+                if (changed)
+                    this.emitEvent('print_paused', { code: this.s.errorCode, msg: p.msg, filename: this.s.filename });
             }
         } else if (['resuming', 'resumed', 'printing', 'finished', 'stoped', 'canceled'].includes(kobraState)) {
             this.s.errorCode = 0;
@@ -410,7 +471,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.spoolmanReport(0.1);
         }
         if (kobraState === 'finished' && this.currentJobId) {
-            void this.gcode.finishJob(this.currentJobId, 'completed');
+            this.endJob('completed');
             this.log.log(`Print finished: ${this.currentJobFilename}`);
             if (this.config.settings.deletePrinterFileAfterPrint && this.currentJobFilename) {
                 const name = this.currentJobFilename;
@@ -423,7 +484,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.currentJobId = '';
             this.currentJobFilename = '';
         } else if ((kobraState === 'stoped' || kobraState === 'canceled') && this.currentJobId) {
-            void this.gcode.finishJob(this.currentJobId, 'cancelled');
+            this.endJob('cancelled');
             this.log.log(`Print cancelled: ${this.currentJobFilename}`);
             this.currentJobId = '';
             this.currentJobFilename = '';
@@ -437,11 +498,53 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (d.progress !== undefined && !PRE_PRINT_STATES.has(kobraState)) this.s.progress = Number(d.progress) / 100;
         if (d.print_time !== undefined) this.s.printDurationSec = Number(d.print_time) * 60;
         if (d.remain_time !== undefined) this.s.remainTimeSec = Number(d.remain_time) * 60;
-        if (d.curr_layer !== undefined) this.s.currLayer = Number(d.curr_layer);
+        if (d.curr_layer !== undefined) this.setLayer(Number(d.curr_layer));
         if (d.total_layers !== undefined) this.s.totalLayers = Number(d.total_layers);
         if (d.taskid !== undefined) this.s.taskId = String(d.taskid);
         if (d.settings?.print_speed_mode !== undefined) this.s.printSpeedMode = Number(d.settings.print_speed_mode);
         this.publish();
+    }
+
+    private setLayer(layer: number): void {
+        const prev = this.s.currLayer;
+        this.s.currLayer = layer;
+        if (layer !== prev && layer > 0 && this.s.printState === 'printing')
+            this.emit('layer', layer, this.s.totalLayers);
+    }
+
+    private endJob(status: 'completed' | 'cancelled' | 'error'): void {
+        const jobId = this.currentJobId;
+        const filename = this.currentJobFilename;
+        if (!jobId) return;
+        const usage = this.spoolUsageEntries();
+        void this.gcode.finishJob(jobId, status, this.suppliesUsageMm, usage);
+        this.emit('job', 'end', jobId, filename);
+        this.emitEvent(status === 'completed' ? 'print_finished' : 'print_cancelled', {
+            filename,
+            durationSec: Math.round(this.s.printDurationSec),
+            filamentMm: Math.round(this.suppliesUsageMm),
+        });
+    }
+
+    private spoolUsageEntries(): SpoolUsageEntry[] {
+        const out: SpoolUsageEntry[] = [];
+        const local = this.sinks.find((x) => x.name === 'local')?.slotMap(this.config.id);
+        const perSlot = new Map(this.spoolUsage);
+        if (!perSlot.size && this.suppliesUsageMm > 0) {
+            const slot = this.s.amsLoadedSlot >= 0 ? this.s.amsLoadedSlot : 0;
+            perSlot.set(slot, this.suppliesUsageMm);
+        }
+        for (const [slotIndex, mm] of perSlot) {
+            if (mm <= 0) continue;
+            const spoolId = local?.get(slotIndex);
+            out.push({
+                slotIndex,
+                mm: Math.round(mm),
+                material: this.s.amsSlots.find((x) => x.globalIndex === slotIndex)?.type ?? '',
+                spoolId: typeof spoolId === 'string' ? spoolId : null,
+            });
+        }
+        return out;
     }
 
     private resetPrintFields(): void {
@@ -469,6 +572,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobFilename = filename;
         if (file) this.adoptFileMeta(file);
         this.log.log(`Job started: ${filename}`);
+        this.emit('job', 'start', this.currentJobId, filename);
+        this.emitEvent('print_started', { filename });
+    }
+
+    get jobId(): string {
+        return this.currentJobId;
     }
 
     private adoptFileMeta(file: StoredFile): void {
@@ -501,7 +610,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (project.print_time !== undefined) this.s.printDurationSec = Number(project.print_time) * 60;
         if (project.remain_time !== undefined) this.s.remainTimeSec = Number(project.remain_time) * 60;
-        if (project.curr_layer !== undefined) this.s.currLayer = Number(project.curr_layer);
+        if (project.curr_layer !== undefined) this.setLayer(Number(project.curr_layer));
         if (project.total_layers !== undefined) this.s.totalLayers = Number(project.total_layers);
         if (project.taskid !== undefined) this.s.taskId = String(project.taskid);
         if (d.temp) {
@@ -557,8 +666,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             }
         }
         const ace = aggregateAceUnits(boxes, this.s.aceUnits);
+        const wasDrying = this.s.aceDrying.status !== 0 && this.s.aceDrying.remainTime <= 2;
         this.s.aceUnits = ace.units;
         this.s.aceDrying = ace.drying;
+        if (wasDrying && ace.drying.status === 0) this.emitEvent('drying_done');
         if (slots.length) {
             this.s.amsSlots = slots;
             this.s.amsLoadedSlot = loaded;
@@ -575,23 +686,22 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private suppliesUsageMm = 0;
     private readonly spoolUsage = new Map<number, number>();
-    private readonly spoolReported = new Map<number, number>();
+    private readonly spoolReported = new Map<string, Map<number, number>>();
     private spoolLastUsage = 0;
-    private spoolLastSync = 0;
+    private readonly spoolLastSync = new Map<string, number>();
 
     resetSpoolUsage(): void {
         this.spoolUsage.clear();
         this.spoolReported.clear();
         this.spoolLastUsage = this.suppliesUsageMm;
-        this.spoolLastSync = Date.now();
+        this.spoolLastSync.clear();
     }
 
-    private spoolMap(): ReadonlyMap<number, number> {
-        return this.spoolman?.slotMap(this.config.id) ?? new Map();
+    private activeSinks(): FilamentUsageSink[] {
+        return this.sinks.filter((x) => x.slotMap(this.config.id).size > 0);
     }
 
     private spoolmanAttribute(loaded: number, activity: Map<number, string>): void {
-        if (!this.spoolman || !this.spoolMap().size) return;
         if (this.s.printState !== 'printing') return;
         const current = this.suppliesUsageMm;
         const delta = current - this.spoolLastUsage;
@@ -600,40 +710,51 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const act = activity.get(loaded);
         if (act === 'feeding' || act === 'retracting') return;
         this.spoolUsage.set(loaded, (this.spoolUsage.get(loaded) ?? 0) + delta);
-        const rate = this.spoolman.syncRateSec;
-        if (rate > 0 && Date.now() - this.spoolLastSync >= rate * 1000) {
-            this.spoolLastSync = Date.now();
-            this.spoolmanReport(10);
+        for (const sink of this.activeSinks()) {
+            const rate = sink.syncRateSec;
+            const last = this.spoolLastSync.get(sink.name) ?? 0;
+            if (rate > 0 && Date.now() - last >= rate * 1000) {
+                this.spoolLastSync.set(sink.name, Date.now());
+                this.spoolmanReportTo(sink, 10);
+            }
         }
     }
 
-    private spoolmanUnreported(): Map<number, number> {
-        const map = this.spoolMap();
+    private spoolmanUnreported(sink: FilamentUsageSink): Map<number, number> {
+        const map = sink.slotMap(this.config.id);
+        const reported = this.spoolReported.get(sink.name) ?? new Map<number, number>();
         const out = new Map<number, number>();
         if (this.spoolUsage.size) {
             for (const slot of map.keys()) {
-                out.set(slot, (this.spoolUsage.get(slot) ?? 0) - (this.spoolReported.get(slot) ?? 0));
+                out.set(slot, (this.spoolUsage.get(slot) ?? 0) - (reported.get(slot) ?? 0));
             }
             return out;
         }
         if (map.size === 1) {
             const slot = [...map.keys()][0];
-            out.set(slot, this.suppliesUsageMm - (this.spoolReported.get(slot) ?? 0));
+            out.set(slot, this.suppliesUsageMm - (reported.get(slot) ?? 0));
         }
         return out;
     }
 
     private spoolmanReport(minMm: number): void {
-        const sm = this.spoolman;
-        if (!sm) return;
-        const map = this.spoolMap();
-        for (const [slot, mm] of this.spoolmanUnreported()) {
+        for (const sink of this.activeSinks()) this.spoolmanReportTo(sink, minMm);
+    }
+
+    private spoolmanReportTo(sink: FilamentUsageSink, minMm: number): void {
+        const map = sink.slotMap(this.config.id);
+        let reported = this.spoolReported.get(sink.name);
+        if (!reported) {
+            reported = new Map();
+            this.spoolReported.set(sink.name, reported);
+        }
+        for (const [slot, mm] of this.spoolmanUnreported(sink)) {
             const spoolId = map.get(slot);
-            if (!spoolId || mm < minMm) continue;
-            this.spoolReported.set(slot, (this.spoolReported.get(slot) ?? 0) + mm);
-            sm.useFilament(spoolId, mm)
-                .then(() => this.log.log(`Spoolman: ${mm.toFixed(1)} mm → spool ${spoolId} (slot ${slot + 1})`))
-                .catch((e) => this.log.warn(`Spoolman: report failed (spool ${spoolId}): ${(e as Error).message}`));
+            if (spoolId === undefined || mm < minMm) continue;
+            reported.set(slot, (reported.get(slot) ?? 0) + mm);
+            sink.useFilament(spoolId, mm)
+                .then(() => this.log.log(`${sink.name}: ${mm.toFixed(1)} mm → spool ${spoolId} (slot ${slot + 1})`))
+                .catch((e) => this.log.warn(`${sink.name}: report failed (spool ${spoolId}): ${(e as Error).message}`));
         }
     }
 
@@ -666,7 +787,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async listPrinterFiles(): Promise<PrinterFileDto[]> {
         const res = await this.waitFileAction('listLocal', () => this.client.listLocalFiles(), 15000);
-        if (res?.code !== 200) throw new Error(m.api_printer_no_file_list());
+        if (res?.code !== 200) throw new BridgeRequestError(m.api_printer_no_file_list());
         return (res.data?.records ?? [])
             .filter((r) => !r.is_dir)
             .map((r) => ({ filename: r.filename, sizeBytes: Number(r.size ?? 0), timestamp: Number(r.timestamp ?? 0) }))
@@ -675,7 +796,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async deletePrinterFiles(filenames: string[]): Promise<void> {
         const res = await this.waitFileAction('deleteBatch', () => this.client.deleteLocalFiles(filenames));
-        if (res?.state !== 'success') throw new Error(m.api_delete_refused());
+        if (res?.state !== 'success') throw new BridgeRequestError(m.api_delete_refused());
         for (const f of filenames) this.printerThumbs.delete(f);
     }
 
@@ -683,7 +804,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const cached = this.printerThumbs.get(filename);
         if (cached !== undefined) return cached;
         const res = await this.waitFileAction('fileDetails', () => this.client.requestFileDetails(filename), 5000);
-        if (!res) throw new Error(m.api_thumbnail_unavailable());
+        if (!res) throw new BridgeRequestError(m.api_thumbnail_unavailable());
         const thumb = res.data?.file_details?.thumbnail ?? res.data?.file_details?.png_image ?? '';
         this.printerThumbs.set(filename, thumb);
         return thumb;
@@ -737,8 +858,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     async skipObjects(names: string[]): Promise<void> {
         this.ensureConnected();
         const res = await this.client.skipObjects(names);
-        if (!res) throw new Error(m.api_skip_no_response());
-        if (res.state === 'failed') throw new Error(m.api_skip_refused());
+        if (!res) throw new BridgeRequestError(m.api_skip_no_response());
+        if (res.state === 'failed') throw new BridgeRequestError(m.api_skip_refused());
     }
 
     async querySkip(): Promise<void> {
@@ -1033,7 +1154,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (!this.uploadUrl) {
             const info = await this.client.queryInfo();
             const url = info?.data?.urls?.fileUploadurl;
-            if (!url) throw new Error(m.api_no_upload_url());
+            if (!url) throw new BridgeRequestError(m.api_no_upload_url());
             this.uploadUrl = url;
         }
         this.log.log(`Uploading to the printer: ${file.filename} (${data.length} B)`);
@@ -1053,7 +1174,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     ): Promise<StoredFile> {
         this.ensureConnected();
         const loaded = await this.gcode.readData(fileId);
-        if (!loaded) throw new Error(m.api_file_not_in_store());
+        if (!loaded) throw new BridgeRequestError(m.api_file_not_in_store());
         await this.pushToPrinter(loaded.file, loaded.data);
         await this.startPrint(loaded.file, opts);
         return loaded.file;
@@ -1091,7 +1212,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
         this.log.log(`print/start (printer file) → ${filename}  ams=${mapping.length} slots`);
         const result = await this.client.startPrint(payload);
-        if (!result) throw new Error(m.api_print_no_response());
+        if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
             this.log.warn(`local print/start refused: ${JSON.stringify(result)}`);
             throw new Error(
@@ -1102,6 +1223,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.currentJobFilename = filename;
         this.s.filename = filename;
         this.publish();
+        this.emit('job', 'start', this.currentJobId, filename);
+        this.emitEvent('print_started', { filename });
     }
 
     private taskSettings(autoLeveling: boolean | undefined, excluded: string[]): PrintStartPayload['task_settings'] {
@@ -1149,19 +1272,23 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
         this.log.log(`print/start → ${file.filename}  ams=${mapping.length} slots  mode=${this.filamentMode}`);
         const result = await this.client.startPrint(payload);
-        if (!result) throw new Error(m.api_print_no_response());
+        if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            throw new Error(m.api_print_refused({ msg: result.msg ?? JSON.stringify(result.data) }));
+            throw new BridgeRequestError(m.api_print_refused({ msg: result.msg ?? JSON.stringify(result.data) }));
         }
         this.currentJobId = await this.gcode.startJob(this.config.id, file.filename, file.id);
         this.currentJobFilename = file.filename;
         this.s.filename = file.filename;
         this.publish();
+        this.emit('job', 'start', this.currentJobId, file.filename);
+        this.emitEvent('print_started', { filename: file.filename });
         if (excluded.length) void this.applyPreprintSkip(excluded);
     }
 }
 
 export class BridgeOfflineError extends Error {}
+
+export class BridgeRequestError extends Error {}
 
 function mqttConnectionError(e: unknown): ConnectionError {
     const msg = e instanceof Error ? e.message : String(e);

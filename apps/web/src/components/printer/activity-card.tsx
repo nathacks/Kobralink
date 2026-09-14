@@ -1,9 +1,9 @@
 import { StatusBadge } from '@/components/printer/status-badge';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkline, type SparklinePoint } from '@/components/viz/sparkline';
+import { useLiveState, useSamples } from '@/hooks/use-printers';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { useLiveState, useSamples } from '@/stores/printers';
 
 export function ActivityCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);

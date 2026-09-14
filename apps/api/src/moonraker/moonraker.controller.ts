@@ -2,6 +2,7 @@ import {
     All,
     Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     Logger,
@@ -159,6 +160,43 @@ export class MoonrakerController {
     @All('printer/gcode/script')
     async gcodeScript(@Body() body: { script?: string } | undefined, @Query('script') q?: string) {
         return { result: await this.moon.execGcodeScript(body?.script ?? q ?? '') };
+    }
+
+    @Get('server/job_queue/status')
+    async jobQueueStatus() {
+        return { result: await this.moon.jobQueueStatus() };
+    }
+
+    @Post('server/job_queue/job')
+    async jobQueueAdd(@Body() body: { filenames?: string[] } | undefined, @Query('filenames') q?: string) {
+        const names = body?.filenames ?? (q ? q.split(',') : []);
+        for (const name of names) await this.moon.queue.addByFilename(this.moon.bridge.id, name.trim());
+        return { result: await this.moon.jobQueueStatus() };
+    }
+
+    @Delete('server/job_queue/job')
+    async jobQueueRemove(
+        @Body() body: { job_ids?: string[]; all?: boolean } | undefined,
+        @Query() query: Record<string, string>,
+    ) {
+        const all = body?.all ?? query.all === 'true';
+        if (all) await this.moon.queue.clear(this.moon.bridge.id);
+        else {
+            const ids = body?.job_ids ?? (query.job_ids ? query.job_ids.split(',') : []);
+            for (const id of ids) await this.moon.queue.remove(this.moon.bridge.id, id);
+        }
+        return { result: await this.moon.jobQueueStatus() };
+    }
+
+    @Post('server/job_queue/start')
+    async jobQueueStart() {
+        await this.moon.queue.startNext(this.moon.bridge.id).catch(() => undefined);
+        return { result: await this.moon.jobQueueStatus() };
+    }
+
+    @Post(['server/job_queue/pause', 'server/job_queue/jump'])
+    async jobQueuePause() {
+        return { result: await this.moon.jobQueueStatus() };
     }
 
     @Post('printer/print/start')

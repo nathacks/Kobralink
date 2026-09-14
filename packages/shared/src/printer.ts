@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+export const alertSettingsSchema = z.object({
+    nozzleMaxC: z.number().int().min(0).max(350).default(300),
+    bedMaxC: z.number().int().min(0).max(150).default(110),
+    offlineMinutes: z.number().int().min(0).max(1440).default(0),
+    spoolLowG: z.number().int().min(0).max(1000).default(0),
+});
+export type AlertSettings = z.infer<typeof alertSettingsSchema>;
+
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),
     vibrationCompensation: z.boolean().default(false),
@@ -12,6 +20,12 @@ export const printerSettingsSchema = z.object({
     powerOnUrl: z.string().trim().default(''),
     powerOffUrl: z.string().trim().default(''),
     powerStatusUrl: z.string().trim().default(''),
+    webUploadWarning: z.boolean().default(true),
+    printStartDialog: z.boolean().default(true),
+    timelapseEnabled: z.boolean().default(false),
+    timelapseFps: z.number().int().min(5).max(60).default(15),
+    queueAutoStart: z.boolean().default(false),
+    alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
 });
 
 export const powerActionSchema = z.object({ action: z.enum(['on', 'off']) });

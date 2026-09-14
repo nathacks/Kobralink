@@ -1,5 +1,5 @@
+import { createStore } from '@tanstack/react-store';
 import type { ComponentProps, ReactElement, ReactNode } from 'react';
-import { create } from 'zustand';
 import type { DialogContent } from '@/components/ui/dialog';
 
 export interface ConfirmationDialogState {
@@ -13,13 +13,6 @@ export interface ConfirmationDialogState {
     onError?: () => void;
 }
 
-export interface ConfirmationDialogActions {
-    openDialog: (data: Omit<ConfirmationDialogState, 'isOpen'> | null, keepPrevData?: boolean) => void;
-    closeDialog: () => void;
-}
-
-export type ConfirmationDialogStore = ConfirmationDialogState & ConfirmationDialogActions;
-
 const defaultState: ConfirmationDialogState = {
     isOpen: false,
     title: undefined,
@@ -31,16 +24,12 @@ const defaultState: ConfirmationDialogState = {
     onError: undefined,
 };
 
-export const useConfirmationDialogStore = create<ConfirmationDialogStore>((set, get) => ({
-    ...defaultState,
-    openDialog: (data, keepPrevData) =>
-        set(() => {
-            const prevState = get();
-            return {
-                ...(keepPrevData ? prevState : defaultState),
-                isOpen: true,
-                ...data,
-            };
-        }),
-    closeDialog: () => set({ isOpen: false }),
+export const confirmationDialogStore = createStore(defaultState, ({ setState }) => ({
+    openDialog: (data: Omit<ConfirmationDialogState, 'isOpen'> | null, keepPrevData?: boolean) =>
+        setState((prev) => ({
+            ...(keepPrevData ? prev : defaultState),
+            isOpen: true,
+            ...data,
+        })),
+    closeDialog: () => setState((prev) => ({ ...prev, isOpen: false })),
 }));

@@ -16,7 +16,7 @@ RUN bun run --filter '@kobralink/shared' --filter '@kobralink/kobra-protocol' --
     && cd apps/api && bunx prisma generate
 
 FROM oven/bun:1.4.2-slim
-ENV NODE_ENV=production KOBRALINK_DATA_DIR=/data KOBRALINK_PORT=7100 KOBRALINK_WEB_DIR=/repo/apps/web/dist
+ENV NODE_ENV=production KOBRALINK_DATA_DIR=/data KOBRALINK_PORT=7100 KOBRALINK_WEB_DIR=/repo/apps/web/dist KOBRALINK_PACKAGED=docker
 WORKDIR /repo
 COPY --from=build /repo/package.json /repo/bun.lock /repo/tsconfig.base.json ./
 COPY --from=build /repo/apps/api/package.json apps/api/

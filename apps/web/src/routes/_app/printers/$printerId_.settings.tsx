@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PrinterSettingsForm } from '@/components/printer/settings-form';
+import { usePrinter } from '@/hooks/use-printers';
 import { usePrinterSync } from '@/hooks/use-printers-sync';
 import { printerQuery } from '@/lib/queries';
-import { usePrinter } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app/printers/$printerId_/settings')({
     loader: ({ context, params }) =>

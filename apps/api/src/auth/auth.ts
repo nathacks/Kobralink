@@ -1,9 +1,12 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError } from 'better-auth/api';
 import { loadEnv } from '../config/env';
 import { m } from '../i18n/locale';
 import { getPrisma } from '../prisma/prisma.service';
+
+export const internalSignup = new AsyncLocalStorage<boolean>();
 
 export function createAuth() {
     const env = loadEnv();
@@ -14,6 +17,11 @@ export function createAuth() {
         basePath: '/api/auth',
         secret: env.authSecret,
         database: prismaAdapter(prisma, { provider: 'sqlite' }),
+        user: {
+            additionalFields: {
+                role: { type: 'string', defaultValue: 'admin', input: false },
+            },
+        },
         emailAndPassword: {
             enabled: true,
             minPasswordLength: 8,
@@ -32,6 +40,7 @@ export function createAuth() {
             user: {
                 create: {
                     before: async (user) => {
+                        if (internalSignup.getStore()) return { data: user };
                         const count = await prisma.user.count();
                         if (count > 0) {
                             throw new APIError('FORBIDDEN', {

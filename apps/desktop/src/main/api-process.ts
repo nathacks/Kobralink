@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { app, type UtilityProcess, utilityProcess } from 'electron';
 
+const RESTART_EXIT_CODE = 75;
+
+export const LOCAL_PORT = Number(process.env.KOBRALINK_PORT) || 7100;
+
 let child: UtilityProcess | null = null;
 
 function apiEntry(): string {
@@ -32,6 +36,8 @@ export function startLocalApi(port: number): UtilityProcess {
             KOBRALINK_DATA_DIR: dataDir,
             KOBRALINK_PORT: String(port),
             KOBRALINK_WEB_DIR: webDir(),
+            KOBRALINK_PACKAGED: 'electron',
+            KOBRALINK_VERSION: app.getVersion(),
             BETTER_AUTH_URL: `http://localhost:${port}`,
         },
     });
@@ -40,6 +46,7 @@ export function startLocalApi(port: number): UtilityProcess {
     child.on('exit', (code) => {
         console.log(`[api] exited (code ${code})`);
         child = null;
+        if (code === RESTART_EXIT_CODE) setTimeout(() => startLocalApi(port), 500);
     });
     return child;
 }

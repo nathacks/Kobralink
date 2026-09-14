@@ -17,8 +17,8 @@ payloads, comportements à reproduire).
   Primary = emerald shadcn, radius 1.5rem, police Outfit.
   Design : rail d'icônes à gauche, cartes très arrondies, carte d'impression en accent quand ça imprime.
 - `apps/desktop` — electron-vite. En dev lance `apps/api/dist/main.js` ; packagé (`dist:mac`) embarque
-  `apps/api/bundle` → `Resources/api` et `apps/web/dist` → `Resources/web` via `extraResources`, ou se
-  connecte à un bridge distant. Version `electron` pinnée (électron-builder l'exige). `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|mdp|/path"] [KOBRALINK_URL=http://…]`
+  `apps/api/bundle` → `Resources/api` et `apps/web/dist` → `Resources/web` via `extraResources`. Mode local uniquement (pas de bridge distant).
+  Version `electron` pinnée (électron-builder l'exige). `KOBRALINK_SHOT=/x.png [KOBRALINK_SHOT_LOGIN="mail|mdp|/path"] [KOBRALINK_URL=http://…]`
   capture la fenêtre puis quitte (smoke test) ; `KOBRALINK_URL` force l'URL du bridge sans spawn.
 - `packages/kobra-protocol`, `packages/shared` — tsdown, sortie ESM + CJS.
 

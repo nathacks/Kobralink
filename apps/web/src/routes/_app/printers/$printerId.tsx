@@ -8,14 +8,17 @@ import { AxesCard } from '@/components/printer/axes-card';
 import { CameraCard } from '@/components/printer/camera-card';
 import { ControlsCard } from '@/components/printer/controls-card';
 import { FilesCard } from '@/components/printer/files/files-card';
+import { MacrosCard } from '@/components/printer/macros-card';
 import { PrintCard } from '@/components/printer/print-card';
+import { QueueCard } from '@/components/printer/queue-card';
 import { TemperatureCard } from '@/components/printer/temperature-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePrinter } from '@/hooks/use-printers';
 import { usePrinterSync } from '@/hooks/use-printers-sync';
+import { useCanOperate } from '@/hooks/use-role';
 import { m } from '@/lib/i18n';
 import { connectionErrorText } from '@/lib/labels';
 import { printerQuery } from '@/lib/queries';
-import { usePrinter } from '@/stores/printers';
 
 export const Route = createFileRoute('/_app/printers/$printerId')({
     loader: ({ context, params }) =>
@@ -28,6 +31,7 @@ function PrinterDashboard() {
     usePrinterSync(printerId, { events: true });
     const printer = usePrinter(printerId);
     const live = printer?.live;
+    const canOperate = useCanOperate();
 
     if (!printer) return <Skeleton className="h-40 rounded-3xl" />;
 
@@ -40,6 +44,8 @@ function PrinterDashboard() {
         files: () => <FilesCard printerId={printerId} />,
         axes: () => <AxesCard printerId={printerId} />,
         temperature: () => <TemperatureCard printerId={printerId} />,
+        queue: () => <QueueCard printerId={printerId} />,
+        macros: () => <MacrosCard printerId={printerId} />,
     };
 
     const header = (
@@ -74,7 +80,14 @@ function PrinterDashboard() {
                     {connectionErrorText(live.connectionError)}
                 </div>
             )}
-            <DashboardGrid printerId={printerId} header={header} render={(id) => widgets[id]()} />
+            {!canOperate && (
+                <div className="rounded-3xl bg-secondary px-5 py-3 text-sm text-muted-foreground">
+                    {m.role_viewer_hint()}
+                </div>
+            )}
+            <fieldset disabled={!canOperate} className="contents">
+                <DashboardGrid printerId={printerId} header={header} render={(id) => widgets[id]()} />
+            </fieldset>
         </div>
     );
 }

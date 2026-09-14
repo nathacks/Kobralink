@@ -3,19 +3,19 @@ import { Ban, Pause, Play, Scissors, X } from 'lucide-react';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { Ring } from '@/components/viz/ring';
 import { usePrinterAction } from '@/hooks/use-printer-action';
+import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { useAlertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
-import { useLiveState } from '@/stores/printers';
+import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function PrintCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
     const qc = useQueryClient();
-    const openAlertDialog = useAlertConfirmationDialogStore((s) => s.openAlertDialog);
-    const openDialog = useConfirmationDialogStore((s) => s.openDialog);
+    const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
+    const openDialog = confirmationDialogStore.actions.openDialog;
     const pause = usePrinterAction(printerId, api.control.pause, m.print_pause_requested);
     const resume = usePrinterAction(printerId, api.control.resume, m.print_resume_requested);
     const cancel = usePrinterAction(printerId, api.control.cancel, m.print_cancel_requested);

@@ -45,7 +45,13 @@ const deps = Object.fromEntries(
 fs.writeFileSync(
     path.join(outDir, 'package.json'),
     JSON.stringify(
-        { name: 'kobralink-api-bundle', private: true, main: 'dist/server/main.js', dependencies: deps },
+        {
+            name: 'kobralink-api-bundle',
+            version: JSON.parse(fs.readFileSync(path.join(apiRoot, 'package.json'), 'utf8')).version,
+            private: true,
+            main: 'dist/server/main.js',
+            dependencies: deps,
+        },
         null,
         2,
     ),

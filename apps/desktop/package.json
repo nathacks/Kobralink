@@ -2,7 +2,7 @@
     "name": "@kobralink/desktop",
     "version": "0.1.0",
     "private": true,
-    "description": "Kobralink desktop (macOS) — embeds the bridge API or connects to a remote one.",
+    "description": "Kobralink desktop (macOS) — embeds the local bridge API.",
     "main": "./out/main/index.js",
     "scripts": {
         "dev": "bunx electron-vite dev",

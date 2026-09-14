@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function AddPrinterDialog({ compact = false }: { compact?: boolean }) {
-    const openDialog = useConfirmationDialogStore((s) => s.openDialog);
+    const openDialog = confirmationDialogStore.actions.openDialog;
     return (
         <Button
             className="rounded-full px-5"
@@ -33,7 +33,7 @@ export function AddPrinterDialog({ compact = false }: { compact?: boolean }) {
 
 function AddPrinterForm() {
     const qc = useQueryClient();
-    const closeDialog = useConfirmationDialogStore((s) => s.closeDialog);
+    const closeDialog = confirmationDialogStore.actions.closeDialog;
 
     const add = useMutation({
         mutationFn: (input: { ip: string; name: string }) =>

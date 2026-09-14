@@ -17,12 +17,19 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { hexToRgb, rgbToHex } from '@/lib/color';
 import { m } from '@/lib/i18n';
-import { filamentProfilesQuery, filamentSlotsQuery, spoolmanSpoolsQuery, spoolmanStatusQuery } from '@/lib/queries';
-import { useConfirmationDialogStore } from '@/stores/confirmation-dialog';
-import { usePrinter } from '@/stores/printers';
+import {
+    filamentProfilesQuery,
+    filamentSlotsQuery,
+    spoolAssignmentsQuery,
+    spoolmanSpoolsQuery,
+    spoolmanStatusQuery,
+    spoolsQuery,
+} from '@/lib/queries';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot }) {
     const slotInfos = useQuery(filamentSlotsQuery(printerId));
@@ -49,12 +56,15 @@ function SlotFormInner({
     const spoolmanOn = Boolean(spoolman.data?.configured);
     const spools = useQuery(spoolmanSpoolsQuery(spoolmanOn));
     const currentSpool = spoolman.data?.slotSpools[String(slot.globalIndex)] ?? 0;
+    const localSpools = useQuery(spoolsQuery());
+    const localAssign = useQuery(spoolAssignmentsQuery(printerId));
+    const currentLocal = localAssign.data?.slotSpools[String(slot.globalIndex)] ?? '';
     const loaded = live?.amsLoadedSlot === slot.globalIndex;
     const busy = live?.printState === 'printing';
-    const onClose = useConfirmationDialogStore((s) => s.closeDialog);
+    const onClose = confirmationDialogStore.actions.closeDialog;
     const onError = (e: Error) => toast.error(e.message);
     const save = useMutation({
-        mutationFn: async (v: AmsSlotFormValues & { profile: string; spoolId: number }) => {
+        mutationFn: async (v: AmsSlotFormValues & { profile: string; spoolId: number; localSpoolId: string }) => {
             const [vendor = '', name = ''] = v.profile ? v.profile.split('|||') : [];
             const overrideKey = current?.override ? profileKey(current.override) : '';
             const tasks: Promise<unknown>[] = [
@@ -69,12 +79,16 @@ function SlotFormInner({
                 else delete map[String(slot.globalIndex)];
                 tasks.push(api.spoolman.setSlots(printerId, map));
             }
+            if (v.localSpoolId !== currentLocal) {
+                tasks.push(api.spools.assign(printerId, { [String(slot.globalIndex)]: v.localSpoolId || null }));
+            }
             await Promise.all(tasks);
         },
         onSuccess: () => {
             toast.success(m.slot_updated({ n: slot.index + 1 }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'filament-slots'] });
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'spoolman'] });
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'spools'] });
             onClose();
         },
         onError,
@@ -93,8 +107,15 @@ function SlotFormInner({
             color: rgbToHex(slot.color),
             profile: current?.override ? profileKey(current.override) : '',
             spoolId: currentSpool,
+            localSpoolId: currentLocal,
         },
-        validators: { onSubmit: amsSlotFormSchema.extend({ profile: z.string(), spoolId: z.number().int().min(0) }) },
+        validators: {
+            onSubmit: amsSlotFormSchema.extend({
+                profile: z.string(),
+                spoolId: z.number().int().min(0),
+                localSpoolId: z.string(),
+            }),
+        },
         onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
     });
     const isKnown = (v: string) => (AMS_MATERIALS as readonly string[]).includes(v);
@@ -256,6 +277,37 @@ function SlotFormInner({
                                     </SelectContent>
                                 </Select>
                                 <p className="px-4 text-xs text-muted-foreground">{m.slot_spool_hint()}</p>
+                            </div>
+                        )}
+                    </form.Field>
+                )}
+                {(localSpools.data?.length ?? 0) > 0 && (
+                    <form.Field name="localSpoolId">
+                        {(field) => (
+                            <div className="grid gap-2">
+                                <Label htmlFor="slot-local-spool">{m.slot_local_spool()}</Label>
+                                <Select
+                                    value={field.state.value || '__none'}
+                                    onValueChange={(v) => field.handleChange(v === '__none' ? '' : v)}
+                                >
+                                    <SelectTrigger id="slot-local-spool" className="rounded-full">
+                                        <SelectValue placeholder={m.slot_spool_none()} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__none">{m.slot_spool_none()}</SelectItem>
+                                        {(localSpools.data ?? []).map((sp) => (
+                                            <SelectItem key={sp.id} value={sp.id}>
+                                                <span
+                                                    className="mr-2 inline-block size-2.5 rounded-full ring-1 ring-black/10"
+                                                    style={{ background: sp.colorHex }}
+                                                />
+                                                {sp.vendor ? `${sp.vendor} ` : ''}
+                                                {sp.name} · {sp.material} · {Math.round(sp.remainingG)} g
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="px-4 text-xs text-muted-foreground">{m.slot_local_spool_hint()}</p>
                             </div>
                         )}
                     </form.Field>

@@ -28,6 +28,7 @@ import {
     startPrintSchema,
 } from '@kobralink/shared';
 import {
+    BadGatewayException,
     BadRequestException,
     Body,
     Controller,
@@ -53,7 +54,7 @@ import type { z } from 'zod';
 
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { serveH264, serveSnapshot, serveStream } from '../bridge/camera';
-import { BridgeOfflineError, type PrinterBridge } from '../bridge/printer-bridge';
+import { BridgeOfflineError, BridgeRequestError, type PrinterBridge } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';
 import { ZodPipe } from '../common/zod.pipe';
 import { GcodeService } from '../gcode/gcode.service';
@@ -76,11 +77,16 @@ export class KxController {
     }
 
     private run<T>(fn: () => T): T {
-        try {
-            return fn();
-        } catch (e) {
+        const rethrow = (e: unknown): never => {
             if (e instanceof BridgeOfflineError) throw new ServiceUnavailableException(e.message);
+            if (e instanceof BridgeRequestError) throw new BadGatewayException(e.message);
             throw e;
+        };
+        try {
+            const out = fn();
+            return out instanceof Promise ? (out.catch(rethrow) as T) : out;
+        } catch (e) {
+            return rethrow(e);
         }
     }
 
