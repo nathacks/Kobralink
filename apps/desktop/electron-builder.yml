@@ -20,6 +20,7 @@ publish:
   owner: nathacks
   repo: Kobralink
 mac:
+  icon: build/icon-mac.png
   category: public.app-category.utilities
   target:
     - target: dmg

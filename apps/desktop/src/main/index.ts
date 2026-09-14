@@ -9,6 +9,8 @@ import { checkForUpdates, setupUpdater } from './updater';
 
 let win: BrowserWindow | null = null;
 
+if (!app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'Kobralink Dev'));
+
 function baseUrl(): string {
     if (process.env.KOBRALINK_URL) return process.env.KOBRALINK_URL.replace(/\/$/, '');
     return `http://localhost:${LOCAL_PORT}`;
@@ -58,7 +60,7 @@ async function boot(w: BrowserWindow): Promise<void> {
     await loadLauncher(w, { status: 'starting' });
 
     if (!process.env.KOBRALINK_URL) {
-        const alreadyUp = await waitForApi(url, 1500);
+        const alreadyUp = !app.isPackaged && (await waitForApi(url, 1500));
         if (!alreadyUp) {
             if (!apiAvailable()) {
                 await loadLauncher(w, { status: 'error', message: m.desktop_api_build_missing() });
