@@ -1,11 +1,17 @@
 import type { GcodeFileDto } from '@kobralink/shared';
-import { Download, Eye, ListPlus, Play, Trash2 } from 'lucide-react';
+import { Download, Eye, ListPlus, MoreVertical, Play, Trash2 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api';
 import { formatBytes, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { jobStatusLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
-import { IconButton } from './icon-button';
 
 export function FileTile({
     file,
@@ -45,22 +51,47 @@ export function FileTile({
                         <span className="text-[10px] text-muted-foreground">GCode</span>
                     )}
                 </div>
-                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <IconButton title={m.files_preview()} onClick={onPreview}>
-                        <Eye />
-                    </IconButton>
-                    <IconButton title={m.queue_add()} onClick={onQueue}>
-                        <ListPlus />
-                    </IconButton>
-                    <IconButton title={m.common_download()} asChild>
-                        <a href={api.files.downloadUrl(printerId, file.id)} download>
-                            <Download />
-                        </a>
-                    </IconButton>
-                    <IconButton title={m.common_delete()} onClick={onDelete}>
-                        <Trash2 />
-                    </IconButton>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            aria-label="Actions"
+                            className={cn(
+                                'flex size-8 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 [&_svg]:size-4',
+                                highlight
+                                    ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground'
+                                    : 'bg-background/40 hover:bg-background/70 text-foreground',
+                            )}
+                        >
+                            <MoreVertical />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 rounded-2xl">
+                        <DropdownMenuItem onSelect={onPreview} className="rounded-xl cursor-pointer">
+                            <Eye />
+                            <span>{m.files_preview()}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={onQueue} className="rounded-xl cursor-pointer">
+                            <ListPlus />
+                            <span>{m.queue_add()}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                            <a href={api.files.downloadUrl(printerId, file.id)} download>
+                                <Download />
+                                <span>{m.common_download()}</span>
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={onDelete}
+                            className="rounded-xl cursor-pointer"
+                        >
+                            <Trash2 />
+                            <span>{m.common_delete()}</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div className="mt-auto space-y-1 pt-4">
                 <div className="flex items-center gap-1">
@@ -74,6 +105,19 @@ export function FileTile({
                                 title={`${f.material} (T${f.slotIndex})`}
                             />
                         ))}
+                    {file.webUnverified && (
+                        <span
+                            className={cn(
+                                'rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none',
+                                highlight
+                                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                                    : 'bg-primary/10 text-primary',
+                            )}
+                            title={m.files_web_warning_title()}
+                        >
+                            {m.files_badge_web()}
+                        </span>
+                    )}
                     {file.lastJob && (
                         <span
                             className={cn(

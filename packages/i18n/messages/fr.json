@@ -355,9 +355,35 @@
     "files_delete_title": "Supprimer {name} ?",
     "files_delete_hint": "Le fichier sera retiré du stockage du bridge.",
     "files_uploading": "Envoi…",
+    "files_uploading_count": [
+        {
+            "declarations": ["input count", "local countPlural = count: plural"],
+            "selectors": ["countPlural"],
+            "match": {
+                "countPlural=one": "Envoi de {count} fichier…",
+                "countPlural=other": "Envoi de {count} fichiers…"
+            }
+        }
+    ],
+    "files_added_many": [
+        {
+            "declarations": ["input count", "local countPlural = count: plural"],
+            "selectors": ["countPlural"],
+            "match": {
+                "countPlural=one": "{count} fichier ajouté",
+                "countPlural=other": "{count} fichiers ajoutés"
+            }
+        }
+    ],
     "files_drop_hint": "Déposer des fichiers GCode ici",
     "files_drop_invalid": "Seuls les fichiers .gcode ou .bgcode sont acceptés",
     "files_add_gcode": "Ajouter un GCode",
+    "files_empty": "Aucun fichier enregistré.",
+    "files_web_empty_title": "Aucun fichier Web",
+    "files_web_empty_hint": "Glissez-déposez un fichier GCode (.gcode ou .bgcode) ici ou cliquez pour l'importer depuis votre navigateur.",
+    "files_empty_search": "Aucun fichier correspondant à votre recherche.",
+    "files_badge_web": "Web",
+    "files_upload_drop_zone": "Glissez-déposez vos fichiers GCode ici ou cliquez pour parcourir",
     "history_empty": "Aucune impression enregistrée.",
     "pfiles_deleted": [
         {
@@ -623,6 +649,8 @@
     "preview_parsing": "Analyse du G-code… {pct} %",
     "preview_layer": "Couche {n}/{total} · Z {z}",
     "preview_follow": "Suivre",
+    "preview_reset_view": "Réinitialiser la vue",
+    "preview_orbit_hint": "Glisser pour tourner · molette pour zoomer",
     "queue_title": "File d'attente",
     "queue_empty": "File vide. Ajoutez des fichiers depuis la liste.",
     "queue_add": "Ajouter à la file",

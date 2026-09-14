@@ -1,6 +1,6 @@
 import type { GcodeFileDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Upload } from 'lucide-react';
+import { Loader2, Plus, Search, Upload } from 'lucide-react';
 import { type DragEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
@@ -31,6 +31,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const [tab, setTab] = useState<Tab>('files');
     const [search, setSearch] = useState('');
     const [dragging, setDragging] = useState(false);
+    const [uploadingCount, setUploadingCount] = useState(0);
     const dragDepth = useRef(0);
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
@@ -89,28 +90,12 @@ export function FilesCard({ printerId }: { printerId: string }) {
     };
     const upload = useMutation({
         mutationFn: (file: File) => api.files.upload(printerId, file, false),
-        onSuccess: (f) => {
+        onSuccess: () => {
             invalidate();
-            if (printer?.settings.printStartDialog ?? true) {
-                openDialog({
-                    title: m.files_added({ name: f.filename }),
-                    content: (
-                        <UploadReadyForm
-                            file={f}
-                            canPrint={canPrint}
-                            onPrint={() => requestPrint(f)}
-                            onQueue={() => enqueue.mutate({ fileId: f.id })}
-                        />
-                    ),
-                });
-            } else {
-                toast.success(m.files_added({ name: f.filename }), {
-                    action: canPrint ? { label: m.common_print(), onClick: () => requestPrint(f) } : undefined,
-                });
-            }
         },
         onError: (e) => toast.error(e.message),
     });
+    const isUploading = upload.isPending || uploadingCount > 0;
     const remove = useMutation({
         mutationFn: (fileId: string) => api.files.remove(printerId, fileId),
         onSuccess: invalidate,
@@ -123,7 +108,45 @@ export function FilesCard({ printerId }: { printerId: string }) {
             if (dropped?.length) toast.error(m.files_drop_invalid());
             return;
         }
-        for (const file of accepted) await upload.mutateAsync(file).catch(() => undefined);
+        setUploadingCount(accepted.length);
+        let lastUploaded: GcodeFileDto | null = null;
+        let successCount = 0;
+        try {
+            for (const file of accepted) {
+                try {
+                    const res = await upload.mutateAsync(file);
+                    lastUploaded = res;
+                    successCount++;
+                } catch {
+                    // handled by onError
+                }
+            }
+        } finally {
+            setUploadingCount(0);
+        }
+
+        const single = lastUploaded;
+        if (successCount === 1 && single) {
+            if (printer?.settings.printStartDialog ?? true) {
+                openDialog({
+                    title: m.files_added({ name: single.filename }),
+                    content: (
+                        <UploadReadyForm
+                            file={single}
+                            canPrint={canPrint}
+                            onPrint={() => requestPrint(single)}
+                            onQueue={() => enqueue.mutate({ fileId: single.id })}
+                        />
+                    ),
+                });
+            } else {
+                toast.success(m.files_added({ name: single.filename }), {
+                    action: canPrint ? { label: m.common_print(), onClick: () => requestPrint(single) } : undefined,
+                });
+            }
+        } else if (successCount > 1) {
+            toast.success(m.files_added_many({ count: successCount }));
+        }
     };
     const dropEnabled = tab === 'files' || tab === 'web';
     const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer.types).includes('Files');
@@ -158,6 +181,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const webCount = files.data?.filter((f) => f.webUnverified).length ?? 0;
 
     return (
+        // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop container
         <section
             className="relative flex flex-col overflow-hidden rounded-3xl bg-card p-6 text-card-foreground"
             onDragEnter={onDragEnter}
@@ -166,9 +190,14 @@ export function FilesCard({ printerId }: { printerId: string }) {
             onDrop={onDrop}
         >
             {dragging && (
-                <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary bg-card/90 text-sm text-foreground">
-                    <Upload className="size-8 text-primary" />
-                    {m.files_drop_hint()}
+                <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary bg-card/95 p-6 text-center text-sm text-foreground backdrop-blur-xs">
+                    <div className="flex size-16 items-center justify-center rounded-3xl bg-primary/15 text-primary">
+                        <Upload className="size-8" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-base font-medium">{m.files_drop_hint()}</p>
+                        <p className="text-xs text-muted-foreground">.gcode, .bgcode</p>
+                    </div>
                 </div>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -207,6 +236,15 @@ export function FilesCard({ printerId }: { printerId: string }) {
                 </label>
             )}
 
+            {isUploading && (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-xs font-medium text-primary">
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>
+                        {uploadingCount > 1 ? m.files_uploading_count({ count: uploadingCount }) : m.files_uploading()}
+                    </span>
+                </div>
+            )}
+
             <input
                 ref={inputRef}
                 type="file"
@@ -232,6 +270,49 @@ export function FilesCard({ printerId }: { printerId: string }) {
                         canPrint={canPrint}
                         search={search}
                     />
+                ) : search.trim() !== '' && list.length === 0 ? (
+                    <div className="mt-8 flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                        <Search className="mb-2 size-8 text-muted-foreground/50" />
+                        <p>{m.files_empty_search()}</p>
+                    </div>
+                ) : tab === 'web' && webCount === 0 ? (
+                    <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        disabled={isUploading}
+                        className="mt-5 flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary/40 bg-secondary/30 p-8 text-center transition-colors hover:border-primary hover:bg-secondary/50 disabled:opacity-50"
+                    >
+                        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <Upload className="size-7" />
+                        </div>
+                        <div className="max-w-sm space-y-1">
+                            <h3 className="text-base font-semibold text-foreground">{m.files_web_empty_title()}</h3>
+                            <p className="text-xs text-muted-foreground">{m.files_web_empty_hint()}</p>
+                        </div>
+                        <span className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+                            <Plus className="mr-1.5 size-4" />
+                            {isUploading ? m.files_uploading() : m.files_add_gcode()}
+                        </span>
+                    </button>
+                ) : tab === 'files' && (files.data?.length ?? 0) === 0 ? (
+                    <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        disabled={isUploading}
+                        className="mt-5 flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary/40 bg-secondary/30 p-8 text-center transition-colors hover:border-primary hover:bg-secondary/50 disabled:opacity-50"
+                    >
+                        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <Upload className="size-7" />
+                        </div>
+                        <div className="max-w-sm space-y-1">
+                            <h3 className="text-base font-semibold text-foreground">{m.files_empty()}</h3>
+                            <p className="text-xs text-muted-foreground">{m.files_upload_drop_zone()}</p>
+                        </div>
+                        <span className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+                            <Plus className="mr-1.5 size-4" />
+                            {isUploading ? m.files_uploading() : m.files_add_gcode()}
+                        </span>
+                    </button>
                 ) : (
                     <div className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
                         {list.map((f, i) => (
@@ -263,11 +344,11 @@ export function FilesCard({ printerId }: { printerId: string }) {
                         <button
                             type="button"
                             onClick={() => inputRef.current?.click()}
-                            disabled={upload.isPending}
+                            disabled={isUploading}
                             className="flex min-h-44 flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-50"
                         >
                             <Plus className="size-6" />
-                            {upload.isPending ? m.files_uploading() : m.files_add_gcode()}
+                            {isUploading ? m.files_uploading() : m.files_add_gcode()}
                         </button>
                     </div>
                 )}

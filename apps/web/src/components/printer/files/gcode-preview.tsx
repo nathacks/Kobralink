@@ -1,6 +1,7 @@
 import type { GcodeFileDto } from '@kobralink/shared';
-import { Crosshair } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Crosshair, RotateCcw } from 'lucide-react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { usePrinter } from '@/hooks/use-printers';
@@ -8,6 +9,8 @@ import { api } from '@/lib/api';
 import type { ParsedGcode, WorkerResponse } from '@/lib/gcode-parser.worker';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+
+const GcodeScene = lazy(() => import('./gcode-scene').then((mod) => ({ default: mod.GcodeScene })));
 
 type Status =
     | { kind: 'loading'; progress: number }
@@ -18,12 +21,12 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [status, setStatus] = useState<Status>({ kind: 'loading', progress: 0 });
     const [layer, setLayer] = useState(0);
     const [follow, setFollow] = useState(false);
+    const [resetSignal, setResetSignal] = useState(0);
     const printer = usePrinter(printerId);
     const live = printer?.live;
     const printingThis = Boolean(
         live && live.filename === file.filename && (live.printState === 'printing' || live.printState === 'paused'),
     );
-    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -62,65 +65,37 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const total = status.kind === 'ready' ? status.data.layers.length : 0;
     const shown = follow && printingThis && live ? Math.max(1, Math.min(total, live.currLayer)) : layer;
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || status.kind !== 'ready') return;
-        const draw = () => {
-            const { layers, minX, maxX, minY, maxY } = status.data;
-            const dpr = window.devicePixelRatio || 1;
-            const w = canvas.clientWidth;
-            const h = canvas.clientHeight;
-            canvas.width = Math.round(w * dpr);
-            canvas.height = Math.round(h * dpr);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, w, h);
-            const pad = 16;
-            const spanX = Math.max(1, maxX - minX);
-            const spanY = Math.max(1, maxY - minY);
-            const scale = Math.min((w - pad * 2) / spanX, (h - pad * 2) / spanY);
-            const ox = (w - spanX * scale) / 2 - minX * scale;
-            const oy = (h + spanY * scale) / 2 + minY * scale;
-            const tx = (x: number) => ox + x * scale;
-            const ty = (y: number) => oy - y * scale;
-            const style = getComputedStyle(canvas);
-            const primary = style.getPropertyValue('--primary').trim() || '#10b981';
-            const muted = style.getPropertyValue('--muted-foreground').trim() || '#888';
-            const count = Math.min(shown, layers.length);
-            const start = Math.max(0, count - 40);
-            ctx.lineCap = 'round';
-            for (let i = start; i < count; i++) {
-                const l = layers[i];
-                const last = i === count - 1;
-                ctx.strokeStyle = last ? primary : muted;
-                ctx.globalAlpha = last ? 1 : 0.08 + (0.5 * (i - start)) / Math.max(1, count - start);
-                ctx.lineWidth = last ? 1.6 : 1;
-                ctx.beginPath();
-                const s = l.segs;
-                for (let k = 0; k < s.length; k += 4) {
-                    ctx.moveTo(tx(s[k]), ty(s[k + 1]));
-                    ctx.lineTo(tx(s[k + 2]), ty(s[k + 3]));
-                }
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-        };
-        draw();
-        const ro = new ResizeObserver(draw);
-        ro.observe(canvas);
-        return () => ro.disconnect();
-    }, [status, shown]);
-
     return (
         <div className="grid gap-3 py-2">
             <div className="relative h-[55svh] w-full overflow-hidden rounded-2xl bg-secondary">
-                <canvas ref={canvasRef} className="size-full" />
+                {status.kind === 'ready' && (
+                    <Suspense fallback={null}>
+                        <GcodeScene data={status.data} shown={shown} resetSignal={resetSignal} />
+                    </Suspense>
+                )}
                 {status.kind !== 'ready' && (
                     <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                         {status.kind === 'loading'
                             ? m.preview_parsing({ pct: Math.round(status.progress * 100) })
                             : status.message}
+                    </div>
+                )}
+                {status.kind === 'ready' && (
+                    <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant="secondary"
+                            className="rounded-full shadow"
+                            title={m.preview_reset_view()}
+                            aria-label={m.preview_reset_view()}
+                            onClick={() => setResetSignal((v) => v + 1)}
+                        >
+                            <RotateCcw />
+                        </Button>
+                        <span className="rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur-xs">
+                            {m.preview_orbit_hint()}
+                        </span>
                     </div>
                 )}
             </div>
