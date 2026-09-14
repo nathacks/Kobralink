@@ -1,6 +1,6 @@
 {
     "name": "kobralink",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "private": true,
     "packageManager": "bun@1.4.2",
     "scripts": {
@@ -15,7 +15,8 @@
         "db:migrate": "bun run --filter @kobralink/api db:migrate",
         "db:generate": "bun run --filter @kobralink/api db:generate",
         "db:studio": "bun run --filter @kobralink/api db:studio",
-        "prepare": "bunx husky"
+        "prepare": "bunx husky",
+        "version:set": "bun scripts/set-version.mjs"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.5.6",
