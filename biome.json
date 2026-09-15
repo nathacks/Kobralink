@@ -14,7 +14,8 @@
             "!**/src/generated",
             "!**/routeTree.gen.ts",
             "!**/components/ui",
-            "!**/src/paraglide"
+            "!**/src/paraglide",
+            "!**/*.svg"
         ]
     },
     "formatter": {
