@@ -23,19 +23,20 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 
 ## Install in production (Docker Compose)
 
-Requirements: Docker + Docker Compose, a machine on the same LAN as the printer.
+Requirements: Docker + Docker Compose, a machine on the same LAN as the printer. No clone needed:
+`infra/docker-compose.prod.yml` runs the published image
+[`nathacks/kobralink`](https://hub.docker.com/r/nathacks/kobralink) (linux/amd64 + linux/arm64).
 
 ```bash
-git clone https://github.com/NatHacks/Kobralink.git
-cd Kobralink/infra
-cp .env.example .env
+mkdir kobralink && cd kobralink
+curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/.env.example -o .env
 ```
 
-Edit `.env` and set `BETTER_AUTH_URL` to the URL you will type in the browser
-(for example `http://192.168.1.50:7100`). Then:
+Edit `.env` and set `BETTER_AUTH_URL` to the URL you will type in the browser. Then:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 - Dashboard: `http://<host>:7100` — the first account created becomes the owner
@@ -45,18 +46,20 @@ docker compose up -d
 Update:
 
 ```bash
-docker compose pull && docker compose up -d
+docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
+
+To pin a version, set `KOBRALINK_IMAGE=nathacks/kobralink:<version>` in `.env`.
 
 Behind a reverse proxy (HTTPS): set `KOBRALINK_BIND=127.0.0.1` and
 `BETTER_AUTH_URL=https://kobralink.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
-More details (backup, healthcheck, local build): [`infra/README.md`](infra/README.md).
+More details (backup, healthcheck, local build from source): [`infra/README.md`](infra/README.md).
 
 ### `.env` reference
 
 | Variable                  | Default                     | Role                                                    |
 | ------------------------- | --------------------------- | ------------------------------------------------------- |
-| `KOBRALINK_IMAGE`         | `nathacks/kobralink:latest` | Image to run (`docker compose up -d --build` to build)  |
+| `KOBRALINK_IMAGE`         | `nathacks/kobralink:latest` | Image to run (pin a version: `nathacks/kobralink:0.1.5`) |
 | `KOBRALINK_BIND`          | `0.0.0.0`                   | Host interface (`127.0.0.1` behind a reverse proxy)     |
 | `KOBRALINK_PORT`          | `7100`                      | Dashboard port on the host                              |
 | `BETTER_AUTH_URL`         | —                           | **Required**: URL used by the browser                   |

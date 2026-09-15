@@ -169,12 +169,14 @@ jobs:
           docker pull ${IMAGE}:${V}
           \`\`\`
 
-          With docker compose (\`infra/docker-compose.yml\` + \`infra/.env.example\`):
+          With docker compose (no clone needed, \`infra/docker-compose.prod.yml\` uses the Docker Hub image):
 
           \`\`\`bash
-          git clone https://github.com/${{ github.repository }}.git && cd Kobralink/infra
-          cp .env.example .env   # set BETTER_AUTH_URL to the URL your browser uses
-          KOBRALINK_IMAGE=${IMAGE}:${V} docker compose up -d
+          mkdir kobralink && cd kobralink
+          curl -fsSLO https://raw.githubusercontent.com/${{ github.repository }}/${VERSION}/infra/docker-compose.prod.yml
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${VERSION}/infra/.env.example -o .env
+          # set BETTER_AUTH_URL to the URL your browser uses, and KOBRALINK_IMAGE=${IMAGE}:${V} to pin this version
+          docker compose -f docker-compose.prod.yml up -d
           \`\`\`
 
           Image tags: \`${IMAGE}:${V}\`, \`${IMAGE}:latest\` (linux/amd64, linux/arm64). See \`infra/README.md\` for updates, backups and reverse proxy.

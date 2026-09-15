@@ -1,13 +1,34 @@
 # Production deployment
 
-Files: `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `.env.example`. The image is built and pushed to Docker Hub by the release workflow on every `v*` tag.
+Files:
+
+- `docker-compose.prod.yml` — runs the published image `nathacks/kobralink` from Docker Hub (recommended)
+- `docker-compose.yml` — same service, plus a `build` section to build from source (`infra/Dockerfile`, context = repo root)
+- `.env.example` — configuration template (copy to `.env`)
+- `Dockerfile` (+ `Dockerfile.dockerignore`) — built and pushed to Docker Hub by the release workflow on every `v*` tag
+
+## Docker Hub image (no clone)
+
+```bash
+mkdir kobralink && cd kobralink
+curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/.env.example -o .env
+# set BETTER_AUTH_URL in .env
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Pin a version with `KOBRALINK_IMAGE=nathacks/kobralink:<version>` in `.env`. Tags: `<version>`, `<major>.<minor>`, `latest`
+(linux/amd64, linux/arm64).
+
+## Build from source
 
 ```bash
 cd infra
-cp .env.example .env          # then set BETTER_AUTH_URL
-docker compose up -d            # Docker Hub image (nathacks/kobralink)
-docker compose up -d --build    # or local build from infra/Dockerfile (context = repo root)
+cp .env.example .env
+docker compose up -d --build
 ```
+
+## Runtime
 
 - UI + API: `http://<host>:7100`
 - Moonraker: one port per printer starting at `7125` (range `7125-7140` exposed, i.e. 16 printers)
@@ -17,8 +38,8 @@ docker compose up -d --build    # or local build from infra/Dockerfile (context 
 ## Update
 
 ```bash
-docker compose pull
-docker compose up -d
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 Prisma migrations are applied automatically at startup. The dashboard (Settings → System) also
