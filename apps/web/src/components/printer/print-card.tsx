@@ -1,18 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ban, Pause, Play, Scissors, X } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
+import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { Ring } from '@/components/viz/ring';
+import { usePrintClock } from '@/hooks/use-print-clock';
 import { usePrinterAction } from '@/hooks/use-printer-action';
 import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
+import { filesQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function PrintCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
+    const clock = usePrintClock(state);
     const qc = useQueryClient();
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
@@ -21,17 +25,20 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const resume = usePrinterAction(printerId, api.control.resume, m.print_resume_requested);
     const cancel = usePrinterAction(printerId, api.control.cancel, m.print_cancel_requested);
 
+    const printing = state.printState === 'printing';
+    const paused = state.printState === 'paused';
+    const active = printing || paused;
+    const files = useQuery({ ...filesQuery(printerId), enabled: active });
+    const liveFile = active ? files.data?.find((f) => f.filename === state.filename) : undefined;
+
     const clearReady = useMutation({
         mutationFn: () => api.control.clearFileReady(printerId),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'state'] }),
     });
 
-    const printing = state.printState === 'printing';
-    const paused = state.printState === 'paused';
-    const active = printing || paused;
     const pct = Math.round(state.progress * 100);
     const remaining =
-        state.remainTimeSec || (state.slicerTimeSec ? Math.max(0, state.slicerTimeSec - state.printDurationSec) : 0);
+        clock.remainSec || (state.slicerTimeSec ? Math.max(0, state.slicerTimeSec - clock.elapsedSec) : 0);
 
     return (
         <section
@@ -53,7 +60,7 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     </p>
                 </div>
                 {active && (
-                    <div className="flex shrink-0 gap-2">
+                    <div className="relative flex shrink-0 gap-2">
                         <CircleButton
                             title={m.print_skip_objects()}
                             onClick={() =>
@@ -98,11 +105,26 @@ export function PrintCard({ printerId }: { printerId: string }) {
                         >
                             <Ban />
                         </CircleButton>
+                        {liveFile && (
+                            <CircleButton
+                                className="absolute top-full right-0 mt-2"
+                                title={m.print_view_3d()}
+                                onClick={() =>
+                                    openDialog({
+                                        title: liveFile.filename,
+                                        props: { className: 'rounded-3xl sm:max-w-4xl' },
+                                        content: <GcodePreview printerId={printerId} file={liveFile} />,
+                                    })
+                                }
+                            >
+                                <Box />
+                            </CircleButton>
+                        )}
                     </div>
                 )}
             </div>
 
-            <div className="my-6 flex items-center justify-center">
+            <div className="my-6 flex-1 flex items-center justify-center">
                 {active ? (
                     <Ring
                         value={state.progress}
@@ -139,8 +161,16 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     active ? 'text-primary-foreground/80' : 'text-muted-foreground',
                 )}
             >
-                <Kv k={m.print_elapsed()} v={active ? formatDuration(state.printDurationSec) : '—'} strong={active} />
-                <Kv k={m.print_remaining()} v={active ? formatDuration(remaining) : '—'} strong={active} />
+                <Kv
+                    k={m.print_elapsed()}
+                    v={active ? formatDuration(clock.elapsedSec, { zero: true }) : '—'}
+                    strong={active}
+                />
+                <Kv
+                    k={m.print_remaining()}
+                    v={active ? formatDuration(remaining, { zero: true }) : '—'}
+                    strong={active}
+                />
                 <Kv
                     k={m.print_layer()}
                     v={state.totalLayers ? `${state.currLayer}/${state.totalLayers}` : '—'}
@@ -181,12 +211,15 @@ function Kv({ k, v, strong }: { k: string; v: string; strong: boolean }) {
     );
 }
 
-function CircleButton(props: React.ComponentProps<'button'>) {
+function CircleButton({ className, ...props }: React.ComponentProps<'button'>) {
     return (
         <button
             type="button"
             {...props}
-            className="flex size-10 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground transition-colors hover:bg-primary-foreground/25 disabled:opacity-50 [&_svg]:size-4"
+            className={cn(
+                'flex size-10 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground transition-colors hover:bg-primary-foreground/25 disabled:opacity-50 [&_svg]:size-4',
+                className,
+            )}
         />
     );
 }

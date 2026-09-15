@@ -2,13 +2,13 @@ import type { GcodeFileDto } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { UploadReadyForm } from '@/components/printer/files/upload-ready-form';
 import { PrePrintSkipForm } from '@/components/printer/skip/preprint-skip-form';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
-import { UploadReadyForm } from './upload-ready-form';
 
 const isGcode = (f: File) => /\.(gcode|bgcode)$/i.test(f.name);
 
