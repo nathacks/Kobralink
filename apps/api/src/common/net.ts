@@ -17,3 +17,13 @@ export function localIpFor(remoteIp: string): string {
     }
     return fallback;
 }
+
+export function lanIps(): string[] {
+    const out: string[] = [];
+    for (const entries of Object.values(os.networkInterfaces())) {
+        for (const e of entries ?? []) {
+            if (e.family === 'IPv4' && !e.internal) out.push(e.address);
+        }
+    }
+    return out;
+}

@@ -34,6 +34,7 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   notarize: true
 win:
+  artifactName: ${productName}-${version}-Installer-win-${arch}.${ext}
   target: [nsis]
 nsis:
   oneClick: false

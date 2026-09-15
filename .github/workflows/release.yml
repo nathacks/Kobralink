@@ -156,7 +156,7 @@ jobs:
           |---|---|
           | macOS Apple Silicon | \`Kobralink-${V}-mac-arm64.dmg\` |
           | macOS Intel | \`Kobralink-${V}-mac-x64.dmg\` |
-          | Windows | \`Kobralink-${V}-win-x64.exe\` |
+          | Windows | \`Kobralink-${V}-Installer-win-x64.exe\` |
           | Linux | \`Kobralink-${V}-linux-x86_64.AppImage\` / \`Kobralink-${V}-linux-amd64.deb\` |
 
           macOS: the app is not notarized — right-click → Open on first launch, or \`xattr -dr com.apple.quarantine /Applications/Kobralink.app\`.

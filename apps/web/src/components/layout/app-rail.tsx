@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { BarChart3, LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
+import { BarChart3, Cable, LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
 import { LanguageMenu } from '@/components/layout/language-menu';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
 import { usePrinters } from '@/hooks/use-printers';
@@ -49,6 +49,9 @@ export function AppRail() {
             }
             bottom={
                 <>
+                    <RailLink to="/slicer" title={m.nav_slicer()}>
+                        <Cable />
+                    </RailLink>
                     <RailLink to="/stats" title={m.nav_stats()}>
                         <BarChart3 />
                     </RailLink>

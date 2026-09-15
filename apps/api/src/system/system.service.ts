@@ -4,6 +4,7 @@ import { Writable } from 'node:stream';
 import type { BackupInfoDto, SystemInfoDto } from '@kobralink/shared';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Unzip, UnzipInflate, Zip, ZipDeflate, ZipPassThrough } from 'fflate';
+import { lanIps } from '../common/net';
 import { loadEnv } from '../config/env';
 import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,6 +34,7 @@ export class SystemService {
             dataDir: this.env.dataDir,
             uptimeSec: Math.round((Date.now() - startedAt) / 1000),
             packaged: packaged(),
+            lanIps: lanIps(),
             update: this.settings.get().updateCheck ? await this.checkUpdate() : null,
         };
     }
