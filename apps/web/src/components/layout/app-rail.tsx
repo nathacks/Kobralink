@@ -1,9 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { BarChart3, Cable, LayoutGrid, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
+import { BarChart3, Cable, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
 import { LanguageMenu } from '@/components/layout/language-menu';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
-import { usePrinters } from '@/hooks/use-printers';
 import { authClient } from '@/lib/auth-client';
 import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
@@ -11,7 +10,6 @@ import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog
 export function AppRail() {
     const qc = useQueryClient();
     const navigate = useNavigate();
-    const printers = usePrinters();
 
     const logout = () =>
         alertConfirmationDialogStore.actions.openAlertDialog({
@@ -31,20 +29,9 @@ export function AppRail() {
             top={
                 <>
                     <img src="/logo-mark.svg" alt="Kobralink" className="mb-1 size-12 rounded-2xl" />
-                    <RailLink to="/printers" activeOptions={{ exact: true }} title={m.nav_home()}>
-                        <LayoutGrid />
+                    <RailLink to="/printers" title={m.nav_home()}>
+                        <Printer />
                     </RailLink>
-                    {printers.map((p) => (
-                        <RailLink
-                            key={p.id}
-                            to="/printers/$printerId"
-                            params={{ printerId: p.id }}
-                            title={p.name}
-                            className="relative"
-                        >
-                            <Printer />
-                        </RailLink>
-                    ))}
                 </>
             }
             bottom={

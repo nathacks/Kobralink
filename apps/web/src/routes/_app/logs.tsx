@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Download, Pause, Play, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePrinters } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatTime } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -15,6 +17,7 @@ interface LogEntry {
     level: 'log' | 'error' | 'warn' | 'debug' | 'verbose';
     context: string;
     message: string;
+    printerId?: string;
 }
 
 const LEVELS: LogEntry['level'][] = ['error', 'warn', 'log', 'debug'];
@@ -39,6 +42,8 @@ function LogsPage() {
     const [paused, setPaused] = useState(false);
     const [filter, setFilter] = useState('');
     const [levels, setLevels] = useState<Set<string>>(new Set(['error', 'warn', 'log']));
+    const [source, setSource] = useState('all');
+    const printers = usePrinters();
     const [connected, setConnected] = useState(false);
     const pending = useRef<LogEntry[]>([]);
     const seq = useRef(0);
@@ -72,9 +77,12 @@ function LogsPage() {
         }
     }, [paused]);
 
+    const matchesSource = (e: LogEntry) =>
+        source === 'all' ? true : source === 'system' ? !e.printerId : e.printerId === source;
     const visible = entries.filter(
         (e) =>
             levels.has(e.level) &&
+            matchesSource(e) &&
             (!filter || `${e.context} ${e.message}`.toLowerCase().includes(filter.toLowerCase())),
     );
 
@@ -96,9 +104,21 @@ function LogsPage() {
             <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-lg font-medium">{m.logs_title()}</h2>
                 <span className={cn('size-2 rounded-full', connected ? 'bg-primary' : 'bg-muted-foreground/50')} />
-                <span className="text-sm text-muted-foreground">
-                    {m.logs_lines({ visible: visible.length, total: entries.length })}
-                </span>
+                <Select value={source} onValueChange={setSource}>
+                    <SelectTrigger className="w-52 rounded-full">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{m.logs_source_all()}</SelectItem>
+                        <SelectItem value="system">{m.logs_source_system()}</SelectItem>
+                        {printers.length > 0 && <SelectSeparator />}
+                        {printers.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                 <div className="flex gap-1 rounded-full bg-secondary p-1">
                     {LEVELS.map((l) => (
                         <button
@@ -147,7 +167,12 @@ function LogsPage() {
                         <Trash2 />
                     </Button>
                     <Button asChild size="sm" className="rounded-full">
-                        <a href={api.logs.downloadUrl} download="kobralink-log.txt">
+                        <a
+                            href={
+                                source === 'all' ? api.logs.downloadUrl : `${api.logs.downloadUrl}?printerId=${source}`
+                            }
+                            download="kobralink-log.txt"
+                        >
                             <Download /> {m.common_download()}
                         </a>
                     </Button>

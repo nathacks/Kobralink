@@ -1,6 +1,7 @@
 import { useLocation, useParams } from '@tanstack/react-router';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
 import { PrinterSwitcher } from '@/components/printer/printer-switcher';
+import { usePinnedPrinter } from '@/hooks/use-pinned-printer';
 import { usePrinters } from '@/hooks/use-printers';
 import { greeting } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -18,6 +19,7 @@ export function AppHeader({ user }: AppHeaderProps) {
     const { printerId } = useParams({ strict: false });
     const onPrintersHome = useLocation({ select: (l) => l.pathname === '/printers' || l.pathname === '/printers/' });
     const printers = usePrinters();
+    const pinned = usePinnedPrinter();
 
     const online = printers.filter((p) => p.live?.connected).length ?? 0;
     const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
@@ -38,7 +40,7 @@ export function AppHeader({ user }: AppHeaderProps) {
                 <p className="text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="ml-auto flex items-center gap-3">
-                {printerId ? <PrinterSwitcher /> : onPrintersHome ? <AddPrinterDialog compact /> : null}
+                {pinned ? null : printerId ? <PrinterSwitcher /> : onPrintersHome ? <AddPrinterDialog compact /> : null}
             </div>
         </header>
     );

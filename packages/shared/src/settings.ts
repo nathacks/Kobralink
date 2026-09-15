@@ -65,6 +65,7 @@ export const appSettingsSchema = z.object({
     spoolmanSyncRateSec: z.number().int().min(0).max(3600).default(0),
     verboseHttpLog: z.boolean().default(false),
     updateCheck: z.boolean().default(true),
+    moonrakerApiKey: z.boolean().default(false),
     notifications: notificationSettingsSchema.default(notificationSettingsSchema.parse({})),
     haMqtt: haMqttSettingsSchema.default(haMqttSettingsSchema.parse({})),
     aceDryPresets: z.array(aceDryPresetSchema).max(20).default(DEFAULT_DRY_PRESETS),

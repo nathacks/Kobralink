@@ -1,7 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { apiKey } from '@better-auth/api-key';
+import { canOperate, type UserRole } from '@kobralink/shared';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { loadEnv } from '../config/env';
 import { m } from '../i18n/locale';
 import { getPrisma } from '../prisma/prisma.service';
@@ -35,6 +37,25 @@ export function createAuth() {
         },
         advanced: {
             useSecureCookies: env.baseUrl.startsWith('https://'),
+        },
+        plugins: [
+            apiKey({
+                defaultPrefix: 'kx_',
+                defaultKeyLength: 40,
+                apiKeyHeaders: 'x-api-key',
+                enableMetadata: true,
+                rateLimit: { enabled: false },
+                keyExpiration: { defaultExpiresIn: null },
+            }),
+        ],
+        hooks: {
+            before: createAuthMiddleware(async (ctx) => {
+                if (!ctx.path.startsWith('/api-key/')) return;
+                const session = await getSessionFromCtx(ctx);
+                if (!session) return;
+                const role = (session.user as { role?: UserRole }).role;
+                if (!canOperate(role)) throw new APIError('FORBIDDEN', { message: m.api_forbidden_role() });
+            }),
         },
         databaseHooks: {
             user: {

@@ -5,7 +5,7 @@ import type { Macro } from '../generated/prisma/client';
 import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 
-const AXIS_ID: Record<'x' | 'y' | 'z', number> = { y: 1, x: 2, z: 3 };
+const AXIS_ID: Record<'x' | 'y' | 'z', number> = { x: 1, y: 2, z: 3 };
 
 @Injectable()
 export class MacroService {
@@ -103,10 +103,10 @@ export class MacroService {
                 bridge.setSpeedMode(a.mode);
                 return;
             case 'home':
-                bridge.moveAxis(a.axis === 'all' ? 4 : a.axis === 'xy' ? 2 : 3, 2, 0);
+                await bridge.moveAxis(a.axis === 'all' ? 4 : a.axis === 'xy' ? 2 : 3, 2, 0);
                 return;
             case 'move':
-                bridge.moveAxis(AXIS_ID[a.axis], a.distance >= 0 ? 1 : 0, Math.abs(a.distance));
+                await bridge.moveAxis(AXIS_ID[a.axis], a.distance >= 0 ? 1 : 0, Math.abs(a.distance));
                 return;
             case 'motorsOff':
                 bridge.disableSteppers();

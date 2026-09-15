@@ -77,8 +77,15 @@ Download the installer from the [GitHub releases](https://github.com/NatHacks/Ko
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
 3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`.
 
-Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard on `:7100`
-is protected by email + password.
+By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
+on `:7100` is protected by email + password.
+
+To lock the Moonraker ports, open **OrcaSlicer → API keys** in the dashboard, enable *Require an API key*
+and generate a key per printer and client — a key only unlocks the printer it was created for, so pasting
+it in OrcaSlicer targets that printer. Clients send it as an `X-Api-Key` header (OrcaSlicer's "API Key / Password"
+field, Fluidd, Obico, Home Assistant), as `Authorization: Bearer`, or as `?api_key=` in the URL (camera `<img>`
+tags). WebSocket clients can also use the standard Moonraker `/access/oneshot_token` flow. Mainsail has no
+API key field and will not connect while the option is on.
 
 ## How it works
 
@@ -92,7 +99,7 @@ Web UI / Desktop ─────► :7100  (UI + /kx API + auth)  ─┘        
 
 | App / package             | Role                                                                                      |
 | ------------------------- | ----------------------------------------------------------------------------------------- |
-| `apps/api`                | NestJS 11 · Prisma 7 + SQLite (libsql) · Better Auth · MQTT bridge · Moonraker emulation   |
+| `apps/api`                | NestJS 11 · Prisma 7 + SQLite (libsql) · Better Auth (+ API keys) · MQTT bridge · Moonraker emulation |
 | `apps/web`                | React 19 · Vite · TanStack Router + Query · Tailwind v4 · shadcn/ui                       |
 | `apps/desktop`            | Electron — spawns the API locally, auto-update via GitHub releases                         |
 | `packages/kobra-protocol` | Kobra X protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |

@@ -38,7 +38,7 @@ export const DEFAULT_LAYOUT: Layout = [
     { i: 'axes', x: 8, y: 24, w: 4, h: 9, minW: 3, minH: 9 },
     { i: 'macros', x: 0, y: 33, w: 4, h: 7, minW: 3, minH: 5 },
     { i: 'queue', x: 4, y: 33, w: 8, h: 7, minW: 4, minH: 6 },
-    { i: 'files', x: 0, y: 40, w: 12, h: 10, minW: 4, minH: 10 },
+    { i: 'files', x: 0, y: 40, w: 12, h: 16, minW: 4, minH: 12 },
 ];
 
 export interface LayoutPreset {
@@ -69,7 +69,7 @@ export function sanitize(layout: Layout | null | undefined): Layout {
     const byId = new Map(layout.filter((l) => WIDGETS.includes(l.i as WidgetId)).map((l) => [l.i, l]));
     return DEFAULT_LAYOUT.map((d) => {
         const saved = byId.get(d.i);
-        return saved ? { ...d, x: saved.x, y: saved.y, w: saved.w, h: saved.h } : d;
+        return saved ? { ...d, x: saved.x, y: saved.y, w: saved.w, h: Math.max(saved.h, d.minH ?? 0) } : d;
     });
 }
 

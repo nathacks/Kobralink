@@ -1,3 +1,4 @@
+import type { IncomingMessage } from 'node:http';
 import { Logger } from '@nestjs/common';
 import {
     OnGatewayConnection,
@@ -9,6 +10,7 @@ import {
 import type { WebSocket } from 'ws';
 import { localIpFor } from '../common/net';
 import { MoonrakerService } from './moonraker.service';
+import { MoonrakerAuthService } from './moonraker-auth.service';
 
 interface RpcRequest {
     jsonrpc?: string;
@@ -24,7 +26,10 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
     private pushTimer: NodeJS.Timeout | null = null;
     private pending = false;
 
-    constructor(private readonly moon: MoonrakerService) {}
+    constructor(
+        private readonly moon: MoonrakerService,
+        private readonly authz: MoonrakerAuthService,
+    ) {}
 
     get clientCount(): number {
         return this.clients.size;
@@ -34,7 +39,12 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
         this.moon.bridge.on('state', () => this.schedulePush());
     }
 
-    handleConnection(client: WebSocket): void {
+    async handleConnection(client: WebSocket, req: IncomingMessage): Promise<void> {
+        if (!(await this.authz.authorize(req, this.moon.bridge.id))) {
+            this.log.warn('WS client rejected: missing or invalid API key');
+            client.close(4401, 'Unauthorized');
+            return;
+        }
         this.clients.add(client);
         this.log.log(`WS client connected (${this.clients.size})`);
         this.sendRaw(client, { jsonrpc: '2.0', method: 'notify_klippy_ready', params: [] });
@@ -76,6 +86,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     @SubscribeMessage('rpc')
     async onRpc(client: WebSocket, req: RpcRequest): Promise<void> {
+        if (!this.clients.has(client)) return;
         const method = req.method ?? '';
         const rawParams = req.params;
         const params: Record<string, unknown> = Array.isArray(rawParams)

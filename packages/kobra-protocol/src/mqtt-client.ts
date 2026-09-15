@@ -33,6 +33,7 @@ interface PendingRequest {
     timer: NodeJS.Timeout;
     reportKey: string;
     reportRegistered: boolean;
+    action?: string;
 }
 
 export type KobraReportSuffix =
@@ -199,16 +200,22 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         }
         if (!payload || typeof payload !== 'object') return;
         const suffix = topic.split('/').slice(-2).join('/') as KobraReportSuffix;
-        this.log.debug(`RX ${suffix} state=${payload.state ?? ''} action=${payload.action ?? ''}`);
+        const rxLevel = payload.state === 'failed' ? 'warn' : 'debug';
+        this.log[rxLevel](
+            `RX ${suffix} action=${payload.action ?? ''} state=${payload.state ?? ''} code=${payload.code ?? ''}${payload.msg && payload.msg !== 'done' ? ` msg=${payload.msg}` : ''}`,
+        );
 
         const msgid = payload.msgid;
         const byReport = this.pendingByReport.get(suffix);
-        if (byReport && (!msgid || byReport.msgid === msgid)) {
+        if (
+            byReport &&
+            (!msgid || byReport.msgid === msgid || (byReport.action && byReport.action === payload.action))
+        ) {
             this.settle(byReport, payload);
         }
         if (msgid) {
             const byId = this.pendingByMsgId.get(msgid);
-            if (byId) this.settle(byId, payload);
+            if (byId && (!byId.action || suffix === byId.reportKey)) this.settle(byId, payload);
         }
         this.emit('report', suffix, payload);
     }
@@ -237,6 +244,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         action: string,
         data?: unknown,
         timeoutMs = 5000,
+        matchAction = false,
     ): Promise<KobraMessage<T> | null> {
         const client = this.client;
         if (!client?.connected) return Promise.resolve(null);
@@ -252,7 +260,14 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
                 resolve: resolve as (m: KobraMessage | null) => void,
                 reportKey,
                 reportRegistered: false,
-                timer: setTimeout(() => this.settle(pending, null), Math.max(timeoutMs, 1)),
+                action: matchAction ? action : undefined,
+                timer: setTimeout(
+                    () => {
+                        if (level === 'info') this.log.warn(`No reply to ${type}/${action} after ${timeoutMs}ms`);
+                        this.settle(pending, null);
+                    },
+                    Math.max(timeoutMs, 1),
+                ),
             };
             this.pendingByMsgId.set(msgid, pending);
             if (!this.pendingByReport.has(reportKey)) {
@@ -368,7 +383,8 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
     }
 
     moveAxis(axis: number, moveType: number, distance = 0) {
-        this.send('axis', 'move', { axis, move_type: moveType, distance });
+        const timeoutMs = moveType === 2 ? 30000 : 5000;
+        return this.request('axis', 'move', { axis, move_type: moveType, distance }, timeoutMs, true);
     }
 
     disableSteppers() {

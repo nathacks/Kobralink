@@ -1,4 +1,4 @@
-import { Controller, Get, Header, MessageEvent, Sse } from '@nestjs/common';
+import { Controller, Get, Header, MessageEvent, Query, Sse } from '@nestjs/common';
 import { fromEvent, map, merge, Observable, of } from 'rxjs';
 import { type LogEntry, logBuffer } from './log-buffer';
 
@@ -15,9 +15,10 @@ export class LogsController {
     @Get('download')
     @Header('content-type', 'text/plain; charset=utf-8')
     @Header('content-disposition', `attachment; filename="kobralink-log.txt"`)
-    download(): string {
+    download(@Query('printerId') printerId?: string): string {
         const lines = logBuffer
             .all()
+            .filter((e) => !printerId || (printerId === 'system' ? !e.printerId : e.printerId === printerId))
             .map(
                 (e) =>
                     `[${new Date(e.ts).toISOString()}] ${e.level.toUpperCase().padEnd(7)} ${e.context}: ${e.message}`,

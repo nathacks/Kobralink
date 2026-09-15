@@ -16,6 +16,7 @@
         "bundle": "bunx prisma generate && bunx nest build && bun scripts/bundle.ts"
     },
     "dependencies": {
+        "@better-auth/api-key": "^1.7.5",
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
         "@kobralink/i18n": "workspace:*",
         "@kobralink/kobra-protocol": "workspace:*",

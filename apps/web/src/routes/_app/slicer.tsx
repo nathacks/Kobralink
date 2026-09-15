@@ -1,28 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Check, Copy, ExternalLink, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ApiKeysCard } from '@/components/slicer/api-keys-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useHosts } from '@/hooks/use-hosts';
 import { usePrinters } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
-import { systemInfoQuery } from '@/lib/queries';
 
 export const Route = createFileRoute('/_app/slicer')({ component: SlicerPage });
 
 const ORCA_WIKI = 'https://github.com/SoftFever/OrcaSlicer/wiki';
-const KX_BUILD = 'https://gitea.it-drui.de/viewit/OrcaSlicer-KX/releases/latest';
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '']);
-
-function useHosts(): string[] {
-    const info = useQuery(systemInfoQuery);
-    const current = window.location.hostname;
-    const lan = info.data?.lanIps ?? [];
-    const hosts = LOCAL_HOSTS.has(current) ? lan : [current, ...lan.filter((h) => h !== current)];
-    return hosts.length ? hosts : ['localhost'];
-}
-
 function CopyButton({ value }: { value: string }) {
     const [done, setDone] = useState(false);
     const copy = async () => {
@@ -53,12 +42,7 @@ function SlicerPage() {
         [m.slicer_step_4_title(), m.slicer_step_4()],
     ];
     const firstPort = printers[0]?.httpPort ?? 7125;
-    const notes = [
-        m.slicer_note_running(),
-        m.slicer_note_firewall({ port: firstPort }),
-        m.slicer_note_ams(),
-        m.slicer_note_kx_build(),
-    ];
+    const notes = [m.slicer_note_running(), m.slicer_note_firewall({ port: firstPort }), m.slicer_note_ams()];
 
     return (
         <div className="space-y-4">
@@ -110,6 +94,8 @@ function SlicerPage() {
                 </CardContent>
             </Card>
 
+            <ApiKeysCard />
+
             <div className="grid gap-4 lg:grid-cols-2">
                 <Card className="rounded-3xl">
                     <CardHeader>
@@ -149,11 +135,6 @@ function SlicerPage() {
                             <Button asChild variant="secondary" size="sm" className="rounded-full">
                                 <a href={ORCA_WIKI} target="_blank" rel="noreferrer">
                                     <ExternalLink /> {m.slicer_open_orca_docs()}
-                                </a>
-                            </Button>
-                            <Button asChild variant="secondary" size="sm" className="rounded-full">
-                                <a href={KX_BUILD} target="_blank" rel="noreferrer">
-                                    <ExternalLink /> {m.slicer_open_kx_build()}
                                 </a>
                             </Button>
                         </div>

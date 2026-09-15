@@ -476,7 +476,7 @@ export class MoonrakerService {
     }
 
     uiUrl(): string {
-        return `${loadEnv().baseUrl}/printers/${this.bridge.id}`;
+        return `${loadEnv().baseUrl}/printers/${this.bridge.id}?pin=1`;
     }
 }
 

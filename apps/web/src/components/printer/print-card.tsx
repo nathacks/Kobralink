@@ -16,9 +16,11 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const qc = useQueryClient();
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
+
     const pause = usePrinterAction(printerId, api.control.pause, m.print_pause_requested);
     const resume = usePrinterAction(printerId, api.control.resume, m.print_resume_requested);
     const cancel = usePrinterAction(printerId, api.control.cancel, m.print_cancel_requested);
+
     const clearReady = useMutation({
         mutationFn: () => api.control.clearFileReady(printerId),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'state'] }),

@@ -30,6 +30,7 @@ import {
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
 import { connectionErrorMessage, m, protocolErrorMessage } from '../i18n/locale';
+import { bindPrinterContext } from '../logs/log-buffer';
 import {
     aggregateAceUnits,
     aggregateSlots,
@@ -67,8 +68,18 @@ export interface FilamentUsageSink {
     useFilament(spoolId: string | number, mm: number): Promise<void>;
 }
 
+export interface CommandRefused {
+    printerId: string;
+    printerName: string;
+    topic: string;
+    action: string;
+    code: number | string;
+    msg: string;
+}
+
 export interface BridgeEvents {
     state: [state: PrinterLiveState];
+    refused: [refused: CommandRefused];
     log: [line: string];
     event: [event: BridgeDomainEvent];
     layer: [layer: number, total: number];
@@ -116,6 +127,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     ) {
         super();
         this.log = new Logger(`Bridge:${config.name}`);
+        bindPrinterContext(`Bridge:${config.name}`, config.id);
         this.camera = new CameraCache(this.log);
         this.s = {
             printerId: config.id,
@@ -388,6 +400,21 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private onReport(suffix: string, payload: KobraMessage): void {
+        if (payload.state === 'failed') {
+            this.log.warn(
+                `${suffix} failed: action=${payload.action} code=${payload.code ?? '?'} msg=${payload.msg ?? ''}`,
+            );
+            if (!(suffix === 'axis/report' && payload.action === 'move')) {
+                this.emit('refused', {
+                    printerId: this.config.id,
+                    printerName: this.config.name,
+                    topic: suffix.replace('/report', ''),
+                    action: payload.action ?? '',
+                    code: payload.code ?? '?',
+                    msg: payload.msg ?? '',
+                });
+            }
+        }
         switch (suffix) {
             case 'tempature/report':
                 this.onTemp(payload as KobraMessage<Partial<Record<string, number>>>);
@@ -1000,9 +1027,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.publish();
     }
 
-    moveAxis(axis: number, moveType: number, distance: number): void {
+    async moveAxis(axis: number, moveType: number, distance: number): Promise<void> {
         this.ensureConnected();
-        this.client.moveAxis(axis, moveType, distance);
+        const res = await this.client.moveAxis(axis, moveType, distance);
+        if (!res) return;
+        if (res.state === 'failed') {
+            throw new BridgeRequestError(m.api_axis_refused({ code: res.code ?? '?', msg: res.msg ?? '' }));
+        }
     }
 
     disableSteppers(): void {

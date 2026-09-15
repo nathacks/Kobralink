@@ -2,6 +2,7 @@ import type { KobralinkEvent, PrinterLiveState } from '@kobralink/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { m } from '@/lib/i18n';
 import { appSettingsQuery } from '@/lib/queries';
 import { printersStore } from '@/stores/printers';
 
@@ -52,6 +53,35 @@ export function useGlobalEvents() {
                     new Notification(event.title, { body: event.body, tag: event.id });
                 } catch {}
             }
+        });
+        es.addEventListener('log', (ev) => {
+            let entry: { level: string; context: string; message: string };
+            try {
+                entry = JSON.parse((ev as MessageEvent).data);
+            } catch {
+                return;
+            }
+            toast.error(entry.message, { description: entry.context, duration: 8000 });
+        });
+        es.addEventListener('refused', (ev) => {
+            let r: {
+                printerId: string;
+                printerName: string;
+                topic: string;
+                action: string;
+                code: string | number;
+                msg: string;
+            };
+            try {
+                r = JSON.parse((ev as MessageEvent).data);
+            } catch {
+                return;
+            }
+            toast.error(m.toast_command_refused({ command: `${r.topic}/${r.action}`, code: r.code, msg: r.msg }), {
+                id: `refused:${r.printerId}:${r.topic}:${r.action}`,
+                description: r.printerName,
+                duration: 8000,
+            });
         });
         return () => es.close();
     }, [qc]);

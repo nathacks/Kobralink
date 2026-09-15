@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Kobralink = réécriture TypeScript de KX-Bridge (bridge Moonraker pour Anycubic Kobra X).
+Kobralink = bridge Moonraker pour Anycubic Kobra X (TypeScript).
 Référence Python d'origine : `/Users/nathan/Developer/Python/KX-Bridge-Release` (protocole MQTT,
 payloads, comportements à reproduire).
 
@@ -54,6 +54,6 @@ Pas de pnpm/npm : lockfile = `bun.lock`, scripts de workspace via `bun run --fil
 ## Règles
 
 - Ne jamais committer sans demande explicite.
-- Les certificats `apps/api/certs/*` (cert client Anycubic Slicer, extraits par KX-Bridge) sont du matériel tiers :
+- Les certificats `apps/api/certs/*` (cert client Anycubic Slicer) sont du matériel tiers :
   ne pas les modifier. Ils sont embarqués tels quels dans le repo, l'image Docker et le bundle Electron pour que
   l'utilisateur n'ait rien à fournir ; pas de génération possible (le broker MQTT de l'imprimante vérifie ce cert précis).

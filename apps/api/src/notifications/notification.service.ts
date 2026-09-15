@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import type { KobralinkEvent, KobralinkEventType, NotificationSettings, PrinterLiveState } from '@kobralink/shared';
 import { Injectable, Logger } from '@nestjs/common';
-import type { BridgeDomainEvent, PrinterBridge } from '../bridge/printer-bridge';
+import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
 import { m, runWithLocale } from '../i18n/locale';
 import { SettingsService } from '../settings/settings.service';
 
@@ -30,6 +30,7 @@ const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events'
 export class NotificationService extends EventEmitter<{
     notification: [KobralinkEvent];
     state: [printerId: string, state: PrinterLiveState];
+    refused: [refused: CommandRefused];
 }> {
     private readonly log = new Logger(NotificationService.name);
     private readonly history: KobralinkEvent[] = [];
@@ -53,11 +54,14 @@ export class NotificationService extends EventEmitter<{
                 pending = null;
             }, 1000);
         };
+        const onRefused = (r: CommandRefused) => this.emit('refused', r);
         bridge.on('event', onEvent);
         bridge.on('state', onState);
+        bridge.on('refused', onRefused);
         this.detached.set(bridge.id, () => {
             bridge.off('event', onEvent);
             bridge.off('state', onState);
+            bridge.off('refused', onRefused);
             if (timer) clearTimeout(timer);
         });
     }

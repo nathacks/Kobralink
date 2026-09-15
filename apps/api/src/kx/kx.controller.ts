@@ -133,7 +133,7 @@ export class KxController {
     @Post('axis')
     @HttpCode(204)
     axis(@Param('id') id: string, @Body(new ZodPipe(moveAxisSchema)) body: MoveAxisInput) {
-        this.run(() => this.bridge(id).moveAxis(body.axis, body.moveType, body.distance));
+        return this.run(() => this.bridge(id).moveAxis(body.axis, body.moveType, body.distance));
     }
 
     @Post('axis/off')

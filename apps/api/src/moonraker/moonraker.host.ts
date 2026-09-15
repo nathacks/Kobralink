@@ -8,6 +8,7 @@ import { GcodeService } from '../gcode/gcode.service';
 import { MacroService } from '../macros/macro.service';
 import { QueueService } from '../queue/queue.service';
 import { MoonrakerAppModule } from './moonraker-app.module';
+import { MoonrakerAuthService } from './moonraker-auth.service';
 
 @Injectable()
 export class MoonrakerHost {
@@ -19,12 +20,13 @@ export class MoonrakerHost {
         private readonly filaments: FilamentService,
         private readonly queue: QueueService,
         private readonly macros: MacroService,
+        private readonly authz: MoonrakerAuthService,
     ) {}
 
     async startFor(bridge: PrinterBridge): Promise<void> {
         if (this.apps.has(bridge.id)) return;
         const app = await NestFactory.create<NestExpressApplication>(
-            MoonrakerAppModule.forPrinter(bridge, this.gcode, this.filaments, this.queue, this.macros),
+            MoonrakerAppModule.forPrinter(bridge, this.gcode, this.filaments, this.queue, this.macros, this.authz),
             {
                 logger: ['error', 'warn', 'log'],
                 bodyParser: true,

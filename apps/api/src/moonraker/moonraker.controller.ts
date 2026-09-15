@@ -24,6 +24,7 @@ import { GcodeService } from '../gcode/gcode.service';
 import { m } from '../i18n/locale';
 import { MoonrakerGateway } from './moonraker.gateway';
 import { MoonrakerService } from './moonraker.service';
+import { MoonrakerAuthService } from './moonraker-auth.service';
 
 const UPLOAD_LIMIT = 512 * 1024 * 1024;
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
@@ -36,6 +37,7 @@ export class MoonrakerController {
         private readonly moon: MoonrakerService,
         private readonly gateway: MoonrakerGateway,
         private readonly gcode: GcodeService,
+        private readonly authz: MoonrakerAuthService,
     ) {}
 
     @Get()
@@ -92,7 +94,17 @@ export class MoonrakerController {
 
     @Get('access/api_key')
     apiKey() {
-        return { result: 'kobralink-no-auth' };
+        return { result: this.authz.required ? 'managed-by-kobralink' : 'kobralink-no-auth' };
+    }
+
+    @Get('access/info')
+    accessInfo() {
+        return { result: { default_source: 'moonraker', available_sources: ['moonraker'] } };
+    }
+
+    @All('access/oneshot_token')
+    oneshotToken() {
+        return { result: this.authz.issueOneshot() };
     }
 
     @Get('machine/update/status')

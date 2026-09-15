@@ -6,6 +6,7 @@ export interface LogEntry {
     level: LogLevel;
     context: string;
     message: string;
+    printerId?: string;
 }
 
 const MAX = 2000;
@@ -27,16 +28,22 @@ class LogBuffer extends EventEmitter<{ entry: [LogEntry] }> {
 export const logBuffer = new LogBuffer();
 logBuffer.setMaxListeners(100);
 
+const printerContexts = new Map<string, string>();
+
+export function bindPrinterContext(context: string, printerId: string): void {
+    printerContexts.set(context, printerId);
+}
+
 export class BufferedLogger extends ConsoleLogger {
     private record(level: LogLevel, message: unknown, context?: string): void {
-        if (!this.isLevelEnabled(level)) return;
         const text =
             message instanceof Error
                 ? (message.stack ?? message.message)
                 : typeof message === 'string'
                   ? message
                   : JSON.stringify(message);
-        logBuffer.push({ ts: Date.now(), level, context: context ?? '', message: text });
+        const ctx = context ?? '';
+        logBuffer.push({ ts: Date.now(), level, context: ctx, message: text, printerId: printerContexts.get(ctx) });
     }
 
     override log(message: unknown, context?: string): void {

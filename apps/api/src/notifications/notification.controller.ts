@@ -1,6 +1,8 @@
 import type { KobralinkEvent, PrinterLiveState } from '@kobralink/shared';
 import { Controller, Get, MessageEvent, Post, Sse } from '@nestjs/common';
-import { fromEvent, map, merge, Observable } from 'rxjs';
+import { filter, fromEvent, map, merge, Observable } from 'rxjs';
+import type { CommandRefused } from '../bridge/printer-bridge';
+import { type LogEntry, logBuffer } from '../logs/log-buffer';
 import { NotificationService } from './notification.service';
 
 @Controller('kx')
@@ -28,6 +30,13 @@ export class NotificationController {
                 state,
             })) as Observable<{ printerId: string; state: PrinterLiveState }>
         ).pipe(map((ev): MessageEvent => ({ type: 'state', data: ev as unknown as object })));
-        return merge(notifications, states);
+        const errors = (fromEvent(logBuffer, 'entry') as Observable<LogEntry>).pipe(
+            filter((e) => e.level === 'error'),
+            map((e): MessageEvent => ({ type: 'log', data: e as unknown as object })),
+        );
+        const refused = (fromEvent(this.notifications, 'refused') as Observable<CommandRefused>).pipe(
+            map((r): MessageEvent => ({ type: 'refused', data: r as unknown as object })),
+        );
+        return merge(notifications, states, errors, refused);
     }
 }
