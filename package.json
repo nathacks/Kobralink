@@ -16,7 +16,8 @@
         "db:generate": "bun run --filter @kobralink/api db:generate",
         "db:studio": "bun run --filter @kobralink/api db:studio",
         "prepare": "bunx husky",
-        "version:set": "bun scripts/set-version.mjs"
+        "version:set": "bun scripts/set-version.mjs",
+        "certs:extract": "bun scripts/extract-certs.mjs"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.5.6",

@@ -1,27 +1,24 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { PrinterLiveState, PrinterSample } from '@kobralink/shared';
 import { createStore } from '@tanstack/react-store';
 import type { PrinterWithLive } from '@/lib/api';
 
-export interface Sample {
-    t: number;
-    nozzle: number;
-    bed: number;
-    progress: number;
-}
+export type Sample = PrinterSample;
 
-const MAX_SAMPLES = 60;
+const MAX_SAMPLES = 120;
 export const EMPTY_SAMPLES: Sample[] = [];
 
 export interface PrintersState {
     printers: Record<string, PrinterWithLive>;
     order: string[];
     samples: Record<string, Sample[]>;
+    seeded: Record<string, boolean>;
 }
 
 const initialState: PrintersState = {
     printers: {},
     order: [],
     samples: {},
+    seeded: {},
 };
 
 export const printersStore = createStore(initialState, ({ setState }) => ({
@@ -41,11 +38,27 @@ export const printersStore = createStore(initialState, ({ setState }) => ({
         setState((s) => {
             const { [id]: _, ...rest } = s.printers;
             const { [id]: __, ...samples } = s.samples;
+            const { [id]: ___, ...seeded } = s.seeded;
             return {
                 ...s,
                 printers: rest,
                 samples,
+                seeded,
                 order: s.order.filter((x) => x !== id),
+            };
+        }),
+    seedSamples: (id: string, history: Sample[]) =>
+        setState((s) => {
+            const old = s.samples[id] ?? EMPTY_SAMPLES;
+            const firstLive = old[0]?.t ?? Number.POSITIVE_INFINITY;
+            const merged = [...history.filter((x) => x.t < firstLive), ...old];
+            return {
+                ...s,
+                seeded: { ...s.seeded, [id]: true },
+                samples: {
+                    ...s.samples,
+                    [id]: merged.length > MAX_SAMPLES ? merged.slice(merged.length - MAX_SAMPLES) : merged,
+                },
             };
         }),
     setLiveState: (id: string, live: PrinterLiveState) =>

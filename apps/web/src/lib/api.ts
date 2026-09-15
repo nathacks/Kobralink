@@ -25,6 +25,7 @@ import type {
     PrinterDetectionDto,
     PrinterFileDto,
     PrinterLiveState,
+    PrinterSample,
     PrintJobDto,
     PrintPrinterFileInput,
     QueueItemDto,
@@ -115,6 +116,7 @@ export const api = {
         refreshCredentials: (id: string) =>
             request<Printer>(`/kx/printers/${id}/refresh-credentials`, { method: 'POST' }),
         state: (id: string) => request<PrinterLiveState>(`/kx/printers/${id}/state`),
+        samples: (id: string) => request<PrinterSample[]>(`/kx/printers/${id}/samples`),
     },
 
     control: {

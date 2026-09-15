@@ -1,6 +1,8 @@
 import { type PrinterSettingsFormValues, printerSettingsFormSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
@@ -106,7 +108,16 @@ export function PrinterSettingsForm({
                 void form.handleSubmit();
             }}
         >
-            <h2 className="px-2 text-xl font-medium">{m.settings_title({ name: printer.name })}</h2>
+            <div className="flex flex-wrap items-center gap-3 px-2">
+                <Link
+                    to="/printers/$printerId"
+                    params={{ printerId: printer.id }}
+                    className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm hover:bg-accent"
+                >
+                    <ArrowLeft className="size-4" /> {m.common_back()}
+                </Link>
+                <h2 className="text-xl font-medium">{m.settings_title({ name: printer.name })}</h2>
+            </div>
 
             <Card className="rounded-3xl border-0 shadow-none">
                 <CardHeader>

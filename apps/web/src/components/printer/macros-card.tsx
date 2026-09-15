@@ -1,42 +1,25 @@
-import type { MacroIcon } from '@kobralink/shared';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import {
-    Droplets,
-    Flame,
-    Home,
-    Lightbulb,
-    type LucideIcon,
-    Settings2,
-    Snowflake,
-    Sparkles,
-    Timer,
-    Wind,
-    Wrench,
-    Zap,
-} from 'lucide-react';
+import { Plus, Settings2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { MacrosEditor, openMacroForm } from '@/components/settings/macros-editor';
+import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePinnedPrinter } from '@/hooks/use-pinned-printer';
 import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { macrosQuery } from '@/lib/queries';
+import { confirmationDialogStore } from '@/stores/confirmation-dialog';
+import { MACRO_ICON } from './macro-icon';
 
-export const MACRO_ICON: Record<MacroIcon, LucideIcon> = {
-    zap: Zap,
-    flame: Flame,
-    wind: Wind,
-    lightbulb: Lightbulb,
-    home: Home,
-    droplets: Droplets,
-    snowflake: Snowflake,
-    timer: Timer,
-    wrench: Wrench,
-    sparkles: Sparkles,
-};
+const manageClass =
+    'flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5';
 
 export function MacrosCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
+    const pinned = usePinnedPrinter();
+    const qc = useQueryClient();
     const macros = useQuery(macrosQuery);
     const run = useMutation({
         mutationFn: (macroId: string) => api.macros.run(printerId, macroId),
@@ -44,25 +27,59 @@ export function MacrosCard({ printerId }: { printerId: string }) {
         onError: (e) => toast.error(e.message),
     });
     const list = macros.data ?? [];
+    const invalidate = () => qc.invalidateQueries({ queryKey: ['macros'] });
+    const openManager = () =>
+        confirmationDialogStore.actions.openDialog({
+            title: m.macros_title(),
+            description: m.macros_hint(),
+            props: { className: 'rounded-3xl sm:max-w-2xl' },
+            content: <MacrosEditor embedded />,
+        });
     return (
         <Card className="rounded-3xl border-0 shadow-none">
             <CardHeader>
                 <CardTitle className="text-lg font-medium">{m.macros_title()}</CardTitle>
                 <CardAction>
-                    <Link
-                        to="/settings"
-                        search={{ tab: 'macros' }}
-                        title={m.macros_manage()}
-                        aria-label={m.macros_manage()}
-                        className="flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5"
-                    >
-                        <Settings2 />
-                    </Link>
+                    {pinned ? (
+                        <button
+                            type="button"
+                            title={m.macros_manage()}
+                            aria-label={m.macros_manage()}
+                            className={manageClass}
+                            onClick={openManager}
+                        >
+                            <Settings2 />
+                        </button>
+                    ) : (
+                        <Link
+                            to="/settings"
+                            search={{ tab: 'macros' }}
+                            title={m.macros_manage()}
+                            aria-label={m.macros_manage()}
+                            className={manageClass}
+                        >
+                            <Settings2 />
+                        </Link>
+                    )}
                 </CardAction>
             </CardHeader>
             <CardContent>
                 {list.length === 0 ? (
-                    <p className="py-4 text-center text-sm text-muted-foreground">{m.macros_empty()}</p>
+                    pinned ? (
+                        <div className="flex flex-col items-center gap-3 py-4">
+                            <p className="text-sm text-muted-foreground">{m.macros_empty_pinned()}</p>
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="rounded-full"
+                                onClick={() => openMacroForm(undefined, invalidate)}
+                            >
+                                <Plus /> {m.macros_add()}
+                            </Button>
+                        </div>
+                    ) : (
+                        <p className="py-4 text-center text-sm text-muted-foreground">{m.macros_empty()}</p>
+                    )
                 ) : (
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2">
                         {list.map((macro) => {

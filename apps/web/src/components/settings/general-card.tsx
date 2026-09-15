@@ -2,8 +2,9 @@ import type { AppSettings } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { LOCALE_LABEL, m } from '@/lib/i18n';
-import { SettingsCard, SwitchRow, useSaveSettings } from './settings-form-card';
+import { SettingsCard, SwitchRow } from './settings-form-card';
 
 export function GeneralCard({ settings }: { settings: AppSettings }) {
     const save = useSaveSettings();

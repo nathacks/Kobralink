@@ -150,11 +150,32 @@ export class GcodeService {
         return r.count > 0;
     }
 
-    async startJob(printerId: string, filename: string, fileId: string | null): Promise<string> {
+    async startJob(
+        printerId: string,
+        filename: string,
+        fileId: string | null,
+        estimatedSec = 0,
+        startedAt?: Date,
+    ): Promise<string> {
+        await this.closeOpenJobs(printerId, 'error');
         const job = await this.prisma.client.printJob.create({
-            data: { printerId, filename, fileId, status: 'printing' },
+            data: {
+                printerId,
+                filename,
+                fileId,
+                status: 'printing',
+                estimatedSec: Math.max(0, Math.round(estimatedSec)),
+                ...(startedAt ? { startedAt } : {}),
+            },
         });
         return job.id;
+    }
+
+    async findOpenJob(printerId: string): Promise<PrintJob | null> {
+        return this.prisma.client.printJob.findFirst({
+            where: { printerId, status: 'printing' },
+            orderBy: { startedAt: 'desc' },
+        });
     }
 
     async finishJob(
@@ -162,28 +183,39 @@ export class GcodeService {
         status: 'completed' | 'cancelled' | 'error',
         filamentMm = 0,
         spoolUsage: SpoolUsageEntry[] = [],
+        printDurationSec = 0,
     ): Promise<void> {
         const job = await this.prisma.client.printJob.findUnique({ where: { id: jobId } });
         if (!job) return;
         const now = new Date();
+        const wallSec = Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000));
+        const durationSec = printDurationSec > 0 ? Math.round(printDurationSec) : wallSec;
         await this.prisma.client.printJob.update({
             where: { id: jobId },
             data: {
                 status,
                 finishedAt: now,
-                durationSec: Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000)),
+                durationSec,
                 filamentMm: Math.max(0, Math.round(filamentMm)),
                 spoolUsage: JSON.stringify(spoolUsage),
             },
         });
     }
 
-    async closeStaleJobs(): Promise<number> {
-        const r = await this.prisma.client.printJob.updateMany({
-            where: { status: 'printing' },
-            data: { status: 'error', finishedAt: new Date() },
-        });
-        return r.count;
+    async closeOpenJobs(printerId: string, status: 'completed' | 'cancelled' | 'error'): Promise<number> {
+        const open = await this.prisma.client.printJob.findMany({ where: { printerId, status: 'printing' } });
+        const now = new Date();
+        for (const job of open) {
+            await this.prisma.client.printJob.update({
+                where: { id: job.id },
+                data: {
+                    status,
+                    finishedAt: now,
+                    durationSec: Math.max(0, Math.round((now.getTime() - job.startedAt.getTime()) / 1000)),
+                },
+            });
+        }
+        return open.length;
     }
 
     async listJobs(printerId: string | undefined, limit = 50, offset = 0): Promise<PrintJobDto[]> {
@@ -248,6 +280,7 @@ export function toJobDto(j: PrintJob, thumbnail: string | null = null): PrintJob
         startedAt: j.startedAt.toISOString(),
         finishedAt: j.finishedAt?.toISOString() ?? null,
         durationSec: j.durationSec,
+        estimatedSec: j.estimatedSec,
         filamentMm: j.filamentMm,
         spoolUsage,
         thumbnail,

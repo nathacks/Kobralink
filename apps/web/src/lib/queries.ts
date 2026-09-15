@@ -18,6 +18,9 @@ export const printerStateQuery = (id: string) =>
         refetchInterval: 15_000,
     });
 
+export const printerSamplesQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'samples'], queryFn: () => api.printers.samples(id), staleTime: 0 });
+
 export const filesQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'files'], queryFn: () => api.files.list(id) });
 
@@ -75,6 +78,7 @@ export const printerFileThumbQuery = (id: string, filename: string) =>
         queryFn: () => api.printerFiles.thumbnail(id, filename),
         staleTime: Number.POSITIVE_INFINITY,
         retry: false,
+        meta: { silent: true },
     });
 
 export const powerStatusQuery = (id: string, enabled: boolean) =>

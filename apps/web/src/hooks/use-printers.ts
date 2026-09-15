@@ -15,3 +15,5 @@ export const useLiveState = (id: string): PrinterLiveState => {
 };
 
 export const useSamples = (id: string) => useSelector(printersStore, (s) => s.samples[id] ?? EMPTY_SAMPLES);
+
+export const useSamplesReady = (id: string) => useSelector(printersStore, (s) => s.seeded[id] === true);

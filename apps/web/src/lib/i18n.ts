@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
 import { useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import { m } from '@/paraglide/messages';
@@ -12,6 +14,8 @@ import {
 
 export { baseLocale, getLocale, isLocale, type Locale, locales, m };
 
+dayjs.locale(getLocale());
+
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void): () => void {
@@ -22,6 +26,7 @@ function subscribe(listener: () => void): () => void {
 export function setLocale(locale: Locale): void {
     if (locale === getLocale()) return;
     paraglideSetLocale(locale, { reload: false });
+    dayjs.locale(locale);
     document.documentElement.lang = locale;
     for (const listener of listeners) listener();
 }

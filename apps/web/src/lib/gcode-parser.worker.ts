@@ -90,7 +90,7 @@ function parse(text: string, report: (p: number) => void): ParsedGcode {
                 const extruding = hasE && ne > e + 1e-6 && (nx !== x || ny !== y);
                 if (extruding) {
                     const layer = ensureLayer(nz);
-                    layer.segs.push(x, y, nx, ny);
+                    layer.segs.push(x, y, nx, ny, ne - e);
                     if (nx < minX) minX = nx;
                     if (nx > maxX) maxX = nx;
                     if (ny < minY) minY = ny;
@@ -122,7 +122,7 @@ function parse(text: string, report: (p: number) => void): ParsedGcode {
         }
     }
     const out = layers
-        .filter((l) => l.segs.length >= 4)
+        .filter((l) => l.segs.length >= 5)
         .sort((a, b) => a.z - b.z)
         .map((l) => ({ z: l.z, segs: Float32Array.from(l.segs) }));
     if (!Number.isFinite(minX)) {

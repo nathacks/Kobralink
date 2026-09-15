@@ -3,8 +3,9 @@ import { useForm } from '@tanstack/react-form';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
-import { Field, SettingsCard, SwitchRow, useSaveSettings } from './settings-form-card';
+import { Field, SettingsCard, SwitchRow } from './settings-form-card';
 
 export function HaMqttCard({ settings }: { settings: AppSettings }) {
     const save = useSaveSettings();

@@ -3,6 +3,8 @@ import { Loader2, Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
+import { useFileActions } from '@/hooks/use-file-actions';
+import { useFileDrop } from '@/hooks/use-file-drop';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -12,8 +14,6 @@ import { PrinterFilesGrid } from './printer-files-grid';
 import { TabButton } from './tab-button';
 import { TimelapseList } from './timelapse-list';
 import { DropOverlay, UploadEmptyState } from './upload-empty-state';
-import { useFileActions } from './use-file-actions';
-import { useFileDrop } from './use-file-drop';
 
 type Tab = 'files' | 'web' | 'printer' | 'history' | 'timelapses';
 

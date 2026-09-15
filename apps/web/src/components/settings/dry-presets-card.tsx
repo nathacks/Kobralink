@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
-import { SettingsCard, useSaveSettings } from './settings-form-card';
+import { SettingsCard } from './settings-form-card';
 
 export function DryPresetsCard({ settings }: { settings: AppSettings }) {
     const save = useSaveSettings();

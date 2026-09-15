@@ -1,4 +1,3 @@
-
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -75,27 +74,27 @@ model Verification {
 }
 
 model Printer {
-  id        String   @id @default(cuid())
-  name      String
-  ip        String
-  mqttPort  Int      @default(9883)
-  username  String
-  password  String
-  deviceId  String
-  modeId    String   @default("20030")
-  model     String   @default("Anycubic Kobra X")
-  httpPort  Int      @unique
-  settings  String   @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  files     GcodeFile[]
-  jobs      PrintJob[]
-  slotProfiles SlotProfile[]
-  spoolAssignments SpoolAssignment[]
+  id                    String                 @id @default(cuid())
+  name                  String
+  ip                    String
+  mqttPort              Int                    @default(9883)
+  username              String
+  password              String
+  deviceId              String
+  modeId                String                 @default("20030")
+  model                 String                 @default("Anycubic Kobra X")
+  httpPort              Int                    @unique
+  settings              String                 @default("{}")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  files                 GcodeFile[]
+  jobs                  PrintJob[]
+  slotProfiles          SlotProfile[]
+  spoolAssignments      SpoolAssignment[]
   localSpoolAssignments LocalSpoolAssignment[]
-  timelapses Timelapse[]
-  queueItems QueueItem[]
-  scheduledDries ScheduledDry[]
+  timelapses            Timelapse[]
+  queueItems            QueueItem[]
+  scheduledDries        ScheduledDry[]
 
   @@map("printer")
 }
@@ -175,21 +174,21 @@ model SlotProfile {
 }
 
 model GcodeFile {
-  id               String    @id
+  id               String      @id
   printerId        String?
-  printer          Printer?  @relation(fields: [printerId], references: [id], onDelete: SetNull)
+  printer          Printer?    @relation(fields: [printerId], references: [id], onDelete: SetNull)
   filename         String
   sizeBytes        Int
   md5              String
-  estPrintTimeSec  Int       @default(0)
-  layerHeight      Float     @default(0)
-  firstLayerHeight Float     @default(0)
+  estPrintTimeSec  Int         @default(0)
+  layerHeight      Float       @default(0)
+  firstLayerHeight Float       @default(0)
   thumbnail        String?
-  filaments        String    @default("[]")
-  objects          String    @default("[]")
+  filaments        String      @default("[]")
+  objects          String      @default("[]")
   svgImage         String?
-  webUnverified    Boolean   @default(false)
-  createdAt        DateTime  @default(now())
+  webUnverified    Boolean     @default(false)
+  createdAt        DateTime    @default(now())
   jobs             PrintJob[]
   queueItems       QueueItem[]
 
@@ -198,19 +197,20 @@ model GcodeFile {
 }
 
 model PrintJob {
-  id          String     @id @default(cuid())
-  printerId   String
-  printer     Printer    @relation(fields: [printerId], references: [id], onDelete: Cascade)
-  fileId      String?
-  file        GcodeFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  filename    String
-  status      String     @default("printing")
-  startedAt   DateTime   @default(now())
-  finishedAt  DateTime?
-  durationSec Int?
-  filamentMm  Float      @default(0)
-  spoolUsage  String     @default("[]")
-  timelapses  Timelapse[]
+  id           String      @id @default(cuid())
+  printerId    String
+  printer      Printer     @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  fileId       String?
+  file         GcodeFile?  @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  filename     String
+  status       String      @default("printing")
+  startedAt    DateTime    @default(now())
+  finishedAt   DateTime?
+  durationSec  Int?
+  estimatedSec Int         @default(0)
+  filamentMm   Float       @default(0)
+  spoolUsage   String      @default("[]")
+  timelapses   Timelapse[]
 
   @@index([printerId, startedAt])
   @@map("print_job")
@@ -248,17 +248,17 @@ model QueueItem {
 }
 
 model LocalSpool {
-  id             String    @id @default(cuid())
+  id             String                 @id @default(cuid())
   name           String
-  vendor         String    @default("")
+  vendor         String                 @default("")
   material       String
-  colorHex       String    @default("#808080")
-  diameterMm     Float     @default(1.75)
-  densityGcm3    Float     @default(1.24)
-  initialWeightG Float     @default(1000)
-  usedMm         Float     @default(0)
-  archived       Boolean   @default(false)
-  createdAt      DateTime  @default(now())
+  colorHex       String                 @default("#808080")
+  diameterMm     Float                  @default(1.75)
+  densityGcm3    Float                  @default(1.24)
+  initialWeightG Float                  @default(1000)
+  usedMm         Float                  @default(0)
+  archived       Boolean                @default(false)
+  createdAt      DateTime               @default(now())
   lastUsedAt     DateTime?
   assignments    LocalSpoolAssignment[]
 

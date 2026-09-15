@@ -1,12 +1,28 @@
-import { intlLocale, m } from '@/lib/i18n';
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
+import duration from 'dayjs/plugin/duration';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import { m } from '@/lib/i18n';
 
-export function formatDuration(sec: number): string {
-    if (!sec || sec < 0) return '—';
-    const h = Math.floor(sec / 3600);
-    const min = Math.floor((sec % 3600) / 60);
-    if (h) return `${h} h ${min.toString().padStart(2, '0')} min`;
-    if (min) return `${min} min`;
-    return `${Math.round(sec)} s`;
+dayjs.extend(duration);
+dayjs.extend(localizedFormat);
+
+export function formatDuration(sec: number, options: { zero?: boolean } = {}): string {
+    if (!Number.isFinite(sec) || sec < 0 || (!sec && !options.zero)) return '—';
+    const d = dayjs.duration(Math.round(sec), 'seconds');
+    const units: [number, (a: { n: string | number }) => string][] = [
+        [Math.floor(d.asDays()), m.duration_days],
+        [d.hours(), m.duration_hours],
+        [d.minutes(), m.duration_minutes],
+        [d.seconds(), m.duration_seconds],
+    ];
+    const first = units.findIndex(([n]) => n > 0);
+    const shown = first < 0 ? units.slice(-1) : units.slice(first, first + 3);
+    return shown.map(([n, msg], i) => msg({ n: i ? String(n).padStart(2, '0') : n })).join(' ');
+}
+
+export function formatMinutes(min: number): string {
+    return formatDuration(min * 60, { zero: true });
 }
 
 export function formatBytes(n: number): string {
@@ -15,22 +31,16 @@ export function formatBytes(n: number): string {
     return m.bytes_mb({ n: (n / (1024 * 1024)).toFixed(1) });
 }
 
-export function formatDate(iso: string): string {
-    return new Date(iso).toLocaleString(intlLocale(), { dateStyle: 'short', timeStyle: 'short' });
+export function formatDate(value: string | number | Date): string {
+    return dayjs(value).format('L LT');
 }
 
-export function formatShortDate(ts: number | string): string {
-    return new Date(ts).toLocaleDateString(intlLocale());
+export function formatShortDate(value: string | number | Date): string {
+    return dayjs(value).format('L');
 }
 
-export function formatTime(ts: number): string {
-    return new Date(ts).toLocaleTimeString(intlLocale());
-}
-
-export function formatMinutes(min: number): string {
-    const h = Math.floor(min / 60);
-    const rest = min % 60;
-    return h ? `${h} h ${rest.toString().padStart(2, '0')}` : `${rest} min`;
+export function formatTime(value: string | number | Date): string {
+    return dayjs(value).format('LTS');
 }
 
 export function greeting(now = new Date()): string {

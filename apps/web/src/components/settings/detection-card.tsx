@@ -10,13 +10,14 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { usePrinters } from '@/hooks/use-printers';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { api } from '@/lib/api';
 import { formatBytes } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { appSettingsQuery, detectionStatusQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
-import { Field, SettingsCard, SwitchRow, useSaveSettings } from './settings-form-card';
+import { Field, SettingsCard, SwitchRow } from './settings-form-card';
 
 const ACTIONS: [FailureDetectionAction, () => string][] = [
     ['notify', m.detection_action_notify],

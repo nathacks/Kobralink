@@ -35,6 +35,7 @@ export interface PrintJobDto {
     startedAt: string;
     finishedAt: string | null;
     durationSec: number | null;
+    estimatedSec: number;
     filamentMm: number;
     spoolUsage: SpoolUsageEntry[];
     thumbnail: string | null;

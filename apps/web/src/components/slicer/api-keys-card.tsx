@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Copy, KeyRound, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useSaveSettings } from '@/components/settings/settings-form-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { useHosts } from '@/hooks/use-hosts';
 import { usePrinters } from '@/hooks/use-printers';
 import { useCanOperate, useIsAdmin } from '@/hooks/use-role';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { authClient } from '@/lib/auth-client';
 import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';

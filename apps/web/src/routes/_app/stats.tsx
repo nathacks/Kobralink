@@ -1,4 +1,4 @@
-import type { StatsDto } from '@kobralink/shared';
+import type { StatsBucket, StatsDto } from '@kobralink/shared';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -15,7 +15,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrinters } from '@/hooks/use-printers';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, formatShortDate } from '@/lib/format';
 import { intlLocale, m } from '@/lib/i18n';
 import { statsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
@@ -80,28 +80,32 @@ function StatsPage() {
                     </div>
                 </div>
             </div>
-            {stats.data ? <StatsBody data={stats.data} /> : <Skeleton className="h-96 rounded-3xl" />}
+            {stats.data ? <StatsBody data={stats.data} days={days} /> : <Skeleton className="h-96 rounded-3xl" />}
         </div>
     );
 }
 
-function StatsBody({ data }: { data: StatsDto }) {
-    const monthFmt = new Intl.DateTimeFormat(intlLocale(), { month: 'short', year: '2-digit' });
-    const dayFmt = new Intl.DateTimeFormat(intlLocale(), { weekday: 'short' });
-    const months = data.months.map((b) => {
-        const [y, mo] = b.key.split('-').map(Number);
-        return {
-            ...b,
-            label: monthFmt.format(new Date(y, mo - 1, 1)),
-            hours: Math.round(b.durationSec / 360) / 10,
-            failed: b.jobs - b.completed,
-        };
-    });
+function StatsBody({ data, days }: { data: StatsDto; days: number }) {
+    const locale = intlLocale();
+    const monthFmt = new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit' });
+    const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
+    const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const useDaily = data.daily.length > 0;
+    const series = useDaily
+        ? data.daily.map((b) => {
+              const [y, mo, d] = b.key.split('-').map(Number);
+              return { ...b, label: dayFmt.format(new Date(y, mo - 1, d)), ...derive(b) };
+          })
+        : data.months.map((b) => {
+              const [y, mo] = b.key.split('-').map(Number);
+              return { ...b, label: monthFmt.format(new Date(y, mo - 1, 1)), ...derive(b) };
+          });
     const weekdays = [...data.weekdays.slice(1), data.weekdays[0]].map((b) => ({
         ...b,
-        label: dayFmt.format(new Date(2024, 0, 1 + ((Number(b.key) + 6) % 7))),
-        failed: b.jobs - b.completed,
+        label: weekdayFmt.format(new Date(2024, 0, 1 + ((Number(b.key) + 6) % 7))),
+        ...derive(b),
     }));
+    const hours = data.hours.map((b) => ({ ...b, label: `${b.key}h`, ...derive(b) }));
     const jobsConfig = {
         completed: { label: m.stats_completed(), color: 'var(--chart-1)' },
         failed: { label: m.stats_failed(), color: 'var(--chart-5)' },
@@ -110,40 +114,58 @@ function StatsBody({ data }: { data: StatsDto }) {
     const materialConfig = {
         weightG: { label: m.stats_material_weight(), color: 'var(--chart-2)' },
     } satisfies ChartConfig;
+    const tickInterval = useDaily ? Math.max(0, Math.ceil(series.length / 10) - 1) : 0;
+    const period =
+        data.firstJobAt && data.lastJobAt
+            ? m.stats_period({ from: formatShortDate(data.firstJobAt), to: formatShortDate(data.lastJobAt) })
+            : '';
 
     return (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Tile
                 label={m.stats_total_jobs()}
                 value={String(data.totalJobs)}
-                sub={m.stats_success_rate({ pct: Math.round(data.successRate * 100) })}
+                sub={m.stats_success_rate({
+                    pct: Math.round(data.successRate * 100),
+                    failed: data.cancelled + data.errored,
+                })}
+                extra={data.inProgress ? m.stats_in_progress({ n: data.inProgress }) : period}
             />
             <Tile
                 label={m.stats_total_time()}
                 value={formatDuration(data.totalDurationSec)}
                 sub={m.stats_avg({ duration: formatDuration(data.avgDurationSec) })}
+                extra={
+                    data.estimateRatio !== null
+                        ? m.stats_estimate({ pct: Math.round((1 / data.estimateRatio) * 100) })
+                        : m.stats_estimate_none()
+                }
             />
             <Tile
                 label={m.stats_longest()}
                 value={formatDuration(data.longestDurationSec)}
-                sub={m.stats_cancelled_n({ n: data.cancelled + data.errored })}
+                sub={`${m.stats_completed()} : ${data.completed}`}
+                extra={days === 0 ? period : ''}
             />
             <Tile
                 label={m.stats_filament()}
                 value={`${(data.totalFilamentMm / 1000).toFixed(1)} m`}
                 sub={m.stats_filament_g({ g: data.totalFilamentG })}
+                extra={data.materials.map((x) => x.material).join(' · ')}
             />
 
             <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
                 <CardHeader>
-                    <CardTitle className="text-lg font-medium">{m.stats_jobs_per_month()}</CardTitle>
+                    <CardTitle className="text-lg font-medium">
+                        {useDaily ? m.stats_jobs_per_day() : m.stats_jobs_per_month()}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {months.length ? (
+                    {data.totalJobs ? (
                         <ChartContainer config={jobsConfig} className="h-64 w-full">
-                            <BarChart data={months} margin={{ left: 0, right: 8 }}>
+                            <BarChart data={series} margin={{ left: 0, right: 8 }}>
                                 <CartesianGrid vertical={false} strokeOpacity={0.3} />
-                                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={tickInterval} />
                                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <ChartLegend content={<ChartLegendContent />} />
@@ -164,14 +186,16 @@ function StatsBody({ data }: { data: StatsDto }) {
 
             <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
                 <CardHeader>
-                    <CardTitle className="text-lg font-medium">{m.stats_hours_per_month()}</CardTitle>
+                    <CardTitle className="text-lg font-medium">
+                        {useDaily ? m.stats_hours_per_day() : m.stats_hours_per_month()}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {months.length ? (
+                    {data.totalJobs ? (
                         <ChartContainer config={hoursConfig} className="h-64 w-full">
-                            <BarChart data={months} margin={{ left: 0, right: 8 }}>
+                            <BarChart data={series} margin={{ left: 0, right: 8 }}>
                                 <CartesianGrid vertical={false} strokeOpacity={0.3} />
-                                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={tickInterval} />
                                 <YAxis tickLine={false} axisLine={false} width={32} />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <Bar dataKey="hours" fill="var(--color-hours)" radius={[4, 4, 0, 0]} />
@@ -204,25 +228,106 @@ function StatsBody({ data }: { data: StatsDto }) {
 
             <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
                 <CardHeader>
+                    <CardTitle className="text-lg font-medium">{m.stats_hours_of_day()}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={jobsConfig} className="h-56 w-full">
+                        <BarChart data={hours} margin={{ left: 0, right: 8 }}>
+                            <CartesianGrid vertical={false} strokeOpacity={0.3} />
+                            <XAxis dataKey="label" tickLine={false} axisLine={false} interval={2} />
+                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <ChartLegend content={<ChartLegendContent />} />
+                            <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" radius={[0, 0, 4, 4]} />
+                            <Bar dataKey="failed" stackId="a" fill="var(--color-failed)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
+            {data.printers.length > 1 ? (
+                <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-medium">{m.stats_printers()}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-2">
+                            {data.printers.map((p) => (
+                                <li key={p.printerId} className="rounded-2xl bg-secondary/60 p-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="truncate text-sm font-medium">{p.name}</span>
+                                        <span className="text-xs text-muted-foreground tabular-nums">
+                                            {Math.round((p.durationSec / Math.max(1, data.totalDurationSec)) * 100)} %
+                                        </span>
+                                    </div>
+                                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+                                        <div
+                                            className="h-full rounded-full bg-primary"
+                                            style={{
+                                                width: `${(p.durationSec / Math.max(1, data.totalDurationSec)) * 100}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                        {m.stats_printer_meta({
+                                            jobs: p.jobs,
+                                            completed: p.completed,
+                                            duration: formatDuration(p.durationSec),
+                                            g: p.weightG,
+                                        })}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            ) : null}
+
+            <Card
+                className={cn(
+                    'rounded-3xl border-0 shadow-none md:col-span-2',
+                    data.printers.length > 1 ? '' : 'xl:col-span-4',
+                )}
+            >
+                <CardHeader>
                     <CardTitle className="text-lg font-medium">{m.stats_materials()}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {data.materials.length ? (
-                        <ChartContainer config={materialConfig} className="h-56 w-full">
-                            <BarChart data={data.materials} layout="vertical" margin={{ left: 8, right: 16 }}>
-                                <CartesianGrid horizontal={false} strokeOpacity={0.3} />
-                                <XAxis type="number" tickLine={false} axisLine={false} unit=" g" />
-                                <YAxis
-                                    type="category"
-                                    dataKey="material"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    width={64}
-                                />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Bar dataKey="weightG" fill="var(--color-weightG)" radius={[0, 4, 4, 0]} />
-                            </BarChart>
-                        </ChartContainer>
+                        <div className={cn('grid gap-4', data.printers.length > 1 ? '' : 'xl:grid-cols-2')}>
+                            <ChartContainer config={materialConfig} className="h-56 w-full">
+                                <BarChart data={data.materials} layout="vertical" margin={{ left: 8, right: 16 }}>
+                                    <CartesianGrid horizontal={false} strokeOpacity={0.3} />
+                                    <XAxis type="number" tickLine={false} axisLine={false} unit=" g" />
+                                    <YAxis
+                                        type="category"
+                                        dataKey="material"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={64}
+                                    />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="weightG" fill="var(--color-weightG)" radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ChartContainer>
+                            <ul className="grid content-start gap-2">
+                                {data.materials.map((x) => (
+                                    <li
+                                        key={x.material}
+                                        className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/60 px-3 py-2"
+                                    >
+                                        <span className="text-sm font-medium">{x.material}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {m.stats_material_meta({
+                                                jobs: x.jobs,
+                                                m: (x.filamentMm / 1000).toFixed(1),
+                                                g: x.weightG,
+                                            })}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     ) : (
                         <Empty />
                     )}
@@ -261,7 +366,11 @@ function StatsBody({ data }: { data: StatsDto }) {
                                                 jobs: f.jobs,
                                                 completed: f.completed,
                                                 duration: formatDuration(f.durationSec),
+                                                m: (f.filamentMm / 1000).toFixed(1),
                                             })}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {m.stats_file_last({ date: formatShortDate(f.lastPrintedAt) })}
                                         </div>
                                     </div>
                                 </li>
@@ -276,7 +385,11 @@ function StatsBody({ data }: { data: StatsDto }) {
     );
 }
 
-function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
+function derive(b: StatsBucket): { hours: number; failed: number } {
+    return { hours: Math.round(b.durationSec / 360) / 10, failed: b.jobs - b.completed };
+}
+
+function Tile({ label, value, sub, extra }: { label: string; value: string; sub: string; extra?: string }) {
     return (
         <Card className="gap-2 rounded-3xl border-0 shadow-none">
             <CardHeader>
@@ -285,6 +398,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
             <CardContent className="space-y-1">
                 <div className="text-4xl font-semibold tracking-tight tabular-nums">{value}</div>
                 <div className="text-xs text-muted-foreground">{sub}</div>
+                {extra ? <div className="truncate text-xs text-muted-foreground/70">{extra}</div> : null}
             </CardContent>
         </Card>
     );

@@ -86,6 +86,7 @@ export interface PrinterLiveState {
     progress: number;
     printDurationSec: number;
     remainTimeSec: number;
+    printTimeAt: number;
     currLayer: number;
     totalLayers: number;
     zMm: number;
@@ -113,6 +114,13 @@ export interface PrinterLiveState {
     storageTotalMb: number;
     storageUsedMb: number;
     updatedAt: number;
+}
+
+export interface PrinterSample {
+    t: number;
+    nozzle: number;
+    bed: number;
+    progress: number;
 }
 
 export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {

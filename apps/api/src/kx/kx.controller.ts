@@ -11,6 +11,7 @@ import {
     type MoveAxisInput,
     moveAxisSchema,
     type PrinterLiveState,
+    type PrinterSample,
     type PrintPrinterFileInput,
     printPrinterFileSchema,
     type SetFanInput,
@@ -93,6 +94,11 @@ export class KxController {
     @Get('state')
     state(@Param('id') id: string) {
         return this.bridge(id).snapshot();
+    }
+
+    @Get('samples')
+    samples(@Param('id') id: string): PrinterSample[] {
+        return this.bridge(id).samples();
     }
 
     @Sse('events')

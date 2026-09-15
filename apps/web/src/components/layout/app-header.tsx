@@ -25,11 +25,18 @@ export function AppHeader({ user }: AppHeaderProps) {
     const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (user.name || user.email.split('@')[0]).split(' ')[0];
 
-    const subtitle = !printers.length
-        ? m.header_no_printers()
-        : printing
-          ? m.header_printing({ printing, online, total: printers.length })
-          : m.header_online({ online, total: printers.length });
+    const current = pinned ? printers.find((p) => p.id === pinned) : undefined;
+    const subtitle = pinned
+        ? current?.live?.printState === 'printing'
+            ? m.header_pinned_printing()
+            : current?.live?.connected
+              ? m.header_pinned_online()
+              : m.header_pinned_offline()
+        : !printers.length
+          ? m.header_no_printers()
+          : printing
+            ? m.header_printing({ printing, online, total: printers.length })
+            : m.header_online({ online, total: printers.length });
 
     return (
         <header className={`flex flex-wrap items-center gap-4 px-2 pt-2 ${isDesktop ? 'app-drag' : ''}`}>

@@ -1,3 +1,35 @@
+/*
+ * Extract the Anycubic Slicer client certificate used for the Kobra X LAN MQTT broker.
+ *
+ * The printer's broker (port 9883) only accepts the TLS client certificate embedded in
+ * Anycubic Slicer Next. This script scans the slicer binaries for the PEM blocks, picks the
+ * certificate whose CN is "AnycubicSlicer", finds its matching private key and writes both to
+ * apps/api/certs/ (anycubic_slicer.crt + anycubic_slicer.key).
+ *
+ * When to run it:
+ *   - the bundled certificate expires in 2123, so normally never;
+ *   - only if an Anycubic firmware or slicer update ships a new certificate (symptom: the
+ *     printer refuses the MQTT TLS handshake on port 9883).
+ *
+ * How to:
+ *   1. Install Anycubic Slicer Next (Windows) or locate an existing install.
+ *   2. Find cloud_mqtt.dll, usually in the install directory, e.g.
+ *        C:\Program Files\AnycubicSlicerNext\cloud_mqtt.dll
+ *      Passing the whole install directory also works (it scans .dll/.exe/.so/.dylib).
+ *   3. From the repo root:
+ *        bun run certs:extract "<path to cloud_mqtt.dll or install dir>"
+ *      Options:
+ *        --out <dir>   write somewhere else than apps/api/certs (default)
+ *        --force       overwrite an existing, different certificate
+ *   4. Restart Kobralink (or the Docker container / desktop app) so the bridge reloads the certs.
+ *
+ * Exit codes: 0 done or already up to date, 1 nothing usable found, 2 existing certificate
+ * differs and --force was not given.
+ *
+ * Only works while the PEM is stored in plain text inside the binaries (true for current
+ * releases). If Anycubic starts encrypting it, dump the running process memory instead.
+ */
+
 import { createPrivateKey, X509Certificate } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

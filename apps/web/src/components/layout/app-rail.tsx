@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { BarChart3, Cable, LogOut, Printer, ScrollText, Settings2 } from 'lucide-react';
 import { LanguageMenu } from '@/components/layout/language-menu';
 import { Rail, RailButton, RailLink } from '@/components/layout/rail';
@@ -28,7 +28,9 @@ export function AppRail() {
         <Rail
             top={
                 <>
-                    <img src="/logo-mark.svg" alt="Kobralink" className="mb-1 size-12 rounded-2xl" />
+                    <Link to="/" className="mb-1 rounded-2xl">
+                        <img src="/logo-mark.svg" alt="Kobralink" className="size-12 rounded-2xl" />
+                    </Link>
                     <RailLink to="/printers" title={m.nav_home()}>
                         <Printer />
                     </RailLink>

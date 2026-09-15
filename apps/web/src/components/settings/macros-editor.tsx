@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
-import { MACRO_ICON } from '@/components/printer/macros-card';
+import { MACRO_ICON } from '@/components/printer/macro-icon';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -116,7 +116,16 @@ export function describeAction(a: MacroAction): string {
     }
 }
 
-export function MacrosEditor() {
+export function openMacroForm(macro: MacroDto | undefined, onSaved: () => void) {
+    confirmationDialogStore.actions.openDialog({
+        title: macro ? m.macros_edit() : m.macros_add(),
+        description: m.macros_form_hint(),
+        props: { className: 'rounded-3xl sm:max-w-2xl' },
+        content: <MacroForm macro={macro} onSaved={onSaved} />,
+    });
+}
+
+export function MacrosEditor({ embedded = false }: { embedded?: boolean }) {
     const qc = useQueryClient();
     const macros = useQuery(macrosQuery);
     const invalidate = () => qc.invalidateQueries({ queryKey: ['macros'] });
@@ -135,17 +144,11 @@ export function MacrosEditor() {
         [ids[i], ids[j]] = [ids[j], ids[i]];
         reorder.mutate(ids);
     };
-    const open = (macro?: MacroDto) =>
-        confirmationDialogStore.actions.openDialog({
-            title: macro ? m.macros_edit() : m.macros_add(),
-            description: m.macros_form_hint(),
-            props: { className: 'rounded-3xl sm:max-w-2xl' },
-            content: <MacroForm macro={macro} onSaved={invalidate} />,
-        });
-    return (
-        <SettingsCard title={m.macros_title()} description={m.macros_hint()}>
+    const open = (macro?: MacroDto) => openMacroForm(macro, invalidate);
+    const body = (
+        <>
             {list.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{m.macros_empty()}</p>
+                <p className="text-sm text-muted-foreground">{m.macros_empty_pinned()}</p>
             ) : (
                 <ul className="grid gap-2">
                     {list.map((macro, i) => {
@@ -200,6 +203,12 @@ export function MacrosEditor() {
                     <Plus /> {m.macros_add()}
                 </Button>
             </div>
+        </>
+    );
+    if (embedded) return <div className="grid gap-4 py-2">{body}</div>;
+    return (
+        <SettingsCard title={m.macros_title()} description={m.macros_hint()}>
+            {body}
         </SettingsCard>
     );
 }

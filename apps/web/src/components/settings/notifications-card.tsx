@@ -8,9 +8,10 @@ import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { useSaveSettings } from '@/hooks/use-save-settings';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
-import { Field, SettingsCard, SwitchRow, useSaveSettings } from './settings-form-card';
+import { Field, SettingsCard, SwitchRow } from './settings-form-card';
 
 const schema = notificationSettingsSchema.required().extend({
     events: notificationEventsSchema.required(),

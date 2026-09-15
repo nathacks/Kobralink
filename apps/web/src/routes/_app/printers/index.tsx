@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowUpRight, Ban, Pause, Play, Printer, RefreshCw, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
 import { StatusBadge } from '@/components/printer/status-badge';
@@ -112,7 +111,6 @@ function PrintersPage() {
                             </Link>
                         </div>
 
-                        {printing && <Snapshot printerId={p.id} />}
                         <div className="flex items-center gap-5">
                             {printing && live ? (
                                 <Ring
@@ -255,32 +253,5 @@ function SmallButton({ inverse, className, ...props }: React.ComponentProps<'but
                 className,
             )}
         />
-    );
-}
-
-function Snapshot({ printerId }: { printerId: string }) {
-    const [tick, setTick] = useState(() => Date.now());
-    const [failed, setFailed] = useState(false);
-    useEffect(() => {
-        const t = setInterval(() => {
-            setTick(Date.now());
-            setFailed(false);
-        }, 5000);
-        return () => clearInterval(t);
-    }, []);
-    return (
-        <div
-            className={cn(
-                'relative z-10 -mt-1 aspect-video w-full overflow-hidden rounded-2xl bg-primary-foreground/10 pointer-events-none',
-                failed && 'hidden',
-            )}
-        >
-            <img
-                src={`${api.camera.snapshotUrl(printerId)}?t=${tick}`}
-                alt=""
-                className="size-full object-cover"
-                onError={() => setFailed(true)}
-            />
-        </div>
     );
 }

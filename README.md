@@ -75,7 +75,13 @@ Download the installer from the [GitHub releases](https://github.com/NatHacks/Ko
 
 1. On the printer: Settings → **Enable LAN mode**.
 2. Dashboard → **Add a printer** → enter the IP. A Moonraker port is assigned (`7125`, `7126`, …).
-3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`.
+3. OrcaSlicer → physical printer → connection type **Moonraker** → host `http://<bridge-ip>:7125`
+   (or open **Connect OrcaSlicer** in the dashboard: it lists the exact address to paste for each printer).
+   Click *Test*, then confirm: the **Device** tab now shows the Kobra X and *Print* sends the G-code to Kobralink.
+
+The OrcaSlicer **Device** tab only targets the printer: send a job, follow progress, pause / cancel, sync the ACE
+filaments. Everything else — print queue, file library, macros, filament profiles per slot, camera, failure
+detection, statistics, notifications, API keys — lives in the Kobralink dashboard on `:7100`.
 
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
@@ -154,4 +160,9 @@ To sign and notarize, add the secrets `CSC_LINK` (base64 `.p12`), `CSC_KEY_PASSW
 ## License
 
 GPL-3.0. The `apps/api/certs/anycubic_slicer.*` certificates are third-party material included solely
-for interoperability. Independent project, not affiliated with Anycubic.
+for interoperability. They expire in 2123 (100 years), so no rotation is needed; they only have to be
+replaced if an Anycubic firmware or slicer update ships a new certificate. If the MQTT TLS handshake is
+refused by the printer, an outdated certificate is a likely cause. To pull a fresh pair from an Anycubic
+Slicer Next install (`cloud_mqtt.dll` or the whole install directory), run
+`bun run certs:extract <path> [--out apps/api/certs] [--force]`. Independent project, not affiliated
+with Anycubic.

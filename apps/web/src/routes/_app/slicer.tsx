@@ -42,7 +42,12 @@ function SlicerPage() {
         [m.slicer_step_4_title(), m.slicer_step_4()],
     ];
     const firstPort = printers[0]?.httpPort ?? 7125;
-    const notes = [m.slicer_note_running(), m.slicer_note_firewall({ port: firstPort }), m.slicer_note_ams()];
+    const notes = [
+        m.slicer_note_scope(),
+        m.slicer_note_running(),
+        m.slicer_note_firewall({ port: firstPort }),
+        m.slicer_note_ams(),
+    ];
 
     return (
         <div className="space-y-4">

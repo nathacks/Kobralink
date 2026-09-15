@@ -51,8 +51,6 @@ export class BridgeRegistry implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleInit(): Promise<void> {
-        const stale = await this.gcode.closeStaleJobs();
-        if (stale) this.log.warn(`${stale} job(s) left open by a previous run marked as error`);
         const rows = await this.printers.findAll();
         for (const row of rows) {
             try {
