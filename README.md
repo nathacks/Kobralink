@@ -52,7 +52,7 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 - Dashboard: `http://<host>:7100` — the first account created becomes the owner
-- Moonraker: one port per printer, starting at `7125` (range `7125-7140` exposed)
+- Moonraker: one port per printer, starting at `7125` (range `7125-7140` exposed, i.e. 16 printers)
 - Data (SQLite, GCodes, timelapses, session secret) is kept in the `kobralink-data` volume
 
 Update:
@@ -67,6 +67,12 @@ Behind a reverse proxy (HTTPS): set `KOBRALINK_BIND=127.0.0.1` and
 `BETTER_AUTH_URL=https://kobralink.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
 More details (backup, healthcheck, local build from source): [`infra/README.md`](infra/README.md).
 
+More than 16 printers: the app assigns ports without limit (`7125`, `7126`, … up to `65535`), but the compose
+file only publishes `7125-7140`. Printer 17+ would listen inside the container without being reachable from the host.
+Widen the range in `docker-compose.prod.yml` (e.g. `"${KOBRALINK_BIND:-0.0.0.0}:7125-7224:7125-7224"` for 100 printers),
+or use `network_mode: host` on Linux and drop the `ports:` block entirely (then `KOBRALINK_BIND` no longer applies and
+every port listens on all interfaces).
+
 ### `.env` reference
 
 | Variable                  | Default                     | Role                                                    |
@@ -77,6 +83,8 @@ More details (backup, healthcheck, local build from source): [`infra/README.md`]
 | `BETTER_AUTH_URL`         | —                           | **Required**: URL used by the browser                   |
 | `BETTER_AUTH_SECRET`      | generated in `/data`        | Session secret (`openssl rand -base64 32`)              |
 | `KOBRALINK_EXTRA_ORIGINS` | —                           | Extra allowed origins, comma-separated                  |
+| `KOBRALINK_TRUSTED_PROXIES` | —                         | Proxy IPs/CIDRs (real client IP for auth rate limiting) |
+| `KOBRALINK_IP_HEADERS`    | —                           | Header set by the proxy with the client IP (`x-real-ip`, `cf-connecting-ip`) |
 
 ## Desktop app (macOS / Windows / Linux)
 

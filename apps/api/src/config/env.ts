@@ -20,10 +20,19 @@ export interface KobralinkEnv {
     migrationsDir: string;
 
     extraOrigins: string[];
+    trustedProxies: string[];
+    ipAddressHeaders: string[];
     isDev: boolean;
 }
 
 let cached: KobralinkEnv | null = null;
+
+function csv(value: string | undefined): string[] {
+    return (value ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
 
 function apiRoot(): string {
     return path.resolve(__dirname, '..', '..');
@@ -72,6 +81,8 @@ export function loadEnv(): KobralinkEnv {
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),
+        trustedProxies: csv(process.env.KOBRALINK_TRUSTED_PROXIES),
+        ipAddressHeaders: csv(process.env.KOBRALINK_IP_HEADERS),
         isDev: process.env.NODE_ENV !== 'production',
     };
     return cached;

@@ -37,6 +37,10 @@ export function createAuth() {
         },
         advanced: {
             useSecureCookies: env.baseUrl.startsWith('https://'),
+            ipAddress: {
+                ...(env.trustedProxies.length ? { trustedProxies: env.trustedProxies } : {}),
+                ...(env.ipAddressHeaders.length ? { ipAddressHeaders: env.ipAddressHeaders } : {}),
+            },
         },
         plugins: [
             apiKey({
