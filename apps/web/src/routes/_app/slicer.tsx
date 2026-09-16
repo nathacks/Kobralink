@@ -34,7 +34,6 @@ function CopyButton({ value }: { value: string }) {
 function SlicerPage() {
     const printers = usePrinters();
     const hosts = useHosts();
-    const [primary, ...others] = hosts;
     const steps = [
         [m.slicer_step_1_title(), m.slicer_step_1()],
         [m.slicer_step_2_title(), m.slicer_step_2()],
@@ -66,7 +65,7 @@ function SlicerPage() {
                         <p className="text-sm text-muted-foreground">{m.slicer_addresses_empty()}</p>
                     ) : (
                         printers.map((p) => {
-                            const url = `http://${primary}:${p.httpPort}`;
+                            const url = `http://${m.slicer_address_placeholder()}:${p.httpPort}`;
                             return (
                                 <div
                                     key={p.id}
@@ -83,11 +82,9 @@ function SlicerPage() {
                                             </span>
                                         </div>
                                         <code className="block truncate font-mono text-sm text-primary">{url}</code>
-                                        {others.length > 0 && (
+                                        {hosts.length > 0 && (
                                             <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                {m.slicer_address_other({
-                                                    hosts: others.map((h) => `http://${h}:${p.httpPort}`).join(' · '),
-                                                })}
+                                                {m.slicer_address_other({ hosts: hosts.join(' · ') })}
                                             </p>
                                         )}
                                     </div>

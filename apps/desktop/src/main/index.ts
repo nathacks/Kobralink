@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { m } from '@kobralink/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
@@ -125,6 +127,26 @@ function ensureWindow(): BrowserWindow {
 
 ipcMain.on('tray:status', (_e, printers: TrayPrinterStatus[]) => {
     updateTray(Array.isArray(printers) ? printers : [], ensureWindow);
+});
+
+ipcMain.handle('app:show-log', () => {
+    const file = apiLogPath();
+    if (!fs.existsSync(file)) fs.mkdirSync(path.dirname(file), { recursive: true });
+    shell.showItemInFolder(file);
+});
+
+ipcMain.handle('app:report-issue', () => {
+    const u = new URL('https://github.com/nathacks/Kobralink/issues/new');
+    u.searchParams.set('title', m.desktop_issue_title());
+    u.searchParams.set(
+        'body',
+        m.desktop_issue_body({
+            version: app.getVersion(),
+            os: `${process.platform} ${process.arch} (${os.release()})`,
+            log: apiLogPath(),
+        }),
+    );
+    void shell.openExternal(u.toString());
 });
 
 ipcMain.handle('app:retry', async () => {
