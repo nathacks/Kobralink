@@ -53,7 +53,7 @@ export function HaMqttCard({ settings }: { settings: AppSettings }) {
                 )}
             </form.Field>
             {text('url', m.ha_url(), 'mqtt://192.168.1.10:1883')}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {text('username', m.ha_username(), '')}
                 {text('password', m.ha_password(), '', 'password')}
                 {text('discoveryPrefix', m.ha_discovery_prefix(), 'homeassistant')}

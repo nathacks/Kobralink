@@ -31,7 +31,7 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 - **AI failure detection** (optional, Obico model) with notify / pause / cancel
 - **Notifications**: webhook, Discord, Telegram, ntfy · **Home Assistant** MQTT discovery
 - **History & stats**, **macros**, backup / restore, update check, multi-user
-- UI in **French** and **English**
+- UI in **French**, **English**, **German**, **Spanish**, **Italian** and **Simplified Chinese**
 
 ## Install in production (Docker Compose)
 
@@ -130,7 +130,7 @@ Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘    
 | `apps/desktop`            | Electron — spawns the API locally, auto-update via GitHub releases                         |
 | `packages/kobra-protocol` | Kobra X protocol: mTLS MQTT client, credential recovery, GCode upload / parsing           |
 | `packages/shared`         | zod schemas + types shared between API and UI                                             |
-| `packages/i18n`           | Paraglide (inlang) messages, `fr` + `en`                                                  |
+| `packages/i18n`           | Paraglide (inlang) messages: `fr`, `en`, `de`, `es`, `it`, `zh-cn`                        |
 
 ## Development
 

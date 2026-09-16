@@ -24,7 +24,7 @@ export function ActivityCard({ printerId }: { printerId: string }) {
                     <StatusBadge state={state} />
                 </CardAction>
             </CardHeader>
-            <CardContent className="grid gap-8 md:grid-cols-3">
+            <CardContent className="grid grid-cols-1 gap-8 md:grid-cols-3">
                 <Stat
                     id="nozzle"
                     title={m.activity_nozzle()}

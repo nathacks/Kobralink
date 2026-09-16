@@ -171,7 +171,7 @@ function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                     />
                 ) : null}
             </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Card className="rounded-3xl border-0 shadow-none md:col-span-2">
                     <CardHeader>
                         <CardTitle className="text-lg font-medium">
@@ -399,7 +399,7 @@ function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                     </CardHeader>
                     <CardContent>
                         {data.topFiles.length ? (
-                            <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
                                 {data.topFiles.map((f) => (
                                     <li
                                         key={f.fileId ?? f.filename}

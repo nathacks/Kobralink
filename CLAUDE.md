@@ -27,7 +27,8 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
 - `packages/shared` — schémas Zod + types partagés API ↔ web (`control.ts`, `state.ts`, `macros.ts`, `sse.ts`…). Tout body
   d'endpoint `/api/v1` a son schéma ici, validé côté API par `ZodPipe`, typé côté web dans `src/lib/api.ts`.
 - `packages/kobra-protocol` — client MQTT Kobra X (`mqtt-client.ts`), types des payloads, parsing GCode, upload.
-- `packages/i18n` — projet inlang/Paraglide, `messages/fr.json` + `messages/en.json` (base `fr`). Le package compile ses
+- `packages/i18n` — projet inlang/Paraglide, `messages/{fr,en,de,es,it,zh-cn}.json` (base `fr`). Liste des locales dupliquée dans
+  `APP_LOCALES` (`packages/shared/src/settings.ts`) ; ajouter une langue = skill `/add-locale`. Le package compile ses
   propres runtime + messages pour l'API ; le web recompile les mêmes messages dans `apps/web/src/paraglide`.
 - Les trois packages : tsdown, sortie ESM + CJS. `build` des packages requis avant `dev`/`check-types`/`test` des apps (turbo `^build`).
 - `infra/` — `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`. Pas de Dockerfile à la racine.
@@ -60,9 +61,9 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   dans `prediction.ts`). Opt-in global (`settings.failureDetection`) + switch par imprimante ; une image toutes les
   `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
   `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
-- i18n : UI en français et anglais. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
+- i18n : UI en fr, en, de, es, it, zh-cn. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
   (locale persistée en localStorage, dayjs synchronisé) ; API : `import { m } from '../i18n/locale'` (locale par requête via
-  `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = éditer `fr.json` **et** `en.json`.
+  `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = l'ajouter dans **tous** les `messages/*.json`.
 - Aucun commentaire dans le code (demande explicite).
 
 ## Commandes

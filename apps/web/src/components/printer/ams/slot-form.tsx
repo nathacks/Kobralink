@@ -135,7 +135,7 @@ function SlotFormInner({
                         return (
                             <div className="grid gap-2">
                                 <Label htmlFor="slot-type">{m.slot_material()}</Label>
-                                <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                     <Select
                                         value={custom ? '__custom' : field.state.value}
                                         onValueChange={(v) => field.handleChange(v === '__custom' ? '' : v)}

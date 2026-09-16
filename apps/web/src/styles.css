@@ -680,3 +680,10 @@ html.desktop [role='dialog'] {
         --scroll-fade-e: var(--_scroll-fade-size-e);
     }
 }
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

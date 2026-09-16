@@ -135,13 +135,15 @@ export function FilesCard({ printerId }: { printerId: string }) {
                         {files.data ? m.files_stored({ count: files.data.length }) : ''}
                     </span>
                 </div>
-                <div className="mt-4 flex w-fit gap-1 rounded-full bg-secondary p-1">
-                    {TABS.map((t) => (
-                        <TabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
-                            {t.label()}
-                            {t.id === 'web' && webCount ? ` · ${webCount}` : ''}
-                        </TabButton>
-                    ))}
+                <div className="scrollbar-none -mx-6 mt-4 overflow-x-auto px-6">
+                    <div className="flex w-fit gap-1 rounded-full bg-secondary p-1">
+                        {TABS.map((t) => (
+                            <TabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                                {t.label()}
+                                {t.id === 'web' && webCount ? ` · ${webCount}` : ''}
+                            </TabButton>
+                        ))}
+                    </div>
                 </div>
                 {searchable && (
                     <label className="mt-3 flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm">

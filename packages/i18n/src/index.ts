@@ -1,3 +1,4 @@
+export { resolveLocale } from './locale.js';
 export * as m from './paraglide/messages.js';
 export {
     baseLocale,

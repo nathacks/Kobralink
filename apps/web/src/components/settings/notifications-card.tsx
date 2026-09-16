@@ -126,7 +126,7 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
                     </SwitchRow>
                 )}
             </form.Field>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {text('discordUrl', 'Discord', 'https://discord.com/api/webhooks/…', m.notif_discord_hint())}
                 {text('ntfyUrl', 'ntfy', 'https://ntfy.sh/kobralink', m.notif_ntfy_hint())}
                 {text('telegramToken', m.notif_telegram_token(), '123456:ABC-DEF…')}

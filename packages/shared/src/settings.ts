@@ -59,8 +59,11 @@ export const DEFAULT_DRY_PRESETS: AceDryPreset[] = [
     { name: 'PA', targetTemp: 70, duration: 480 },
 ];
 
+export const APP_LOCALES = ['fr', 'en', 'de', 'es', 'it', 'zh-cn'] as const;
+export type AppLocale = (typeof APP_LOCALES)[number];
+
 export const appSettingsSchema = z.object({
-    locale: z.enum(['fr', 'en']).default('fr'),
+    locale: z.enum(APP_LOCALES).default('fr'),
     currency: z.string().trim().min(1).max(8).default('EUR'),
     filamentPricePerKg: z.number().min(0).max(100000).default(0),
     spoolmanUrl: z.string().trim().default(''),

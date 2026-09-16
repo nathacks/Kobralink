@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { isLocale, type Locale, m, overwriteGetLocale } from '@kobralink/i18n';
+import { type Locale, m, overwriteGetLocale, resolveLocale } from '@kobralink/i18n';
 import { KobraProtocolError } from '@kobralink/kobra-protocol';
 import type { ConnectionError } from '@kobralink/shared';
 import type { NextFunction, Request, Response } from 'express';
@@ -13,8 +13,8 @@ export { m };
 export function localeFromHeader(header: string | string[] | null | undefined): Locale {
     const value = Array.isArray(header) ? header.join(',') : (header ?? '');
     for (const part of value.split(',')) {
-        const tag = part.split(';')[0]?.trim().toLowerCase().split('-')[0] ?? '';
-        if (isLocale(tag)) return tag;
+        const locale = resolveLocale(part.split(';')[0]);
+        if (locale) return locale;
     }
     return fallbackLocale;
 }

@@ -45,7 +45,7 @@ function AppLayout() {
 
     return (
         <SseProvider>
-            <div className="flex min-h-svh gap-4 p-4 pt-(--inset-top)">
+            <div className={`flex min-h-svh gap-4 p-4 pt-(--inset-top) ${pinned ? '' : 'pb-24 md:pb-4'}`}>
                 {!pinned && <AppRail />}
                 <div className="flex min-w-0 flex-1 flex-col gap-6">
                     <AppHeader user={session.user} />

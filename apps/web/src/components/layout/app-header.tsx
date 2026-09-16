@@ -43,7 +43,7 @@ export function AppHeader({ user }: AppHeaderProps) {
     return (
         <header className={`flex flex-wrap items-center gap-4 px-2 pt-2 ${isDesktop ? 'app-drag' : ''}`}>
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">
+                <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
                     {m.header_greeting({ greeting: greeting(), name: firstName })}
                 </h1>
                 <p className="text-sm text-muted-foreground">{subtitle}</p>

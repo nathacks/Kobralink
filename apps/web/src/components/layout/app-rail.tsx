@@ -28,7 +28,7 @@ export function AppRail() {
         <Rail
             top={
                 <>
-                    <Link to="/" className="mb-1 rounded-2xl">
+                    <Link to="/" className="hidden rounded-2xl md:mb-1 md:block">
                         <img src="/logo-mark.svg" alt="Kobralink" className="size-12 rounded-2xl" />
                     </Link>
                     <RailLink to="/printers" title={m.nav_home()}>

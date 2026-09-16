@@ -1,4 +1,4 @@
-import type { AppSettings } from '@kobralink/shared';
+import { APP_LOCALES, type AppLocale, type AppSettings } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,12 +28,12 @@ export function GeneralCard({ settings }: { settings: AppSettings }) {
             <form.Field name="locale">
                 {(field) => (
                     <SwitchRow label={m.settings_server_locale()} hint={m.settings_server_locale_hint()}>
-                        <Select value={field.state.value} onValueChange={(v) => field.handleChange(v as 'fr' | 'en')}>
+                        <Select value={field.state.value} onValueChange={(v) => field.handleChange(v as AppLocale)}>
                             <SelectTrigger className="w-40 rounded-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {(['fr', 'en'] as const).map((l) => (
+                                {APP_LOCALES.map((l) => (
                                     <SelectItem key={l} value={l}>
                                         {LOCALE_LABEL[l]()}
                                     </SelectItem>

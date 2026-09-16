@@ -181,12 +181,15 @@ function LogsPage() {
                     visible.map((e) => (
                         <div
                             key={e.id}
-                            className={cn('flex gap-3 whitespace-pre-wrap break-all', LEVEL_CLASS[e.level])}
+                            className={cn(
+                                'flex flex-wrap gap-x-3 whitespace-pre-wrap break-all md:flex-nowrap',
+                                LEVEL_CLASS[e.level],
+                            )}
                         >
                             <span className="shrink-0 tabular-nums text-muted-foreground">{formatTime(e.ts)}</span>
-                            <span className="w-16 shrink-0 uppercase text-muted-foreground">{e.level}</span>
+                            <span className="shrink-0 uppercase text-muted-foreground md:w-16">{e.level}</span>
                             <span className="shrink-0 text-muted-foreground">[{e.context}]</span>
-                            <span>{e.message}</span>
+                            <span className="basis-full md:basis-auto">{e.message}</span>
                         </div>
                     ))
                 )}

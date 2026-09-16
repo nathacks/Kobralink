@@ -1,5 +1,9 @@
 import dayjs from 'dayjs';
+import 'dayjs/locale/de';
+import 'dayjs/locale/es';
 import 'dayjs/locale/fr';
+import 'dayjs/locale/it';
+import 'dayjs/locale/zh-cn';
 import { useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import { m } from '@/paraglide/messages';
@@ -38,10 +42,23 @@ export function useLocale(): Locale {
 export const LOCALE_LABEL: Record<Locale, () => string> = {
     fr: m.locale_fr,
     en: m.locale_en,
+    de: m.locale_de,
+    es: m.locale_es,
+    it: m.locale_it,
+    'zh-cn': m.locale_zh_cn,
+};
+
+const INTL_LOCALE: Record<Locale, string> = {
+    fr: 'fr-FR',
+    en: 'en-US',
+    de: 'de-DE',
+    es: 'es-ES',
+    it: 'it-IT',
+    'zh-cn': 'zh-CN',
 };
 
 export function intlLocale(): string {
-    return getLocale() === 'fr' ? 'fr-FR' : 'en-US';
+    return INTL_LOCALE[getLocale()];
 }
 
 export function zodErrorMap(issue: z.core.$ZodRawIssue): string | undefined {

@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import 'dayjs/locale/fr';
 import duration from 'dayjs/plugin/duration';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { intlLocale, m } from '@/lib/i18n';

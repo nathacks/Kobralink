@@ -156,7 +156,7 @@ export function DashboardGrid({
                 {wide && toolbar}
             </div>
             {!wide ? (
-                <div className="grid gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     {[...layout]
                         .sort((a, b) => a.y - b.y || a.x - b.x)
                         .map((l) => (

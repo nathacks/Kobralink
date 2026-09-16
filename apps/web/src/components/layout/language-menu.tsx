@@ -6,10 +6,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { LOCALE_LABEL, locales, m, setLocale, useLocale } from '@/lib/i18n';
 
 export function LanguageMenu() {
     const current = useLocale();
+    const mobile = useIsMobile();
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -17,7 +19,7 @@ export function LanguageMenu() {
                     <Languages />
                 </RailButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="end" className="min-w-40 rounded-2xl">
+            <DropdownMenuContent side={mobile ? 'top' : 'right'} align="end" className="min-w-40 rounded-2xl">
                 {locales.map((l) => (
                     <DropdownMenuItem key={l} className="rounded-xl" onSelect={() => setLocale(l)}>
                         <span className="flex-1">{LOCALE_LABEL[l]()}</span>

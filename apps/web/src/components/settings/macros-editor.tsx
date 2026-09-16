@@ -255,7 +255,7 @@ function MacroForm({ macro, onSaved }: { macro?: MacroDto; onSaved: () => void }
             }}
         >
             <div className="grid gap-4 py-2">
-                <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
                     <form.Field name="name">
                         {(field) => (
                             <div className="grid gap-2">
