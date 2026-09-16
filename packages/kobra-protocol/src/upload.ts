@@ -37,16 +37,15 @@ export function uploadGcode(
         Buffer.from(remoteFilename, 'utf8'),
         Buffer.from('\r\n'),
     ]);
-    const partGcode = Buffer.concat([
+    const partGcodeHead = Buffer.concat([
         sep,
         Buffer.from(
             `Content-Disposition: form-data; name="gcode"; filename="${remoteFilename}"\r\n` +
                 'Content-Type: application/octet-stream\r\n\r\n',
         ),
-        data,
-        Buffer.from('\r\n'),
     ]);
-    const body = Buffer.concat([partFilename, partGcode, end]);
+    const partGcodeTail = Buffer.concat([Buffer.from('\r\n'), end]);
+    const bodyLength = partFilename.length + partGcodeHead.length + data.length + partGcodeTail.length;
 
     return new Promise<UploadResult>((resolve, reject) => {
         const req = httpRequest(
@@ -68,7 +67,7 @@ export function uploadGcode(
                     'X-BBL-OS-Version': '10.0.26200',
                     'X-File-Length': String(data.length),
                     'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    'Content-Length': String(body.length),
+                    'Content-Length': String(bodyLength),
                     Connection: 'close',
                 },
             },
@@ -100,6 +99,9 @@ export function uploadGcode(
             req.destroy(new KobraProtocolError('upload_timeout', {}, 'Timeout waiting for the printer')),
         );
         req.on('error', reject);
-        req.end(body);
+        req.write(partFilename);
+        req.write(partGcodeHead);
+        req.write(data);
+        req.end(partGcodeTail);
     });
 }

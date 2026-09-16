@@ -57,7 +57,6 @@ import { ZodPipe } from '../common/zod.pipe';
 import { GcodeService } from '../gcode/gcode.service';
 import { m } from '../i18n/locale';
 
-const UPLOAD_LIMIT = 512 * 1024 * 1024;
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
 @Controller('api/v1/printers/:id')
@@ -226,7 +225,7 @@ export class CoreController {
     }
 
     @Post('files')
-    @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: UPLOAD_LIMIT, files: 1 } }))
+    @UseInterceptors(AnyFilesInterceptor({ limits: { files: 1 } }))
     async upload(
         @Param('id') id: string,
         @UploadedFiles() files: MulterFile[] | undefined,

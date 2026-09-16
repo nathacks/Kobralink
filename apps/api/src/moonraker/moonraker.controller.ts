@@ -26,7 +26,6 @@ import { MoonrakerGateway } from './moonraker.gateway';
 import { MoonrakerService } from './moonraker.service';
 import { MoonrakerAuthService } from './moonraker-auth.service';
 
-const UPLOAD_LIMIT = 512 * 1024 * 1024;
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
 @Controller()
@@ -248,7 +247,7 @@ export class MoonrakerController {
 
     @Post(['server/files/upload', 'api/files/local', 'api/files/*path'])
     @HttpCode(201)
-    @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: UPLOAD_LIMIT, files: 1 } }))
+    @UseInterceptors(AnyFilesInterceptor({ limits: { files: 1 } }))
     async upload(
         @UploadedFiles() files: MulterFile[] | undefined,
         @Body() body: Record<string, string>,
