@@ -95,6 +95,10 @@ jobs:
       - name: Build workspace packages
         run: bunx turbo run build --filter=@kobralink/shared --filter=@kobralink/kobra-protocol --filter=@kobralink/i18n
 
+      - name: Fetch VC++ redistributable
+        if: matrix.os == 'windows-latest'
+        run: node apps/desktop/scripts/fetch-vc-redist.cjs
+
       - name: Build desktop app
         shell: bash
         run: |

@@ -3,7 +3,7 @@ import { m } from '@kobralink/i18n';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import appIcon from '../../resources/icon.png?asset';
 import { installLocale } from '../shared/locale';
-import { apiAvailable, LOCAL_PORT, startLocalApi, stopLocalApi, waitForApi } from './api-process';
+import { apiAvailable, apiLogPath, LOCAL_PORT, startLocalApi, stopLocalApi, waitForApi } from './api-process';
 import { setupTray, type TrayPrinterStatus, updateTray } from './tray';
 import { checkForUpdates, setupUpdater } from './updater';
 
@@ -25,7 +25,8 @@ function createWindow(): BrowserWindow {
         show: false,
         title: 'Kobralink',
         icon: appIcon,
-        titleBarStyle: 'hiddenInset',
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+        autoHideMenuBar: process.platform !== 'darwin',
         trafficLightPosition: { x: 14, y: 14 },
         backgroundColor: '#0f0f11',
         webPreferences: {
@@ -71,7 +72,7 @@ async function boot(w: BrowserWindow): Promise<void> {
     }
     const ok = await waitForApi(url, 40000);
     if (!ok) {
-        await loadLauncher(w, { status: 'error', message: m.desktop_bridge_unreachable({ url }) });
+        await loadLauncher(w, { status: 'error', message: m.desktop_bridge_unreachable({ url, log: apiLogPath() }) });
         return;
     }
     await w.loadURL(url);

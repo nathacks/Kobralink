@@ -501,7 +501,7 @@
     "desktop_retry": "Retry",
     "desktop_menu_view": "View",
     "desktop_api_build_missing": "API build not found — run `bun run build` first.",
-    "desktop_bridge_unreachable": "Bridge unreachable at {url}",
+    "desktop_bridge_unreachable": "Bridge unreachable at {url} — see log: {log}",
     "desktop_menu_check_updates": "Check for Updates…",
     "desktop_update_available_title": "Update available",
     "desktop_update_available_body": "Kobralink {version} is available. Download now?",

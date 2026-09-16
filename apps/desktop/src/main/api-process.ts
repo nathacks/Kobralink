@@ -7,6 +7,23 @@ const RESTART_EXIT_CODE = 75;
 export const LOCAL_PORT = Number(process.env.KOBRALINK_PORT) || 7100;
 
 let child: UtilityProcess | null = null;
+let log: fs.WriteStream | null = null;
+
+export function apiLogPath(): string {
+    return path.join(app.getPath('userData'), 'logs', 'api.log');
+}
+
+function openLog(): fs.WriteStream {
+    if (log) return log;
+    const file = apiLogPath();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    log = fs.createWriteStream(file, { flags: 'a' });
+    return log;
+}
+
+function logLine(text: string): void {
+    openLog().write(`${new Date().toISOString()} ${text}`);
+}
 
 function apiEntry(): string {
     if (app.isPackaged) return path.join(process.resourcesPath, 'api', 'dist', 'server', 'main.js');
@@ -27,6 +44,9 @@ export function startLocalApi(port: number): UtilityProcess {
     const dataDir = path.join(app.getPath('userData'), 'data');
     fs.mkdirSync(dataDir, { recursive: true });
     const entry = apiEntry();
+    logLine(
+        `[main] start ${entry} (port ${port}, ${process.platform}/${process.arch}, electron ${process.versions.electron})\n`,
+    );
     child = utilityProcess.fork(entry, [], {
         cwd: path.dirname(entry),
         stdio: 'pipe',
@@ -41,10 +61,17 @@ export function startLocalApi(port: number): UtilityProcess {
             BETTER_AUTH_URL: `http://localhost:${port}`,
         },
     });
-    child.stdout?.on('data', (d) => process.stdout.write(`[api] ${d}`));
-    child.stderr?.on('data', (d) => process.stderr.write(`[api] ${d}`));
+    child.stdout?.on('data', (d) => {
+        process.stdout.write(`[api] ${d}`);
+        logLine(`[api] ${d}`);
+    });
+    child.stderr?.on('data', (d) => {
+        process.stderr.write(`[api] ${d}`);
+        logLine(`[api!] ${d}`);
+    });
     child.on('exit', (code) => {
         console.log(`[api] exited (code ${code})`);
+        logLine(`[main] api exited (code ${code})\n`);
         child = null;
         if (code === RESTART_EXIT_CODE) setTimeout(() => startLocalApi(port), 500);
     });

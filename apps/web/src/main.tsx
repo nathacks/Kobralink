@@ -11,7 +11,9 @@ import { routeTree } from './routeTree.gen';
 import 'react-grid-layout/css/styles.css';
 import './styles.css';
 
-if ('kobralinkDesktop' in window) document.documentElement.classList.add('desktop');
+const desktop = (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop;
+if (desktop) document.documentElement.classList.add('desktop');
+if (desktop?.platform === 'darwin') document.documentElement.classList.add('desktop-mac');
 installI18n();
 
 const queryClient = new QueryClient({

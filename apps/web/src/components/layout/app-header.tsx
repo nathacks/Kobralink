@@ -6,7 +6,9 @@ import { usePrinters } from '@/hooks/use-printers';
 import { greeting } from '@/lib/format';
 import { m } from '@/lib/i18n';
 
-const isDesktop = typeof window !== 'undefined' && 'kobralinkDesktop' in window;
+const isDesktop =
+    typeof window !== 'undefined' &&
+    (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop?.platform === 'darwin';
 
 interface AppHeaderProps {
     user: {

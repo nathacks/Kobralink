@@ -59,14 +59,15 @@ fs.writeFileSync(
 );
 execSync('bun install --production --no-save', { cwd: outDir, stdio: 'inherit' });
 
+const targetOs = process.env.KOBRALINK_BUNDLE_OS ?? process.platform;
 const extraArchs = (process.env.KOBRALINK_BUNDLE_ARCHS ?? '')
     .split(',')
     .map((a) => a.trim())
-    .filter((a) => a && a !== process.arch);
+    .filter((a) => a && (a !== process.arch || targetOs !== process.platform));
 for (const arch of extraArchs) {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `kobralink-bundle-${arch}-`));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `kobralink-bundle-${targetOs}-${arch}-`));
     fs.copyFileSync(path.join(outDir, 'package.json'), path.join(tmp, 'package.json'));
-    execSync(`bun install --production --no-save --os ${process.platform} --cpu ${arch}`, {
+    execSync(`bun install --production --no-save --os ${targetOs} --cpu ${arch}`, {
         cwd: tmp,
         stdio: 'inherit',
     });
@@ -89,6 +90,6 @@ function copyMissing(from: string, to: string): void {
 }
 const ortBin = path.join(outDir, 'node_modules', 'onnxruntime-node', 'bin', 'napi-v6');
 for (const platform of fs.readdirSync(ortBin)) {
-    if (platform !== process.platform) fs.rmSync(path.join(ortBin, platform), { recursive: true, force: true });
+    if (platform !== targetOs) fs.rmSync(path.join(ortBin, platform), { recursive: true, force: true });
 }
 console.log(`Bundle API prêt: ${outDir}`);

@@ -501,7 +501,7 @@
     "desktop_retry": "Réessayer",
     "desktop_menu_view": "Affichage",
     "desktop_api_build_missing": "Build API introuvable — lancez `bun run build` d’abord.",
-    "desktop_bridge_unreachable": "Bridge injoignable sur {url}",
+    "desktop_bridge_unreachable": "Bridge injoignable sur {url} — voir le log : {log}",
     "desktop_menu_check_updates": "Rechercher des mises à jour…",
     "desktop_update_available_title": "Mise à jour disponible",
     "desktop_update_available_body": "Kobralink {version} est disponible. Télécharger maintenant ?",

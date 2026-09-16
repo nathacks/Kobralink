@@ -143,11 +143,14 @@ html {
 }
 
 html.desktop {
-    --inset-top: 2.5rem;
     scrollbar-width: none;
 }
 
-html.desktop .app-dragbar {
+html.desktop-mac {
+    --inset-top: 2.5rem;
+}
+
+html.desktop-mac .app-dragbar {
     position: fixed;
     inset: 0 0 auto 0;
     height: var(--inset-top);

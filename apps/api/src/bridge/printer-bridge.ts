@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import net from 'node:net';
 import {
@@ -196,7 +197,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             deviceId: c.deviceId,
             cert: this.certs.cert,
             key: this.certs.key,
-            clientId: 'kobralink',
+            clientId: `kobralink-${process.pid}-${randomBytes(3).toString('hex')}`,
             logger: {
                 debug: (m) => this.log.debug(m),
                 info: (m) => this.log.log(m),

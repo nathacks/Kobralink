@@ -39,6 +39,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  include: build/installer.nsh
 linux:
   executableName: kobralink
   category: Utility

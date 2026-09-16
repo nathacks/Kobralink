@@ -11,6 +11,7 @@
         "start": "bunx electron-vite preview",
         "check-types": "bunx tsc --noEmit -p tsconfig.json",
         "dist:mac": "bun run dist -- --mac",
+        "dist:win": "node scripts/fetch-vc-redist.cjs && KOBRALINK_BUNDLE_OS=win32 KOBRALINK_BUNDLE_ARCHS=x64 bun run dist -- --win --x64",
         "dist": "bun run --filter @kobralink/api bundle && bun run --filter @kobralink/web build && bunx electron-vite build && bunx electron-builder --publish never"
     },
     "dependencies": {

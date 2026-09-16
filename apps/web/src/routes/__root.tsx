@@ -5,7 +5,9 @@ export interface RouterContext {
     queryClient: QueryClient;
 }
 
-const isDesktop = typeof window !== 'undefined' && 'kobralinkDesktop' in window;
+const isDesktop =
+    typeof window !== 'undefined' &&
+    (window as unknown as { kobralinkDesktop?: { platform?: string } }).kobralinkDesktop?.platform === 'darwin';
 
 export const Route = createRootRouteWithContext<RouterContext>()({
     component: () => (
