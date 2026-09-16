@@ -1,5 +1,5 @@
 import { m } from '@kobralink/i18n';
-import type { KobralinkDesktopApi } from '../preload/index';
+import type { KobralinkDesktopApi } from '../preload';
 import { installLocale } from '../shared/locale';
 
 declare global {
