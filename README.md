@@ -2,10 +2,22 @@
 
 # Kobralink
 
+<p align="center">
+  <a href="https://github.com/NatHacks/Kobralink/releases/latest"><img src="https://img.shields.io/github/v/release/NatHacks/Kobralink?label=release" alt="GitHub release" /></a>
+  <a href="https://github.com/NatHacks/Kobralink/releases"><img src="https://img.shields.io/github/downloads/NatHacks/Kobralink/total?label=downloads" alt="GitHub downloads" /></a>
+  <a href="https://hub.docker.com/r/nathacks/kobralink"><img src="https://img.shields.io/docker/pulls/nathacks/kobralink?label=docker%20pulls" alt="Docker pulls" /></a>
+  <a href="https://hub.docker.com/r/nathacks/kobralink"><img src="https://img.shields.io/docker/image-size/nathacks/kobralink/latest?label=image%20size" alt="Docker image size" /></a>
+  <a href="https://github.com/NatHacks/Kobralink/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/NatHacks/Kobralink/release.yml?label=release%20build" alt="Release build" /></a>
+  <a href="https://github.com/NatHacks/Kobralink/stargazers"><img src="https://img.shields.io/github/stars/NatHacks/Kobralink?style=flat" alt="GitHub stars" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/NatHacks/Kobralink" alt="License" /></a>
+</p>
+
 Kobralink turns an **Anycubic Kobra X** into a **Moonraker-compatible printer** — no Klipper, no
 Raspberry Pi, no firmware change. Run it on a small server (Docker) or as a desktop app, add your
 printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
 (Mainsail, Obico, Home Assistant…).
+
+<p align="center"><img src="docs/interface.png" alt="Kobralink dashboard" width="900" /></p>
 
 ## What you get
 

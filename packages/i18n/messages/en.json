@@ -872,7 +872,7 @@
     "slicer_step_2_title": "Pick the Moonraker host type",
     "slicer_step_2": "Host type: Moonraker.",
     "slicer_step_3_title": "Fill in the host",
-    "slicer_step_3": "Hostname / IP / URL: paste the full address above, with the protocol (http://, or https:// if a TLS reverse proxy sits in front of Kobralink) and the port. API key: leave empty by default; if you enabled \"Require an API key\" below, paste a key generated here.",
+    "slicer_step_3": "Hostname / IP / URL: paste the address above, replacing “machine-ip” with the IP address of the machine running Kobralink (e.g. http://192.168.1.20:7125), or with localhost if OrcaSlicer runs on the same machine (http://localhost:7125). Keep the protocol (http://, or https:// if a TLS reverse proxy sits in front of Kobralink) and the port. API key: leave empty by default; if you enabled \"Require an API key\" below, paste a key generated here.",
     "slicer_step_4_title": "Test, then save",
     "slicer_step_4": "Click Test: OrcaSlicer should report “Connection succeeded”. Save; the Device tab now shows your Kobra X and the Print button sends the G-code to Kobralink.",
     "slicer_notes_title": "Good to know",
