@@ -33,6 +33,21 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   notarize: true
+dmg:
+  background: build/background.png
+  icon: build/dmg-icon.png
+  iconSize: 128
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 175
+      type: file
+    - x: 400
+      y: 175
+      type: link
+      path: /Applications
 win:
   artifactName: ${productName}-${version}-Installer-win-${arch}.${ext}
   target: [nsis]
