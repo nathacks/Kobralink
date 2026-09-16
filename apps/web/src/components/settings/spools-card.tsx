@@ -11,9 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { spoolsQuery } from '@/lib/queries';
+import { appSettingsQuery, spoolsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -23,6 +23,8 @@ export function SpoolsCard() {
     const qc = useQueryClient();
     const [archived, setArchived] = useState(false);
     const spools = useQuery(spoolsQuery(archived));
+    const settings = useQuery(appSettingsQuery);
+    const currency = settings.data?.currency ?? 'EUR';
     const invalidate = () => qc.invalidateQueries({ queryKey: ['spools'] });
     const onError = (e: Error) => toast.error(e.message);
     const update = useMutation({
@@ -94,6 +96,9 @@ export function SpoolsCard() {
                                             total: Math.round(s.initialWeightG),
                                             meters: (s.usedMm / 1000).toFixed(1),
                                         })}
+                                        {s.price > 0
+                                            ? ` · ${m.spools_value({ value: formatMoney(s.remainingValue, currency) })}`
+                                            : ''}
                                         {s.lastUsedAt
                                             ? ` · ${m.spools_last_used({ date: formatDate(s.lastUsedAt) })}`
                                             : ''}
@@ -170,13 +175,19 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
             diameterMm: spool?.diameterMm ?? 1.75,
             densityGcm3: spool?.densityGcm3 ?? 1.24,
             initialWeightG: spool?.initialWeightG ?? 1000,
+            price: spool?.price ?? 0,
             usedMm: spool?.usedMm ?? 0,
             archived: spool?.archived ?? false,
         },
         validators: { onSubmit: localSpoolSchema.required() },
         onSubmit: ({ value }) => save.mutateAsync(localSpoolSchema.parse(value)).catch(() => undefined),
     });
-    const num = (name: 'diameterMm' | 'densityGcm3' | 'initialWeightG' | 'usedMm', label: string, step: number) => (
+    const num = (
+        name: 'diameterMm' | 'densityGcm3' | 'initialWeightG' | 'usedMm' | 'price',
+        label: string,
+        step: number,
+        hint?: string,
+    ) => (
         <form.Field name={name}>
             {(field) => (
                 <div className="grid gap-2">
@@ -191,6 +202,7 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
                         aria-invalid={fieldInvalid(field.state.meta)}
                         className="rounded-full px-4"
                     />
+                    {hint ? <p className="px-4 text-xs text-muted-foreground">{hint}</p> : null}
                     <FieldError meta={field.state.meta} />
                 </div>
             )}
@@ -284,6 +296,7 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
                     )}
                 </form.Field>
                 {num('initialWeightG', m.spools_initial_weight(), 50)}
+                {num('price', m.spools_price(), 0.5, m.spools_price_hint())}
                 {num('usedMm', m.spools_used_mm(), 100)}
                 {num('diameterMm', m.spools_diameter(), 0.05)}
                 {num('densityGcm3', m.spools_density(), 0.01)}

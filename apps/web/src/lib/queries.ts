@@ -10,17 +10,6 @@ export const printersQuery = queryOptions({
 export const printerQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id], queryFn: () => api.printers.get(id) });
 
-export const printerStateQuery = (id: string) =>
-    queryOptions({
-        queryKey: ['printers', id, 'state'],
-        queryFn: () => api.printers.state(id),
-
-        refetchInterval: 15_000,
-    });
-
-export const printerSamplesQuery = (id: string) =>
-    queryOptions({ queryKey: ['printers', id, 'samples'], queryFn: () => api.printers.samples(id), staleTime: 0 });
-
 export const filesQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'files'], queryFn: () => api.files.list(id) });
 

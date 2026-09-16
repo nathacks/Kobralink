@@ -1,10 +1,11 @@
 import type { PrinterLiveState, PrinterSample } from '@kobralink/shared';
 import { createStore } from '@tanstack/react-store';
-import type { PrinterWithLive } from '@/lib/api';
+import { api, type PrinterWithLive } from '@/lib/api';
 
 export type Sample = PrinterSample;
 
 const MAX_SAMPLES = 120;
+const loadingSamples = new Set<string>();
 export const EMPTY_SAMPLES: Sample[] = [];
 
 export interface PrintersState {
@@ -21,7 +22,16 @@ const initialState: PrintersState = {
     seeded: {},
 };
 
-export const printersStore = createStore(initialState, ({ setState }) => ({
+export const printersStore = createStore(initialState, ({ setState, get }) => ({
+    loadSamples: (id: string) => {
+        if (get().seeded[id] || loadingSamples.has(id)) return;
+        loadingSamples.add(id);
+        api.printers
+            .samples(id)
+            .then((history) => printersStore.actions.seedSamples(id, history))
+            .catch(() => {})
+            .finally(() => loadingSamples.delete(id));
+    },
     setPrinters: (list: PrinterWithLive[]) =>
         setState((s) => ({
             ...s,

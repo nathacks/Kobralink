@@ -40,7 +40,7 @@ export function createAuth() {
         },
         plugins: [
             apiKey({
-                defaultPrefix: 'kx_',
+                defaultPrefix: 'kl_',
                 defaultKeyLength: 40,
                 apiKeyHeaders: 'x-api-key',
                 enableMetadata: true,

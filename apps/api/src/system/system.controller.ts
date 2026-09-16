@@ -7,7 +7,7 @@ import { SystemService } from './system.service';
 
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
-@Controller('kx/system')
+@Controller('api/v1/system')
 export class SystemController {
     constructor(private readonly system: SystemService) {}
 

@@ -60,7 +60,7 @@ export async function waitForApi(baseUrl: string, timeoutMs = 30000): Promise<bo
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         try {
-            const res = await fetch(`${baseUrl}/kx/setup/status`, { signal: AbortSignal.timeout(2000) });
+            const res = await fetch(`${baseUrl}/api/v1/setup/status`, { signal: AbortSignal.timeout(2000) });
             if (res.ok) return true;
         } catch {}
         await new Promise((r) => setTimeout(r, 500));

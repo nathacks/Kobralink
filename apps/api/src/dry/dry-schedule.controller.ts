@@ -3,7 +3,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/co
 import { ZodPipe } from '../common/zod.pipe';
 import { DryScheduleService } from './dry-schedule.service';
 
-@Controller('kx/printers/:id/dry-schedule')
+@Controller('api/v1/printers/:id/dry-schedule')
 export class DryScheduleController {
     constructor(private readonly schedule: DryScheduleService) {}
 

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
@@ -17,7 +17,6 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 export function PrintCard({ printerId }: { printerId: string }) {
     const state = useLiveState(printerId);
     const clock = usePrintClock(state);
-    const qc = useQueryClient();
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
 
@@ -31,10 +30,7 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const files = useQuery({ ...filesQuery(printerId), enabled: active });
     const liveFile = active ? files.data?.find((f) => f.filename === state.filename) : undefined;
 
-    const clearReady = useMutation({
-        mutationFn: () => api.control.clearFileReady(printerId),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'state'] }),
-    });
+    const clearReady = useMutation({ mutationFn: () => api.control.clearFileReady(printerId) });
 
     const pct = Math.round(state.progress * 100);
     const remaining =

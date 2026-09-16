@@ -17,7 +17,7 @@ import { BridgeOfflineError } from '../bridge/printer-bridge';
 import { ZodPipe } from '../common/zod.pipe';
 import { MacroService } from './macro.service';
 
-@Controller('kx')
+@Controller('api/v1')
 export class MacroController {
     constructor(
         private readonly macros: MacroService,

@@ -256,6 +256,7 @@ model LocalSpool {
   diameterMm     Float                  @default(1.75)
   densityGcm3    Float                  @default(1.24)
   initialWeightG Float                  @default(1000)
+  price          Float                  @default(0)
   usedMm         Float                  @default(0)
   archived       Boolean                @default(false)
   createdAt      DateTime               @default(now())

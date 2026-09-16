@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { PrismaService } from '../prisma/prisma.service';
 
-@Controller('kx/setup')
+@Controller('api/v1/setup')
 export class SetupController {
     constructor(private readonly prisma: PrismaService) {}
 

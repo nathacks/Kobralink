@@ -28,7 +28,6 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': { target: API, changeOrigin: false },
-            '/kx': { target: API, changeOrigin: false },
         },
     },
     build: { outDir: 'dist', sourcemap: true },

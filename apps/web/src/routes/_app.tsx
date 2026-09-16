@@ -2,8 +2,8 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppRail } from '@/components/layout/app-rail';
+import { SseProvider } from '@/components/providers/sse-provider';
 import { useDesktopNavigation } from '@/hooks/use-desktop-navigation';
-import { useGlobalEvents } from '@/hooks/use-global-events';
 import { usePinnedPrinter } from '@/hooks/use-pinned-printer';
 import { usePrintersSync } from '@/hooks/use-printers-sync';
 import { printersQuery } from '@/lib/queries';
@@ -41,18 +41,19 @@ function AppLayout() {
     const pinned = usePinnedPrinter();
 
     usePrintersSync();
-    useGlobalEvents();
     useDesktopNavigation();
 
     return (
-        <div className="flex min-h-svh gap-4 p-4 pt-(--inset-top)">
-            {!pinned && <AppRail />}
-            <div className="flex min-w-0 flex-1 flex-col gap-6">
-                <AppHeader user={session.user} />
-                <main className="min-w-0 flex-1">
-                    <Outlet />
-                </main>
+        <SseProvider>
+            <div className="flex min-h-svh gap-4 p-4 pt-(--inset-top)">
+                {!pinned && <AppRail />}
+                <div className="flex min-w-0 flex-1 flex-col gap-6">
+                    <AppHeader user={session.user} />
+                    <main className="min-w-0 flex-1">
+                        <Outlet />
+                    </main>
+                </div>
             </div>
-        </div>
+        </SseProvider>
     );
 }

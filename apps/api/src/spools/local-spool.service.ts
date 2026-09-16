@@ -143,6 +143,7 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
 
 export function toDto(r: LocalSpool): LocalSpoolDto {
     const usedG = filamentWeightG(r.usedMm, r.diameterMm, r.densityGcm3);
+    const remainingG = Math.max(0, r.initialWeightG - usedG);
     return {
         id: r.id,
         name: r.name,
@@ -152,9 +153,11 @@ export function toDto(r: LocalSpool): LocalSpoolDto {
         diameterMm: r.diameterMm,
         densityGcm3: r.densityGcm3,
         initialWeightG: r.initialWeightG,
+        price: r.price,
         usedMm: r.usedMm,
         usedG: Math.round(usedG * 10) / 10,
-        remainingG: Math.round(Math.max(0, r.initialWeightG - usedG) * 10) / 10,
+        remainingG: Math.round(remainingG * 10) / 10,
+        remainingValue: r.initialWeightG > 0 ? Math.round((remainingG / r.initialWeightG) * r.price * 100) / 100 : 0,
         archived: r.archived,
         createdAt: r.createdAt.toISOString(),
         lastUsedAt: r.lastUsedAt?.toISOString() ?? null,

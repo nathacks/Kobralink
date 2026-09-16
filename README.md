@@ -98,7 +98,7 @@ API key field and will not connect while the option is on.
 ```
 OrcaSlicer ──HTTP/WS──► :7125  (Moonraker, printer 1) ─┐
 Mainsail / Obico ─────► :7126  (Moonraker, printer 2) ─┤   apps/api (single process)
-Web UI / Desktop ─────► :7100  (UI + /kx API + auth)  ─┘         │ MQTT mTLS :9883
+Web UI / Desktop ─────► :7100  (UI + /api/v1 API + auth)  ─┘         │ MQTT mTLS :9883
                                                                   ▼
                                                            Kobra X (LAN mode)
 ```
@@ -140,7 +140,7 @@ API environment variables (`apps/api`):
 | `KOBRALINK_CERTS_DIR`     | `apps/api/certs`                      | `anycubic_slicer.crt` / `.key`                |
 | `KOBRALINK_EXTRA_ORIGINS` | `http://localhost:5173,…`             | Extra origins (CORS + Better Auth)            |
 | `KOBRALINK_FFMPEG`        | `@ffmpeg-installer/ffmpeg`, else PATH | ffmpeg binary for camera + timelapse          |
-| `KOBRALINK_VERSION`       | `package.json` version                | Version reported by `/kx/system`              |
+| `KOBRALINK_VERSION`       | `package.json` version                | Version reported by `/api/v1/system`              |
 | `KOBRALINK_UPDATE_REPO`   | `NatHacks/Kobralink`                  | GitHub repo polled for update checks          |
 
 Desktop: `KOBRALINK_URL` forces the bridge URL without spawning the API;

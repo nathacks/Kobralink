@@ -20,7 +20,7 @@ import { FilamentService } from './filament.service';
 
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
-@Controller('kx')
+@Controller('api/v1')
 export class FilamentController {
     constructor(
         private readonly filaments: FilamentService,

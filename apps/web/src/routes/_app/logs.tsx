@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Download, Pause, Play, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useSse, useSseStatus } from '@/components/providers/sse-provider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePrinters } from '@/hooks/use-printers';
@@ -44,30 +45,22 @@ function LogsPage() {
     const [levels, setLevels] = useState<Set<string>>(new Set(['error', 'warn', 'log']));
     const [source, setSource] = useState('all');
     const printers = usePrinters();
-    const [connected, setConnected] = useState(false);
     const pending = useRef<LogEntry[]>([]);
     const seq = useRef(0);
     const bottomRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const es = new EventSource(api.logs.streamUrl, { withCredentials: true });
-        const tag = (items: Omit<LogEntry, 'id'>[]): LogEntry[] => items.map((e) => ({ ...e, id: seq.current++ }));
-        const push = (items: LogEntry[]) => {
-            if (paused) {
-                pending.current.push(...items);
-                return;
-            }
-            setEntries((cur) => [...cur, ...items].slice(-MAX));
-        };
-        es.addEventListener('snapshot', (e) =>
-            setEntries(tag(JSON.parse((e as MessageEvent).data) as Omit<LogEntry, 'id'>[]).slice(-MAX)),
-        );
-        es.addEventListener('log', (e) => push(tag([JSON.parse((e as MessageEvent).data) as Omit<LogEntry, 'id'>])));
-        es.onopen = () => setConnected(true);
-        es.onerror = () => setConnected(false);
-        return () => es.close();
-    }, [paused]);
+    const tag = (items: Omit<LogEntry, 'id'>[]): LogEntry[] => items.map((e) => ({ ...e, id: seq.current++ }));
+    const push = (items: LogEntry[]) => {
+        if (paused) {
+            pending.current.push(...items);
+            return;
+        }
+        setEntries((cur) => [...cur, ...items].slice(-MAX));
+    };
+    useSse<Omit<LogEntry, 'id'>[]>('logs', 'snapshot', (items) => setEntries(tag(items).slice(-MAX)));
+    useSse<Omit<LogEntry, 'id'>>('logs', 'log', (entry) => push(tag([entry])));
+    const connected = useSseStatus() === 'open';
 
     useEffect(() => {
         if (!paused && pending.current.length) {

@@ -1,5 +1,6 @@
 import type { AppSettings } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useSaveSettings } from '@/hooks/use-save-settings';
@@ -13,6 +14,8 @@ export function GeneralCard({ settings }: { settings: AppSettings }) {
             locale: settings.locale,
             updateCheck: settings.updateCheck,
             verboseHttpLog: settings.verboseHttpLog,
+            currency: settings.currency,
+            filamentPricePerKg: settings.filamentPricePerKg,
         },
         onSubmit: ({ value }) => save.mutateAsync(value).catch(() => undefined),
     });
@@ -44,6 +47,32 @@ export function GeneralCard({ settings }: { settings: AppSettings }) {
                 {(field) => (
                     <SwitchRow label={m.settings_update_check()} hint={m.settings_update_check_hint()}>
                         <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                    </SwitchRow>
+                )}
+            </form.Field>
+            <form.Field name="currency">
+                {(field) => (
+                    <SwitchRow label={m.settings_currency()} hint={m.settings_currency_hint()}>
+                        <Input
+                            value={field.state.value}
+                            maxLength={8}
+                            onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                            className="w-28 rounded-full px-4 font-mono uppercase"
+                        />
+                    </SwitchRow>
+                )}
+            </form.Field>
+            <form.Field name="filamentPricePerKg">
+                {(field) => (
+                    <SwitchRow label={m.settings_filament_price()} hint={m.settings_filament_price_hint()}>
+                        <Input
+                            type="number"
+                            min={0}
+                            step={0.5}
+                            value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                            onChange={(e) => field.handleChange(e.target.valueAsNumber || 0)}
+                            className="w-28 rounded-full px-4"
+                        />
                     </SwitchRow>
                 )}
             </form.Field>

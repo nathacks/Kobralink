@@ -4,6 +4,7 @@ export interface StatsBucket {
     completed: number;
     durationSec: number;
     filamentMm: number;
+    cost: number;
 }
 
 export interface StatsFileEntry {
@@ -14,6 +15,7 @@ export interface StatsFileEntry {
     completed: number;
     durationSec: number;
     filamentMm: number;
+    cost: number;
     lastPrintedAt: string;
 }
 
@@ -21,6 +23,7 @@ export interface StatsMaterialEntry {
     material: string;
     filamentMm: number;
     weightG: number;
+    cost: number;
     jobs: number;
 }
 
@@ -32,6 +35,7 @@ export interface StatsPrinterEntry {
     durationSec: number;
     filamentMm: number;
     weightG: number;
+    cost: number;
 }
 
 export interface StatsDto {
@@ -49,6 +53,9 @@ export interface StatsDto {
     estimateRatio: number | null;
     totalFilamentMm: number;
     totalFilamentG: number;
+    totalCost: number;
+    unpricedG: number;
+    currency: string;
     firstJobAt: string | null;
     lastJobAt: string | null;
     daily: StatsBucket[];

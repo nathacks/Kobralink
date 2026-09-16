@@ -9,9 +9,11 @@ export interface LocalSpoolDto {
     diameterMm: number;
     densityGcm3: number;
     initialWeightG: number;
+    price: number;
     usedMm: number;
     usedG: number;
     remainingG: number;
+    remainingValue: number;
     archived: boolean;
     createdAt: string;
     lastUsedAt: string | null;
@@ -41,6 +43,7 @@ export const localSpoolSchema = z.object({
     diameterMm: z.number().min(1).max(3.5).default(1.75),
     densityGcm3: z.number().min(0.5).max(3).default(1.24),
     initialWeightG: z.number().min(0).max(10000).default(1000),
+    price: z.number().min(0).max(100000).default(0),
     usedMm: z.number().min(0).default(0),
     archived: z.boolean().default(false),
 });

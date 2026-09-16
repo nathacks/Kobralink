@@ -10,7 +10,6 @@ import {
     type FileObjectsDto,
     type MoveAxisInput,
     moveAxisSchema,
-    type PrinterLiveState,
     type PrinterSample,
     type PrintPrinterFileInput,
     printPrinterFileSchema,
@@ -37,20 +36,17 @@ import {
     Get,
     HttpCode,
     Logger,
-    MessageEvent,
     NotFoundException,
     Param,
     Post,
     Query,
     Res,
     ServiceUnavailableException,
-    Sse,
     UploadedFiles,
     UseInterceptors,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { fromEvent, map, merge, Observable, of, throttleTime } from 'rxjs';
 import type { z } from 'zod';
 
 import { BridgeRegistry } from '../bridge/bridge.registry';
@@ -64,9 +60,9 @@ import { m } from '../i18n/locale';
 const UPLOAD_LIMIT = 512 * 1024 * 1024;
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
 
-@Controller('kx/printers/:id')
-export class KxController {
-    private readonly log = new Logger(KxController.name);
+@Controller('api/v1/printers/:id')
+export class CoreController {
+    private readonly log = new Logger(CoreController.name);
 
     constructor(
         private readonly registry: BridgeRegistry,
@@ -99,17 +95,6 @@ export class KxController {
     @Get('samples')
     samples(@Param('id') id: string): PrinterSample[] {
         return this.bridge(id).samples();
-    }
-
-    @Sse('events')
-    events(@Param('id') id: string): Observable<MessageEvent> {
-        const bridge = this.bridge(id);
-        const updates = (fromEvent(bridge, 'state') as Observable<PrinterLiveState>).pipe(
-            throttleTime(500, undefined, { leading: true, trailing: true }),
-        );
-        return merge(of(bridge.snapshot()), updates).pipe(
-            map((state): MessageEvent => ({ type: 'state', data: state as unknown as object })),
-        );
     }
 
     @Post('temperature')

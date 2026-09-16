@@ -7,12 +7,12 @@ import { SetupController } from './auth/setup.controller';
 import { BridgeModule } from './bridge/bridge.module';
 import { WriteGuard } from './common/write.guard';
 import { loadEnv } from './config/env';
+import { CoreModule } from './core/core.module';
 import { DetectionModule } from './detection/detection.module';
 import { DryScheduleModule } from './dry/dry-schedule.module';
 import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
 import { HaMqttModule } from './ha/ha-mqtt.module';
-import { KxModule } from './kx/kx.module';
 import { MacroModule } from './macros/macro.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -43,7 +43,7 @@ const env = loadEnv();
         HaMqttModule,
         FilamentModule,
         BridgeModule,
-        KxModule,
+        CoreModule,
         StatsModule,
         DryScheduleModule,
         UsersModule,
@@ -52,7 +52,7 @@ const env = loadEnv();
             ? [
                   ServeStaticModule.forRoot({
                       rootPath: env.webDir,
-                      exclude: ['/api/{*path}', '/kx/{*path}'],
+                      exclude: ['/api/{*path}'],
                   }),
               ]
             : []),

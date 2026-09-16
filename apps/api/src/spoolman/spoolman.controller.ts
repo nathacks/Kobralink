@@ -5,7 +5,7 @@ import { ZodPipe } from '../common/zod.pipe';
 import { m } from '../i18n/locale';
 import { SpoolmanService } from './spoolman.service';
 
-@Controller('kx')
+@Controller('api/v1')
 export class SpoolmanController {
     constructor(
         private readonly spoolman: SpoolmanService,

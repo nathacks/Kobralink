@@ -1,7 +1,7 @@
 import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { DetectionService } from './detection.service';
 
-@Controller('kx')
+@Controller('api/v1')
 export class DetectionController {
     constructor(private readonly detection: DetectionService) {}
 

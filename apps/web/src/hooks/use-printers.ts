@@ -1,5 +1,6 @@
 import type { PrinterLiveState } from '@kobralink/shared';
 import { shallow, useSelector } from '@tanstack/react-store';
+import { useEffect } from 'react';
 import { EMPTY_SAMPLES, printersStore } from '@/stores/printers';
 
 export const usePrinters = () =>
@@ -14,6 +15,9 @@ export const useLiveState = (id: string): PrinterLiveState => {
     return live;
 };
 
-export const useSamples = (id: string) => useSelector(printersStore, (s) => s.samples[id] ?? EMPTY_SAMPLES);
+export const useSamples = (id: string) => {
+    useEffect(() => printersStore.actions.loadSamples(id), [id]);
+    return useSelector(printersStore, (s) => s.samples[id] ?? EMPTY_SAMPLES);
+};
 
-export const useSamplesReady = (id: string) => useSelector(printersStore, (s) => s.seeded[id] === true);
+export const useSamplesReady = (id: string) => useSelector(printersStore, (s) => s.seeded[id]);

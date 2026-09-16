@@ -10,6 +10,7 @@ export * from './printer';
 export * from './queue';
 export * from './settings';
 export * from './spools';
+export * from './sse';
 export * from './state';
 export * from './stats';
 export * from './system';

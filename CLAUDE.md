@@ -32,10 +32,10 @@ payloads, comportements à reproduire).
   état live, poll loop, commandes. `BridgeRegistry` les instancie depuis la table `printer`.
 - Chaque imprimante a **sa propre application Nest** Moonraker sur `httpPort`
   (`moonraker.host.ts` → `MoonrakerAppModule.forPrinter`). Pas d'auth dessus, volontairement.
-- L'API principale (:7100) : `/api/auth/*` (Better Auth), `/kx/*` (protégé), sert `apps/web/dist`.
-- Live state UI : SSE `/kx/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query.
+- L'API principale (:7100) : `/api/auth/*` (Better Auth), `/api/v1/*` (protégé), sert `apps/web/dist`.
+- Live state UI : SSE `/api/v1/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query.
 - Caméra : `bridge/camera.ts` (`CameraCache`) = un seul ffmpeg par imprimante (FLV → MJPEG 15 fps/640px),
-  fanout vers `/kx/printers/:id/camera/{stream,snapshot}` (dashboard) et `/api/camera/{stream,snapshot}`
+  fanout vers `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) et `/api/camera/{stream,snapshot}`
   (Moonraker, annoncé par `server/webcams/list`). Binaire via `KOBRALINK_FFMPEG`, sinon `@ffmpeg-installer/ffmpeg`
   (externe dans le bundle Electron), sinon `ffmpeg` du PATH. Arrêt auto après 60 s sans consommateur.
 - Détection d'échec IA : `apps/api/src/detection/` (modèle ONNX Obico YOLOv2 ~200 Mo téléchargé à la demande dans

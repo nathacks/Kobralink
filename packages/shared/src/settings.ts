@@ -61,6 +61,8 @@ export const DEFAULT_DRY_PRESETS: AceDryPreset[] = [
 
 export const appSettingsSchema = z.object({
     locale: z.enum(['fr', 'en']).default('fr'),
+    currency: z.string().trim().min(1).max(8).default('EUR'),
+    filamentPricePerKg: z.number().min(0).max(100000).default(0),
     spoolmanUrl: z.string().trim().default(''),
     spoolmanSyncRateSec: z.number().int().min(0).max(3600).default(0),
     verboseHttpLog: z.boolean().default(false),

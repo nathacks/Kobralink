@@ -10,7 +10,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } fr
 import { ZodPipe } from '../common/zod.pipe';
 import { LocalSpoolService } from './local-spool.service';
 
-@Controller('kx')
+@Controller('api/v1')
 export class LocalSpoolController {
     constructor(private readonly spools: LocalSpoolService) {}
 

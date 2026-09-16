@@ -8,7 +8,7 @@ import { BadGatewayException, Body, Controller, Delete, Get, HttpCode, Param, Po
 import { ZodPipe } from '../common/zod.pipe';
 import { QueueService } from './queue.service';
 
-@Controller('kx/printers/:id/queue')
+@Controller('api/v1/printers/:id/queue')
 export class QueueController {
     constructor(private readonly queue: QueueService) {}
 

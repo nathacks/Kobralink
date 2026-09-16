@@ -3,7 +3,7 @@ import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ZodPipe } from '../common/zod.pipe';
 import { SettingsService } from './settings.service';
 
-@Controller('kx/settings')
+@Controller('api/v1/settings')
 export class SettingsController {
     constructor(private readonly settings: SettingsService) {}
 

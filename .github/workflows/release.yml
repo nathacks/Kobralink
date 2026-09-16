@@ -137,6 +137,10 @@ jobs:
     needs: [docker, desktop]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v6
         with:
           pattern: desktop-*
@@ -147,9 +151,19 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kobralink
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           V="${VERSION#v}"
+          PREV="$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || true)"
+          RANGE="${VERSION}"
+          [ -z "$PREV" ] || RANGE="${PREV}..${VERSION}"
+          CHANGES="$(git log "$RANGE" --no-merges --invert-grep --grep='^\[Release\]' --pretty='- %s ([%h](${REPO_URL}/commit/%H))')"
+          [ -n "$CHANGES" ] || CHANGES="- No changes recorded."
           cat > body.md <<EOF
+          ## Changes
+
+          ${CHANGES}
+
           ## Desktop app
 
           | Platform | File |

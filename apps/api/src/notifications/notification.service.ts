@@ -52,7 +52,7 @@ export class NotificationService extends EventEmitter<{
                 timer = null;
                 if (pending) this.emit('state', bridge.id, pending);
                 pending = null;
-            }, 1000);
+            }, 500);
         };
         const onRefused = (r: CommandRefused) => this.emit('refused', r);
         bridge.on('event', onEvent);

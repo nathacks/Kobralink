@@ -9,14 +9,18 @@ import {
 } from '@kobralink/shared';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 const DAILY_MAX_DAYS = 90;
 
-type Spool = { diameterMm: number; densityGcm3: number; material: string };
+type Spool = { diameterMm: number; densityGcm3: number; material: string; price: number; initialWeightG: number };
 
 @Injectable()
 export class StatsService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly settings: SettingsService,
+    ) {}
 
     async compute(printerId?: string, days = 0): Promise<StatsDto> {
         const since = days > 0 ? startOfDay(new Date(Date.now() - (days - 1) * 86_400_000)) : undefined;
@@ -28,9 +32,17 @@ export class StatsService {
             }),
             this.prisma.client.printer.findMany({ select: { id: true, name: true } }),
             this.prisma.client.localSpool.findMany({
-                select: { id: true, diameterMm: true, densityGcm3: true, material: true },
+                select: {
+                    id: true,
+                    diameterMm: true,
+                    densityGcm3: true,
+                    material: true,
+                    price: true,
+                    initialWeightG: true,
+                },
             }),
         ]);
+        const { currency, filamentPricePerKg } = this.settings.get();
         const printerNames = new Map(printerRows.map((p) => [p.id, p.name]));
         const spools = new Map<string, Spool>(spoolRows.map((s) => [s.id, s]));
         const finished = jobs.filter((j) => j.status !== 'printing');
@@ -59,24 +71,49 @@ export class StatsService {
         for (let i = 0; i < 24; i++) hours.set(String(i), emptyBucket(String(i)));
         const printers = new Map<string, StatsPrinterEntry>();
         const files = new Map<string, StatsFileEntry>();
-        const materials = new Map<string, { filamentMm: number; weightG: number; jobs: number }>();
+        const materials = new Map<string, { filamentMm: number; weightG: number; cost: number; jobs: number }>();
         let totalFilamentG = 0;
+        let totalCost = 0;
+        let unpricedG = 0;
 
         for (const j of finished) {
             const d = j.startedAt;
             const ok = j.status === 'completed';
             const dur = j.durationSec ?? 0;
+            const usage = parseUsage(j.spoolUsage);
+            const entries = usage.length
+                ? usage
+                : j.filamentMm > 0
+                  ? [{ slotIndex: 0, mm: j.filamentMm, material: '', spoolId: null }]
+                  : [];
+            const priced = entries.map((u) => {
+                const spool = u.spoolId ? spools.get(u.spoolId) : undefined;
+                const mat = (u.material || spool?.material || 'PLA').toUpperCase();
+                const weightG = filamentWeightG(
+                    u.mm,
+                    spool?.diameterMm ?? 1.75,
+                    spool?.densityGcm3 ?? DEFAULT_DENSITY[mat.split('-')[0]] ?? 1.24,
+                );
+                const perG =
+                    spool && spool.price > 0 && spool.initialWeightG > 0
+                        ? spool.price / spool.initialWeightG
+                        : filamentPricePerKg > 0
+                          ? filamentPricePerKg / 1000
+                          : null;
+                return { mm: u.mm, mat, weightG, cost: perG === null ? null : weightG * perG };
+            });
+            const jobCost = sum(priced, (u) => u.cost ?? 0);
             const dk = dayKey(d);
             const db = daily.get(dk);
-            if (db) bump(db, ok, dur, j.filamentMm);
+            if (db) bump(db, ok, dur, j.filamentMm, jobCost);
             const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             const mb = months.get(mk) ?? emptyBucket(mk);
-            bump(mb, ok, dur, j.filamentMm);
+            bump(mb, ok, dur, j.filamentMm, jobCost);
             months.set(mk, mb);
             const wd = weekdays.get(String(d.getDay()));
-            if (wd) bump(wd, ok, dur, j.filamentMm);
+            if (wd) bump(wd, ok, dur, j.filamentMm, jobCost);
             const hb = hours.get(String(d.getHours()));
-            if (hb) bump(hb, ok, dur, j.filamentMm);
+            if (hb) bump(hb, ok, dur, j.filamentMm, jobCost);
 
             const pe = printers.get(j.printerId) ?? {
                 printerId: j.printerId,
@@ -86,11 +123,13 @@ export class StatsService {
                 durationSec: 0,
                 filamentMm: 0,
                 weightG: 0,
+                cost: 0,
             };
             pe.jobs += 1;
             if (ok) pe.completed += 1;
             pe.durationSec += dur;
             pe.filamentMm += j.filamentMm;
+            pe.cost += jobCost;
             printers.set(j.printerId, pe);
 
             const fk = j.fileId ?? j.filename;
@@ -102,40 +141,32 @@ export class StatsService {
                 completed: 0,
                 durationSec: 0,
                 filamentMm: 0,
+                cost: 0,
                 lastPrintedAt: d.toISOString(),
             };
             fe.jobs += 1;
             if (ok) fe.completed += 1;
             fe.durationSec += dur;
             fe.filamentMm += j.filamentMm;
+            fe.cost += jobCost;
             fe.lastPrintedAt = d.toISOString();
             files.set(fk, fe);
 
-            const usage = parseUsage(j.spoolUsage);
-            const entries = usage.length
-                ? usage
-                : j.filamentMm > 0
-                  ? [{ slotIndex: 0, mm: j.filamentMm, material: '', spoolId: null }]
-                  : [];
             const seen = new Set<string>();
-            for (const u of entries) {
-                const spool = u.spoolId ? spools.get(u.spoolId) : undefined;
-                const mat = (u.material || spool?.material || 'PLA').toUpperCase();
-                const weightG = filamentWeightG(
-                    u.mm,
-                    spool?.diameterMm ?? 1.75,
-                    spool?.densityGcm3 ?? DEFAULT_DENSITY[mat.split('-')[0]] ?? 1.24,
-                );
-                const me = materials.get(mat) ?? { filamentMm: 0, weightG: 0, jobs: 0 };
+            for (const u of priced) {
+                const me = materials.get(u.mat) ?? { filamentMm: 0, weightG: 0, cost: 0, jobs: 0 };
                 me.filamentMm += u.mm;
-                me.weightG += weightG;
-                if (!seen.has(mat)) {
+                me.weightG += u.weightG;
+                me.cost += u.cost ?? 0;
+                if (!seen.has(u.mat)) {
                     me.jobs += 1;
-                    seen.add(mat);
+                    seen.add(u.mat);
                 }
-                materials.set(mat, me);
-                pe.weightG += weightG;
-                totalFilamentG += weightG;
+                materials.set(u.mat, me);
+                pe.weightG += u.weightG;
+                totalFilamentG += u.weightG;
+                if (u.cost === null) unpricedG += u.weightG;
+                else totalCost += u.cost;
             }
         }
 
@@ -156,17 +187,28 @@ export class StatsService {
             estimateRatio: estimatedSec > 0 ? estimatedActualSec / estimatedSec : null,
             totalFilamentMm: Math.round(totalFilament),
             totalFilamentG: Math.round(totalFilamentG),
+            totalCost: money(totalCost),
+            unpricedG: Math.round(unpricedG),
+            currency,
             firstJobAt: first?.toISOString() ?? null,
             lastJobAt: last?.toISOString() ?? null,
-            daily: [...daily.values()],
-            months: [...months.values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-12),
-            weekdays: [...weekdays.values()],
-            hours: [...hours.values()],
+            daily: [...daily.values()].map(roundBucket),
+            months: [...months.values()]
+                .sort((a, b) => a.key.localeCompare(b.key))
+                .slice(-12)
+                .map(roundBucket),
+            weekdays: [...weekdays.values()].map(roundBucket),
+            hours: [...hours.values()].map(roundBucket),
             printers: [...printers.values()]
-                .map((p) => ({ ...p, filamentMm: Math.round(p.filamentMm), weightG: Math.round(p.weightG) }))
+                .map((p) => ({
+                    ...p,
+                    filamentMm: Math.round(p.filamentMm),
+                    weightG: Math.round(p.weightG),
+                    cost: money(p.cost),
+                }))
                 .sort((a, b) => b.durationSec - a.durationSec),
             topFiles: [...files.values()]
-                .map((f) => ({ ...f, filamentMm: Math.round(f.filamentMm) }))
+                .map((f) => ({ ...f, filamentMm: Math.round(f.filamentMm), cost: money(f.cost) }))
                 .sort((a, b) => b.jobs - a.jobs || b.durationSec - a.durationSec)
                 .slice(0, 8),
             materials: [...materials.entries()]
@@ -174,6 +216,7 @@ export class StatsService {
                     material,
                     filamentMm: Math.round(v.filamentMm),
                     weightG: Math.round(v.weightG),
+                    cost: money(v.cost),
                     jobs: v.jobs,
                 }))
                 .sort((a, b) => b.filamentMm - a.filamentMm),
@@ -194,14 +237,23 @@ function dayKey(d: Date): string {
 }
 
 function emptyBucket(key: string): StatsBucket {
-    return { key, jobs: 0, completed: 0, durationSec: 0, filamentMm: 0 };
+    return { key, jobs: 0, completed: 0, durationSec: 0, filamentMm: 0, cost: 0 };
 }
 
-function bump(b: StatsBucket, ok: boolean, durationSec: number, filamentMm: number): void {
+function roundBucket(b: StatsBucket): StatsBucket {
+    return { ...b, cost: money(b.cost) };
+}
+
+function money(v: number): number {
+    return Math.round(v * 100) / 100;
+}
+
+function bump(b: StatsBucket, ok: boolean, durationSec: number, filamentMm: number, cost: number): void {
     b.jobs += 1;
     if (ok) b.completed += 1;
     b.durationSec += durationSec;
     b.filamentMm += filamentMm;
+    b.cost += cost;
 }
 
 function parseUsage(raw: string): SpoolUsageEntry[] {

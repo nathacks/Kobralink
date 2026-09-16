@@ -2,7 +2,7 @@ import { Controller, Delete, Get, HttpCode, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { TimelapseService } from './timelapse.service';
 
-@Controller('kx')
+@Controller('api/v1')
 export class TimelapseController {
     constructor(private readonly timelapses: TimelapseService) {}
 

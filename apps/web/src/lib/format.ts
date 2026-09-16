@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import duration from 'dayjs/plugin/duration';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { m } from '@/lib/i18n';
+import { intlLocale, m } from '@/lib/i18n';
 
 dayjs.extend(duration);
 dayjs.extend(localizedFormat);
@@ -48,4 +48,12 @@ export function greeting(now = new Date()): string {
     if (h < 6) return m.greeting_night();
     if (h < 18) return m.greeting_day();
     return m.greeting_evening();
+}
+
+export function formatMoney(value: number, currency: string): string {
+    try {
+        return new Intl.NumberFormat(intlLocale(), { style: 'currency', currency }).format(value);
+    } catch {
+        return `${value.toFixed(2)} ${currency}`;
+    }
 }

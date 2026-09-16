@@ -18,7 +18,6 @@ import { TemperatureCard } from '@/components/printer/temperature-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrinter } from '@/hooks/use-printers';
-import { usePrinterSync } from '@/hooks/use-printers-sync';
 import { useCanOperate } from '@/hooks/use-role';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
@@ -36,7 +35,6 @@ export const Route = createFileRoute('/_app/printers/$printerId')({
 
 function PrinterDashboard() {
     const { printerId } = Route.useParams();
-    usePrinterSync(printerId, { events: true });
     const printer = usePrinter(printerId);
     const live = printer?.live;
     const canOperate = useCanOperate();

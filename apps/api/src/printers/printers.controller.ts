@@ -24,7 +24,7 @@ import { ZodPipe } from '../common/zod.pipe';
 import { m } from '../i18n/locale';
 import { PrintersService } from './printers.service';
 
-@Controller('kx/printers')
+@Controller('api/v1/printers')
 export class PrintersController {
     constructor(
         private readonly printers: PrintersService,

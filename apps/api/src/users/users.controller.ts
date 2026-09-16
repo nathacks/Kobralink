@@ -4,7 +4,7 @@ import { Roles, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { ZodPipe } from '../common/zod.pipe';
 import { UsersService } from './users.service';
 
-@Controller('kx/users')
+@Controller('api/v1/users')
 @Roles(['admin'])
 export class UsersController {
     constructor(private readonly users: UsersService) {}

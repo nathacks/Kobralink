@@ -1,17 +1,8 @@
-import { Controller, Get, Header, MessageEvent, Query, Sse } from '@nestjs/common';
-import { fromEvent, map, merge, Observable, of } from 'rxjs';
-import { type LogEntry, logBuffer } from './log-buffer';
+import { Controller, Get, Header, Query } from '@nestjs/common';
+import { logBuffer } from './log-buffer';
 
-@Controller('kx/logs')
+@Controller('api/v1/logs')
 export class LogsController {
-    @Sse('stream')
-    stream(): Observable<MessageEvent> {
-        const live = (fromEvent(logBuffer, 'entry') as Observable<LogEntry>).pipe(
-            map((e): MessageEvent => ({ type: 'log', data: e as unknown as object })),
-        );
-        return merge(of<MessageEvent>({ type: 'snapshot', data: logBuffer.all() as unknown as object }), live);
-    }
-
     @Get('download')
     @Header('content-type', 'text/plain; charset=utf-8')
     @Header('content-disposition', `attachment; filename="kobralink-log.txt"`)

@@ -20,7 +20,7 @@ export class WriteGuard implements CanActivate {
     async canActivate(ctx: ExecutionContext): Promise<boolean> {
         const req = ctx.switchToHttp().getRequest<AuthedRequest>();
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return true;
-        if (!req.path.startsWith('/kx/')) return true;
+        if (!req.path.startsWith('/api/v1/')) return true;
         if (this.reflector.getAllAndOverride<boolean>(ALLOW_VIEWER_WRITE, [ctx.getHandler(), ctx.getClass()])) {
             return true;
         }
