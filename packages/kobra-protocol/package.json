@@ -1,6 +1,6 @@
 {
     "name": "@kobralink/kobra-protocol",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "private": true,
     "description": "Anycubic Kobra X LAN protocol: MQTT client, credential fetch, GCode upload, GCode metadata parsing.",
     "license": "GPL-3.0-only",
