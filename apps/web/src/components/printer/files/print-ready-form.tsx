@@ -178,20 +178,17 @@ export function PrintReadyForm({
     if (editing) {
         const unit = editing.boxId >= 0 ? m.ace_unit({ n: editing.boxId + 1 }) : m.ams_toolhead();
         return (
-            <div className="grid gap-2 py-2">
-                <button
-                    type="button"
-                    onClick={() => setEditing(null)}
-                    className="flex items-center gap-2 self-start rounded-full py-1 pr-3 text-sm text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="size-4" /> {m.ams_slot_title({ n: editing.index + 1, unit })}
-                </button>
+            <div className="flex flex-col gap-2 py-2">
+                <Button type="button" size="sm" className="self-start rounded-full" onClick={() => setEditing(null)}>
+                    <ArrowLeft /> {m.ams_slot_title({ n: editing.index + 1, unit })}
+                </Button>
                 <p className="text-xs text-muted-foreground">{m.ams_slot_hint()}</p>
                 <SlotForm
                     key={editing.globalIndex}
                     printerId={printerId}
                     slot={editing}
                     onClose={() => setEditing(null)}
+                    onBack={() => setEditing(null)}
                 />
             </div>
         );

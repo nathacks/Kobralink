@@ -8,7 +8,7 @@ import {
 } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
@@ -31,11 +31,21 @@ import {
 } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
-export function SlotForm({ printerId, slot, onClose }: { printerId: string; slot: AmsSlot; onClose?: () => void }) {
+export function SlotForm({
+    printerId,
+    slot,
+    onClose,
+    onBack,
+}: {
+    printerId: string;
+    slot: AmsSlot;
+    onClose?: () => void;
+    onBack?: () => void;
+}) {
     const slotInfos = useQuery(filamentSlotsQuery(printerId));
     if (slotInfos.isPending) return <div className="h-64 animate-pulse rounded-2xl bg-secondary/60" />;
     const current = slotInfos.data?.find((x) => x.slotIndex === slot.globalIndex);
-    return <SlotFormInner printerId={printerId} slot={slot} current={current} onClose={onClose} />;
+    return <SlotFormInner printerId={printerId} slot={slot} current={current} onClose={onClose} onBack={onBack} />;
 }
 
 function SlotFormInner({
@@ -43,11 +53,13 @@ function SlotFormInner({
     slot,
     current,
     onClose = confirmationDialogStore.actions.closeDialog,
+    onBack,
 }: {
     printerId: string;
     slot: AmsSlot;
     current: SlotFilamentInfo | undefined;
     onClose?: () => void;
+    onBack?: () => void;
 }) {
     const printer = usePrinter(printerId);
     const live = printer?.live;
@@ -237,7 +249,7 @@ function SlotFormInner({
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <p className="px-4 text-xs text-muted-foreground">{m.slot_profile_hint()}</p>
+                                        <p className="text-xs text-muted-foreground">{m.slot_profile_hint()}</p>
                                     </div>
                                 );
                             }}
@@ -335,13 +347,20 @@ function SlotFormInner({
                         <ArrowUpFromLine /> {m.slot_unload()}
                     </Button>
                 </div>
-                <form.Subscribe selector={(s) => s.isSubmitting}>
-                    {(isSubmitting) => (
-                        <Button type="submit" className="rounded-full px-5" disabled={isSubmitting}>
-                            {m.common_save()}
+                <div className="flex gap-2">
+                    {onBack && (
+                        <Button type="button" variant="ghost" className="rounded-full" onClick={onBack}>
+                            <ArrowLeft /> {m.common_back()}
                         </Button>
                     )}
-                </form.Subscribe>
+                    <form.Subscribe selector={(s) => s.isSubmitting}>
+                        {(isSubmitting) => (
+                            <Button type="submit" className="rounded-full px-5" disabled={isSubmitting}>
+                                {m.common_save()}
+                            </Button>
+                        )}
+                    </form.Subscribe>
+                </div>
             </DialogFooter>
         </form>
     );

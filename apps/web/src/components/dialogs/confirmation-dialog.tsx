@@ -14,7 +14,7 @@ export function ConfirmationDialog() {
             <DialogContent
                 {...props}
                 className={cn(
-                    'max-h-[92svh] rounded-3xl',
+                    'max-h-[92svh] grid-cols-[minmax(0,1fr)] overflow-hidden rounded-3xl px-0',
                     hasHeader ? 'grid-rows-[auto_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)]',
                     props?.className,
                 )}
@@ -24,17 +24,17 @@ export function ConfirmationDialog() {
                 }}
             >
                 {hasHeader && (
-                    <DialogHeader>
-                        {title && <DialogTitle className="[overflow-wrap:anywhere]">{title}</DialogTitle>}
+                    <DialogHeader className="px-6">
+                        {title && <DialogTitle className="min-w-0 pr-6 [overflow-wrap:anywhere]">{title}</DialogTitle>}
                         {description && <DialogDescription>{description}</DialogDescription>}
                     </DialogHeader>
                 )}
                 <ScrollAreaWithShadow
                     bottomShadow
-                    className="-mx-6 h-full min-w-0"
-                    viewportClassName="px-6 [&>div]:!block [&>div]:min-w-0"
+                    className="h-full min-w-0"
+                    viewportClassName="[&>div]:block! [&>div]:min-w-0! [&>div]:max-w-full"
                 >
-                    {content}
+                    <div className="min-w-0 px-6">{content}</div>
                 </ScrollAreaWithShadow>
             </DialogContent>
         </Dialog>

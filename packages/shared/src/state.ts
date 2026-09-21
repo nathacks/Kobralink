@@ -101,6 +101,7 @@ export interface PrinterLiveState {
     lightBrightness: number;
     taskId: string;
     fileReady: string;
+    fileReadyTs: number;
     errorCode: number;
     pauseMsg: string;
     filamentMode: FilamentMode;

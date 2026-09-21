@@ -173,6 +173,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             lightBrightness: 0,
             taskId: '-1',
             fileReady: '',
+            fileReadyTs: 0,
             errorCode: 0,
             pauseMsg: '',
             filamentMode: 'toolhead',
@@ -1303,6 +1304,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 this.log.log(`${file.filename} held for the print start dialog (print=${opts.print})`);
             }
             this.s.fileReady = file.filename;
+            this.s.fileReadyTs = Date.now();
             this.publish();
         }
         return file;

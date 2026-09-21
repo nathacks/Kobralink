@@ -77,7 +77,7 @@ export function PrintReadyWatcher() {
                 const p = s.printers[id];
                 const live = p?.live;
                 if (!live?.fileReady || live.printState !== 'standby' || !p.settings.printStartDialog) continue;
-                return { printerId: id, filename: live.fileReady };
+                return { printerId: id, filename: live.fileReady, ts: live.fileReadyTs };
             }
             return null;
         },
@@ -88,7 +88,7 @@ export function PrintReadyWatcher() {
 
     useEffect(() => {
         if (!ready || dialogOpen) return;
-        const key = `${ready.printerId}|${ready.filename}`;
+        const key = `${ready.printerId}|${ready.filename}|${ready.ts}`;
         if (opened.current === key || readDismissed() === key) return;
         opened.current = key;
         openPrintReadyDialog(qc, ready.printerId, ready.filename)
