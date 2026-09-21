@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "Warn on web uploads",
     "settings_web_upload_warning_hint": "Confirm before printing a file uploaded from the browser.",
     "settings_print_start_dialog": "Dialog after upload",
-    "settings_print_start_dialog_hint": "Offers print / queue after an upload (otherwise a simple toast).",
+    "settings_print_start_dialog_hint": "After an upload (web or OrcaSlicer, including “send and print”), opens the filament/slot dialog before starting. Otherwise the print starts directly.",
     "settings_queue_auto_start": "Queue: auto-start",
     "settings_queue_auto_start_hint": "Starts the next file 15 s after a print finishes. Make sure the bed clears itself.",
     "settings_delete_after_print": "Delete from printer after print",

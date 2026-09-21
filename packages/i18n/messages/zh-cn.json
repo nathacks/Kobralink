@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "网页上传时警告",
     "settings_web_upload_warning_hint": "打印从浏览器上传的文件前要求确认。",
     "settings_print_start_dialog": "上传后弹窗",
-    "settings_print_start_dialog_hint": "上传后提供打印 / 加入队列选项（否则只显示简单提示）。",
+    "settings_print_start_dialog_hint": "上传后（网页或 OrcaSlicer，包括“发送并打印”）先打开耗材/料槽选择窗口再开始。否则直接开始打印。",
     "settings_queue_auto_start": "队列：自动启动",
     "settings_queue_auto_start_hint": "打印完成 15 秒后启动下一个文件。请确保热床能自动清空。",
     "settings_delete_after_print": "打印后从打印机删除",

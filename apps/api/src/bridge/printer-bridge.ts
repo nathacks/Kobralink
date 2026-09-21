@@ -1292,9 +1292,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const file = await this.gcode.save(this.config.id, filename, data, opts.webUpload ?? false);
         this.ensureConnected();
         await this.pushToPrinter(file, data);
-        if (opts.print) {
+        if (opts.print && !this.config.settings.printStartDialog) {
             await this.startPrint(file, { serveBase: opts.serveBase });
         } else {
+            if (opts.print) this.log.log(`Print of ${file.filename} held for the print start dialog`);
             this.s.fileReady = file.filename;
             this.publish();
         }

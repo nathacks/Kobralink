@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "Bei Web-Uploads warnen",
     "settings_web_upload_warning_hint": "Vor dem Drucken einer aus dem Browser hochgeladenen Datei bestätigen.",
     "settings_print_start_dialog": "Dialog nach dem Upload",
-    "settings_print_start_dialog_hint": "Bietet nach einem Upload Drucken / Warteschlange an (sonst ein einfacher Toast).",
+    "settings_print_start_dialog_hint": "Öffnet nach einem Upload (Web oder OrcaSlicer, auch „Senden und drucken“) den Filament-/Slot-Dialog vor dem Start. Sonst startet der Druck direkt.",
     "settings_queue_auto_start": "Warteschlange: Autostart",
     "settings_queue_auto_start_hint": "Startet die nächste Datei 15 s nach Abschluss eines Drucks. Stellen Sie sicher, dass sich das Bett selbst räumt.",
     "settings_delete_after_print": "Nach dem Druck vom Drucker löschen",

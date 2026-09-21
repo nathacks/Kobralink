@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "Avisar en subidas web",
     "settings_web_upload_warning_hint": "Confirmar antes de imprimir un archivo subido desde el navegador.",
     "settings_print_start_dialog": "Diálogo tras la subida",
-    "settings_print_start_dialog_hint": "Ofrece imprimir / poner en cola tras una subida (si no, una simple notificación).",
+    "settings_print_start_dialog_hint": "Tras un envío (web u OrcaSlicer, incluido «enviar e imprimir»), abre el diálogo de filamentos/slots antes de lanzar. Si no, la impresión empieza directamente.",
     "settings_queue_auto_start": "Cola: inicio automático",
     "settings_queue_auto_start_hint": "Inicia el siguiente archivo 15 s después de terminar una impresión. Asegúrate de que la cama se despeja sola.",
     "settings_delete_after_print": "Eliminar de la impresora tras imprimir",

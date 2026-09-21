@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "Avvisa sui caricamenti web",
     "settings_web_upload_warning_hint": "Chiedi conferma prima di stampare un file caricato dal browser.",
     "settings_print_start_dialog": "Finestra dopo il caricamento",
-    "settings_print_start_dialog_hint": "Propone stampa / coda dopo un caricamento (altrimenti un semplice avviso).",
+    "settings_print_start_dialog_hint": "Dopo un invio (web o OrcaSlicer, incluso «invia e stampa»), apre la finestra filamenti/slot prima di avviare. Altrimenti la stampa parte subito.",
     "settings_queue_auto_start": "Coda: avvio automatico",
     "settings_queue_auto_start_hint": "Avvia il prossimo file 15 s dopo la fine di una stampa. Assicurati che il piano si liberi da solo.",
     "settings_delete_after_print": "Elimina dalla stampante dopo la stampa",

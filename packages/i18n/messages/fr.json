@@ -715,7 +715,7 @@
     "settings_web_upload_warning": "Avertir pour les envois web",
     "settings_web_upload_warning_hint": "Confirmation avant d'imprimer un fichier envoyé depuis le navigateur.",
     "settings_print_start_dialog": "Dialogue après envoi",
-    "settings_print_start_dialog_hint": "Propose imprimer / mettre en file après un envoi (sinon simple notification).",
+    "settings_print_start_dialog_hint": "Après un envoi (web ou OrcaSlicer, même « envoyer et imprimer »), ouvre la fenêtre de choix des filaments/slots avant de lancer. Sinon : impression directe.",
     "settings_queue_auto_start": "File : démarrage automatique",
     "settings_queue_auto_start_hint": "Lance le fichier suivant 15 s après la fin d'une impression. Assurez-vous que le plateau se libère seul.",
     "settings_delete_after_print": "Supprimer de l'imprimante après impression",
