@@ -183,6 +183,17 @@
     "print_remaining": "Remaining",
     "print_layer": "Layer",
     "print_file_ready": "ready on the printer",
+    "print_ready_hint": "Check the part, map each GCode channel to a slot, then start the print.",
+    "print_ready_channels": "Filaments",
+    "print_ready_slots": "Slots — click to adjust",
+    "print_ready_slot": "Slot {n}",
+    "print_ready_used": "used",
+    "print_ready_unused": "unused",
+    "print_ready_no_match": "No compatible slot",
+    "print_ready_no_slots": "No loaded filament detected — the printer will use the toolhead filament.",
+    "print_ready_mismatch_title": "Filament mismatch",
+    "print_ready_mismatch_line": "Channel {n}: the GCode needs {material}, no compatible slot is loaded.",
+    "print_ready_objects": "Objects to skip",
     "temp_title": "Temperatures",
     "temp_preset_off": "Off",
     "temp_set": "Set",
@@ -319,7 +330,6 @@
     "slot_unload": "Unload",
     "objects_layout_alt": "Object layout on the bed",
     "objects_skipped": "skipped",
-    "preprint_loading": "Loading object list…",
     "preprint_count": [
         {
             "declarations": ["input remaining", "input total", "local remainingPlural = remaining: plural"],
@@ -330,7 +340,6 @@
             }
         }
     ],
-    "preprint_all": "All objects will be printed",
     "skip_applied": [
         {
             "declarations": ["input count", "local countPlural = count: plural"],
@@ -365,7 +374,6 @@
     "files_tab_history": "History",
     "files_search": "Search a file…",
     "files_print_title": "Print {name}",
-    "files_print_hint": "Uncheck the objects you don't want to print. They will be skipped from the start.",
     "files_delete_title": "Delete {name}?",
     "files_delete_hint": "The file will be removed from the bridge storage.",
     "files_uploading": "Uploading…",
@@ -489,6 +497,7 @@
     "api_ace_not_detected": "ACE {n} not detected",
     "api_no_upload_url": "The printer did not provide an upload URL (info/report)",
     "api_file_not_in_store": "File not found in the GCode store",
+    "api_no_usable_assignments": "No usable filament assignment for the current filament mode",
     "api_print_no_response": "No response from the printer when starting the print",
     "api_unknown_store_file": "Unknown file in the GCode store: {name}",
     "api_spoolman_not_configured": "Spoolman not configured",
@@ -603,7 +612,6 @@
     "files_web_warning_title": "File uploaded from the browser",
     "files_web_warning_hint": "{name} was not sliced for this printer from OrcaSlicer. Check the printer profile before starting.",
     "files_web_warning_action": "Print anyway",
-    "upload_ready_hint": "File added to the store. What next?",
     "upload_ready_later": "Later",
     "ha_hint": "Publishes printer state to an MQTT broker with Home Assistant auto-discovery (sensors, light, pause/resume/cancel buttons, camera).",
     "ha_enabled": "Enable MQTT publishing",

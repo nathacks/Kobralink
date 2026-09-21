@@ -145,6 +145,13 @@ export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {
     offline: 'error',
 };
 
+export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
+    if (slot.status !== 5) return false;
+    if (mode === 'ace_hub') return true;
+    if (mode === 'ace_direct') return slot.boxId >= 0;
+    return slot.boxId === -1;
+}
+
 export const PRE_PRINT_STATES = new Set(['preheating', 'auto_leveling', 'checking', 'updated', 'init']);
 export const ACTIVE_PRINT_STATES = new Set(['printing', 'preheating', 'auto_leveling', 'checking', 'init']);
 export const TERMINAL_PRINT_STATES = new Set(['finished', 'stoped', 'canceled']);

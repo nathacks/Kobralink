@@ -31,21 +31,23 @@ import {
 } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
-export function SlotForm({ printerId, slot }: { printerId: string; slot: AmsSlot }) {
+export function SlotForm({ printerId, slot, onClose }: { printerId: string; slot: AmsSlot; onClose?: () => void }) {
     const slotInfos = useQuery(filamentSlotsQuery(printerId));
     if (slotInfos.isPending) return <div className="h-64 animate-pulse rounded-2xl bg-secondary/60" />;
     const current = slotInfos.data?.find((x) => x.slotIndex === slot.globalIndex);
-    return <SlotFormInner printerId={printerId} slot={slot} current={current} />;
+    return <SlotFormInner printerId={printerId} slot={slot} current={current} onClose={onClose} />;
 }
 
 function SlotFormInner({
     printerId,
     slot,
     current,
+    onClose = confirmationDialogStore.actions.closeDialog,
 }: {
     printerId: string;
     slot: AmsSlot;
     current: SlotFilamentInfo | undefined;
+    onClose?: () => void;
 }) {
     const printer = usePrinter(printerId);
     const live = printer?.live;
@@ -61,7 +63,6 @@ function SlotFormInner({
     const currentLocal = localAssign.data?.slotSpools[String(slot.globalIndex)] ?? '';
     const loaded = live?.amsLoadedSlot === slot.globalIndex;
     const busy = live?.printState === 'printing';
-    const onClose = confirmationDialogStore.actions.closeDialog;
     const onError = (e: Error) => toast.error(e.message);
     const save = useMutation({
         mutationFn: async (v: AmsSlotFormValues & { profile: string; spoolId: number; localSpoolId: string }) => {

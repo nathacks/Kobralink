@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
+import { openPrintReadyDialog } from '@/components/printer/print-ready-watcher';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { Ring } from '@/components/viz/ring';
 import { usePrintClock } from '@/hooks/use-print-clock';
@@ -30,6 +31,7 @@ export function PrintCard({ printerId }: { printerId: string }) {
     const files = useQuery({ ...filesQuery(printerId), enabled: active });
     const liveFile = active ? files.data?.find((f) => f.filename === state.filename) : undefined;
 
+    const qc = useQueryClient();
     const clearReady = useMutation({ mutationFn: () => api.control.clearFileReady(printerId) });
 
     const pct = Math.round(state.progress * 100);
@@ -176,9 +178,13 @@ export function PrintCard({ printerId }: { printerId: string }) {
 
             {state.fileReady && !active && (
                 <div className="mt-4 flex items-center justify-between gap-2 rounded-2xl bg-primary/15 px-4 py-2 text-sm">
-                    <span className="truncate">
+                    <button
+                        type="button"
+                        className="min-w-0 flex-1 truncate text-left hover:underline"
+                        onClick={() => void openPrintReadyDialog(qc, printerId, state.fileReady)}
+                    >
                         <strong>{state.fileReady}</strong> {m.print_file_ready()}
-                    </span>
+                    </button>
                     <button
                         type="button"
                         className="rounded-full p-1 hover:bg-primary/20"

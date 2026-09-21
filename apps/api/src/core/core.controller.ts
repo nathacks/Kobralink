@@ -263,6 +263,7 @@ export class CoreController {
                 serveBase,
                 autoLeveling: body.autoLeveling,
                 excludedObjects: body.excludedObjects,
+                filamentAssignments: body.filamentAssignments,
             }),
         );
     }

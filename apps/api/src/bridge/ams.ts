@@ -1,5 +1,13 @@
 import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox, KobraDryingStatus } from '@kobralink/kobra-protocol';
-import type { AceDrying, AceUnit, AmsSlot, FilamentMode } from '@kobralink/shared';
+import {
+    type AceDrying,
+    type AceUnit,
+    type AmsSlot,
+    type FilamentAssignment,
+    type FilamentMode,
+    type GcodeFilament,
+    slotUsableForPrint,
+} from '@kobralink/shared';
 
 export function detectFilamentMode(boxes: KobraColorBox[]): FilamentMode {
     const toolhead = boxes.some((b) => b.id === -1);
@@ -95,15 +103,45 @@ export function slotToPrintAmsIndex(slot: AmsSlot, mode: FilamentMode): number {
     return slot.globalIndex;
 }
 
-export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
-    if (slot.status !== 5) return false;
-    if (mode === 'ace_hub') return true;
-    if (mode === 'ace_direct') return slot.boxId >= 0;
-    return slot.boxId === -1;
-}
-
 function rgba(slot: AmsSlot): [number, number, number, number] {
     return [slot.color[0], slot.color[1], slot.color[2], 255];
+}
+
+function hexRgba(hex: string): [number, number, number, number] {
+    const n = Number.parseInt(hex.replace('#', ''), 16);
+    if (!Number.isFinite(n)) return [255, 255, 255, 255];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
+}
+
+export function buildAssignedAmsBoxMapping(
+    assignments: FilamentAssignment[],
+    filaments: GcodeFilament[],
+    slots: AmsSlot[],
+    mode: FilamentMode,
+): { mapping: AmsBoxMappingEntry[]; unused: number; invalid: number } {
+    const mapping: AmsBoxMappingEntry[] = [];
+    let unused = 0;
+    let invalid = 0;
+    for (const a of assignments) {
+        if (a.isUsed === false || a.slotIndex < 0) {
+            unused++;
+            continue;
+        }
+        const slot = slots.find((s) => s.globalIndex === a.slotIndex);
+        if (!slot || !slotUsableForPrint(slot, mode)) {
+            invalid++;
+            continue;
+        }
+        const paint = filaments.find((f) => f.slotIndex === a.paintIndex);
+        mapping.push({
+            paint_index: a.paintIndex,
+            ams_index: slotToPrintAmsIndex(slot, mode),
+            paint_color: paint ? hexRgba(paint.colorHex) : [255, 255, 255, 255],
+            ams_color: rgba(slot),
+            material_type: slot.type || paint?.material || 'PLA',
+        });
+    }
+    return { mapping, unused, invalid };
 }
 
 export function buildAutoAmsBoxMapping(loaded: AmsSlot[], mode: FilamentMode): AmsBoxMappingEntry[] {

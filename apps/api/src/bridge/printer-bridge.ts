@@ -18,6 +18,7 @@ import {
     type AceDrying,
     type AmsSlot,
     type ConnectionError,
+    type FilamentAssignment,
     type FilamentMode,
     KOBRA_TO_KLIPPER_STATE,
     type KobralinkEventType,
@@ -27,6 +28,7 @@ import {
     type PrinterSample,
     type PrinterSettings,
     type SpoolUsageEntry,
+    slotUsableForPrint,
     TERMINAL_PRINT_STATES,
 } from '@kobralink/shared';
 import { Logger } from '@nestjs/common';
@@ -36,12 +38,12 @@ import { bindPrinterContext } from '../logs/log-buffer';
 import {
     aggregateAceUnits,
     aggregateSlots,
+    buildAssignedAmsBoxMapping,
     buildAutoAmsBoxMapping,
     detectFilamentMode,
     EMPTY_DRYING,
     globalToBoxSlot,
     slotActivityMap,
-    slotUsableForPrint,
 } from './ams';
 import { CameraCache } from './camera';
 
@@ -1317,10 +1319,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.client.requestFileDetails(file.filename);
     }
 
-    async printStoredFile(
-        fileId: string,
-        opts: { serveBase: string; autoLeveling?: boolean; excludedObjects?: string[] },
-    ): Promise<StoredFile> {
+    async printStoredFile(fileId: string, opts: StartPrintOptions): Promise<StoredFile> {
         this.ensureConnected();
         const loaded = await this.gcode.readData(fileId);
         if (!loaded) throw new BridgeRequestError(m.api_file_not_in_store());
@@ -1394,19 +1393,25 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         };
     }
 
-    private async startPrint(
-        file: StoredFile,
-        opts: { serveBase: string; autoLeveling?: boolean; excludedObjects?: string[] },
-    ): Promise<void> {
+    private amsMappingForPrint(file: StoredFile, assignments: FilamentAssignment[] | undefined) {
+        if (assignments?.length) {
+            const built = buildAssignedAmsBoxMapping(assignments, file.filaments, this.s.amsSlots, this.filamentMode);
+            if (built.invalid) this.log.warn(`Ignored ${built.invalid} unusable filament assignment(s)`);
+            if (!built.mapping.length) throw new BridgeRequestError(m.api_no_usable_assignments());
+            return built.mapping;
+        }
+        let loaded = this.loadedSlotsForPrint();
+        const used = new Set(file.filaments.filter((f) => f.isUsed).map((f) => f.slotIndex));
+        if (used.size) loaded = loaded.filter((s) => used.has(s.globalIndex));
+        return buildAutoAmsBoxMapping(loaded, this.filamentMode);
+    }
+
+    private async startPrint(file: StoredFile, opts: StartPrintOptions): Promise<void> {
         this.s.fileReady = '';
         const excluded = (opts.excludedObjects ?? []).filter((n) => file.objects.includes(n));
         this.s.skippedObjects = excluded;
         this.s.skipTs = Date.now();
-        let loaded = this.loadedSlotsForPrint();
-
-        const used = new Set(file.filaments.filter((f) => f.isUsed).map((f) => f.slotIndex));
-        if (used.size) loaded = loaded.filter((s) => used.has(s.globalIndex));
-        const mapping = buildAutoAmsBoxMapping(loaded, this.filamentMode);
+        const mapping = this.amsMappingForPrint(file, opts.filamentAssignments);
         const url = `${opts.serveBase}/serve/${encodeURIComponent(file.filename)}`;
         const payload: PrintStartPayload = {
             taskid: '-1',
@@ -1445,6 +1450,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.publish();
         if (excluded.length) void this.applyPreprintSkip(excluded);
     }
+}
+
+export interface StartPrintOptions {
+    serveBase: string;
+    autoLeveling?: boolean;
+    excludedObjects?: string[];
+    filamentAssignments?: FilamentAssignment[];
 }
 
 export class BridgeOfflineError extends Error {}

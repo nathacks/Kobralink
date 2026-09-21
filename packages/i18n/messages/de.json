@@ -183,6 +183,17 @@
     "print_remaining": "Verbleibend",
     "print_layer": "Schicht",
     "print_file_ready": "bereit auf dem Drucker",
+    "print_ready_hint": "Teil prüfen, jeden GCode-Kanal einem Slot zuweisen und dann den Druck starten.",
+    "print_ready_channels": "Filamente",
+    "print_ready_slots": "Slots — zum Anpassen klicken",
+    "print_ready_slot": "Slot {n}",
+    "print_ready_used": "verwendet",
+    "print_ready_unused": "unbenutzt",
+    "print_ready_no_match": "Kein passender Slot",
+    "print_ready_no_slots": "Kein geladenes Filament erkannt — der Drucker verwendet das Filament im Druckkopf.",
+    "print_ready_mismatch_title": "Filament passt nicht",
+    "print_ready_mismatch_line": "Kanal {n}: der GCode benötigt {material}, kein passender Slot ist geladen.",
+    "print_ready_objects": "Objekte überspringen",
     "temp_title": "Temperaturen",
     "temp_preset_off": "Aus",
     "temp_set": "Setzen",
@@ -319,7 +330,6 @@
     "slot_unload": "Entladen",
     "objects_layout_alt": "Objektanordnung auf dem Bett",
     "objects_skipped": "übersprungen",
-    "preprint_loading": "Objektliste wird geladen…",
     "preprint_count": [
         {
             "declarations": ["input remaining", "input total", "local remainingPlural = remaining: plural"],
@@ -330,7 +340,6 @@
             }
         }
     ],
-    "preprint_all": "Alle Objekte werden gedruckt",
     "skip_applied": [
         {
             "declarations": ["input count", "local countPlural = count: plural"],
@@ -365,7 +374,6 @@
     "files_tab_history": "Verlauf",
     "files_search": "Datei suchen…",
     "files_print_title": "{name} drucken",
-    "files_print_hint": "Deaktivieren Sie die Objekte, die Sie nicht drucken möchten. Sie werden von Anfang an übersprungen.",
     "files_delete_title": "{name} löschen?",
     "files_delete_hint": "Die Datei wird aus dem Bridge-Speicher entfernt.",
     "files_uploading": "Wird hochgeladen…",
@@ -489,6 +497,7 @@
     "api_ace_not_detected": "ACE {n} nicht erkannt",
     "api_no_upload_url": "Der Drucker hat keine Upload-URL geliefert (info/report)",
     "api_file_not_in_store": "Datei im GCode-Speicher nicht gefunden",
+    "api_no_usable_assignments": "Keine nutzbare Filamentzuordnung für den aktuellen Filamentmodus",
     "api_print_no_response": "Keine Antwort vom Drucker beim Starten des Drucks",
     "api_unknown_store_file": "Unbekannte Datei im GCode-Speicher: {name}",
     "api_spoolman_not_configured": "Spoolman nicht konfiguriert",
@@ -603,7 +612,6 @@
     "files_web_warning_title": "Aus dem Browser hochgeladene Datei",
     "files_web_warning_hint": "{name} wurde nicht in OrcaSlicer für diesen Drucker gesliced. Prüfen Sie das Druckerprofil vor dem Start.",
     "files_web_warning_action": "Trotzdem drucken",
-    "upload_ready_hint": "Datei zum Speicher hinzugefügt. Wie weiter?",
     "upload_ready_later": "Später",
     "ha_hint": "Veröffentlicht den Druckerstatus an einen MQTT-Broker mit Home-Assistant-Auto-Discovery (Sensoren, Licht, Pause/Fortsetzen/Abbrechen-Buttons, Kamera).",
     "ha_enabled": "MQTT-Veröffentlichung aktivieren",

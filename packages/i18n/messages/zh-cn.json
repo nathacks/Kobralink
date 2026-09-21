@@ -183,6 +183,17 @@
     "print_remaining": "剩余",
     "print_layer": "层",
     "print_file_ready": "已在打印机上就绪",
+    "print_ready_hint": "检查模型，将每个 GCode 通道分配到料槽，然后开始打印。",
+    "print_ready_channels": "耗材",
+    "print_ready_slots": "料槽 — 点击调整",
+    "print_ready_slot": "料槽 {n}",
+    "print_ready_used": "使用",
+    "print_ready_unused": "未使用",
+    "print_ready_no_match": "没有兼容的料槽",
+    "print_ready_no_slots": "未检测到已装载的耗材——打印机将使用工具头上的耗材。",
+    "print_ready_mismatch_title": "耗材不匹配",
+    "print_ready_mismatch_line": "通道 {n}：GCode 需要 {material}，但没有装载兼容的料槽。",
+    "print_ready_objects": "跳过的对象",
     "temp_title": "温度",
     "temp_preset_off": "关闭",
     "temp_set": "设置",
@@ -319,7 +330,6 @@
     "slot_unload": "退出",
     "objects_layout_alt": "热床上的对象布局",
     "objects_skipped": "已跳过",
-    "preprint_loading": "正在加载对象列表…",
     "preprint_count": [
         {
             "declarations": ["input remaining", "input total", "local remainingPlural = remaining: plural"],
@@ -330,7 +340,6 @@
             }
         }
     ],
-    "preprint_all": "将打印所有对象",
     "skip_applied": [
         {
             "declarations": ["input count", "local countPlural = count: plural"],
@@ -365,7 +374,6 @@
     "files_tab_history": "历史",
     "files_search": "搜索文件…",
     "files_print_title": "打印 {name}",
-    "files_print_hint": "取消勾选不想打印的对象。它们将从一开始就被跳过。",
     "files_delete_title": "删除 {name}？",
     "files_delete_hint": "该文件将从桥接存储中移除。",
     "files_uploading": "上传中…",
@@ -489,6 +497,7 @@
     "api_ace_not_detected": "未检测到 ACE {n}",
     "api_no_upload_url": "打印机未提供上传 URL（info/report）",
     "api_file_not_in_store": "GCode 存储中未找到文件",
+    "api_no_usable_assignments": "当前耗材模式下没有可用的耗材分配",
     "api_print_no_response": "启动打印时打印机无响应",
     "api_unknown_store_file": "GCode 存储中的未知文件：{name}",
     "api_spoolman_not_configured": "未配置 Spoolman",
@@ -603,7 +612,6 @@
     "files_web_warning_title": "从浏览器上传的文件",
     "files_web_warning_hint": "{name} 不是通过 OrcaSlicer 为此打印机切片的。启动前请检查打印机配置。",
     "files_web_warning_action": "仍然打印",
-    "upload_ready_hint": "文件已添加到存储。接下来做什么？",
     "upload_ready_later": "稍后",
     "ha_hint": "将打印机状态发布到 MQTT 代理，并支持 Home Assistant 自动发现（传感器、灯光、暂停/继续/取消按钮、摄像头）。",
     "ha_enabled": "启用 MQTT 发布",

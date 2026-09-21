@@ -5,7 +5,7 @@
     "packageManager": "bun@1.4.2",
     "scripts": {
         "dev": "bunx turbo run dev",
-        "dev:web": "bunx turbo run dev --filter=@kobralink/api --filter=@kobralink/web",
+        "dev:web": "bunx turbo run dev --filter=@kobralink/api --filter=@kobralink/web --ui=tui",
         "dev:desktop": "bunx turbo run dev --filter=@kobralink/desktop...",
         "build": "bunx turbo run build",
         "check-types": "bunx turbo run check-types",

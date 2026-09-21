@@ -41,10 +41,18 @@ export interface PrintJobDto {
     thumbnail: string | null;
 }
 
+export const filamentAssignmentSchema = z.object({
+    paintIndex: z.number().int().min(0).max(63),
+    slotIndex: z.number().int().min(-1).max(63),
+    isUsed: z.boolean().default(true),
+});
+export type FilamentAssignment = z.input<typeof filamentAssignmentSchema>;
+
 export const startPrintSchema = z.object({
     fileId: z.string(),
     autoLeveling: z.boolean().optional(),
     excludedObjects: z.array(z.string().min(1)).max(500).default([]),
+    filamentAssignments: z.array(filamentAssignmentSchema).max(64).optional(),
 });
 
 export const skipObjectsSchema = z.object({ names: z.array(z.string().min(1)).min(1).max(500) });

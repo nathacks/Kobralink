@@ -1,9 +1,8 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import type { GcodeFileDto, StartPrintInput } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { UploadReadyForm } from '@/components/printer/files/upload-ready-form';
-import { PrePrintSkipForm } from '@/components/printer/skip/preprint-skip-form';
+import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
@@ -35,7 +34,7 @@ export function useFileActions(printerId: string) {
         onError: (e) => toast.error(e.message),
     });
     const print = useMutation({
-        mutationFn: (input: { fileId: string; excludedObjects?: string[] }) => api.files.print(printerId, input),
+        mutationFn: (input: StartPrintInput) => api.files.print(printerId, input),
         onSuccess: (f) => {
             toast.success(m.files_print_started({ name: f.filename }));
             invalidate();
@@ -53,21 +52,29 @@ export function useFileActions(printerId: string) {
         onError: (e) => toast.error(e.message),
     });
 
+    const openPrintDialog = (f: GcodeFileDto, withQueue: boolean) =>
+        openDialog({
+            title: m.files_print_title({ name: f.filename }),
+            description: m.print_ready_hint(),
+            content: (
+                <PrintReadyForm
+                    printerId={printerId}
+                    file={f}
+                    onPrint={async (r) => {
+                        if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
+                        return print.mutateAsync({ fileId: f.id, ...r });
+                    }}
+                    onQueue={
+                        withQueue
+                            ? (r) => enqueue.mutate({ fileId: f.id, excludedObjects: r.excludedObjects })
+                            : undefined
+                    }
+                />
+            ),
+        });
+
     const requestPrint = (f: GcodeFileDto) => {
-        const go = () =>
-            f.objects.length
-                ? openDialog({
-                      title: m.files_print_title({ name: f.filename }),
-                      description: m.files_print_hint(),
-                      content: (
-                          <PrePrintSkipForm
-                              printerId={printerId}
-                              file={f}
-                              onPrint={(excludedObjects) => print.mutateAsync({ fileId: f.id, excludedObjects })}
-                          />
-                      ),
-                  })
-                : print.mutate({ fileId: f.id });
+        const go = () => openPrintDialog(f, false);
         if (f.webUnverified && (printer?.settings.webUploadWarning ?? true)) {
             openAlertDialog({
                 title: m.files_web_warning_title(),
@@ -117,17 +124,7 @@ export function useFileActions(printerId: string) {
         const single = uploaded[0];
         if (!single) return;
         if (printer?.settings.printStartDialog ?? true) {
-            openDialog({
-                title: m.files_added({ name: single.filename }),
-                content: (
-                    <UploadReadyForm
-                        file={single}
-                        canPrint={canPrint}
-                        onPrint={() => requestPrint(single)}
-                        onQueue={() => enqueue.mutate({ fileId: single.id })}
-                    />
-                ),
-            });
+            openPrintDialog(single, true);
         } else {
             toast.success(m.files_added({ name: single.filename }), {
                 action: canPrint ? { label: m.common_print(), onClick: () => requestPrint(single) } : undefined,

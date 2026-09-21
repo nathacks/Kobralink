@@ -183,6 +183,17 @@
     "print_remaining": "Restant",
     "print_layer": "Couche",
     "print_file_ready": "prêt sur l'imprimante",
+    "print_ready_hint": "Vérifiez la pièce, affectez chaque canal du GCode à un slot puis lancez l'impression.",
+    "print_ready_channels": "Filaments",
+    "print_ready_slots": "Slots — cliquer pour ajuster",
+    "print_ready_slot": "Slot {n}",
+    "print_ready_used": "utilisé",
+    "print_ready_unused": "non utilisé",
+    "print_ready_no_match": "Aucun slot compatible",
+    "print_ready_no_slots": "Aucun filament chargé détecté — l'imprimante utilisera le filament de la tête.",
+    "print_ready_mismatch_title": "Filament incompatible",
+    "print_ready_mismatch_line": "Canal {n} : le GCode attend du {material}, aucun slot compatible n'est chargé.",
+    "print_ready_objects": "Objets à ignorer",
     "temp_title": "Températures",
     "temp_preset_off": "Off",
     "temp_set": "Régler",
@@ -319,7 +330,6 @@
     "slot_unload": "Retirer",
     "objects_layout_alt": "Disposition des objets sur le plateau",
     "objects_skipped": "ignoré",
-    "preprint_loading": "Chargement de la liste des objets…",
     "preprint_count": [
         {
             "declarations": ["input remaining", "input total", "local remainingPlural = remaining: plural"],
@@ -330,7 +340,6 @@
             }
         }
     ],
-    "preprint_all": "Tous les objets seront imprimés",
     "skip_applied": [
         {
             "declarations": ["input count", "local countPlural = count: plural"],
@@ -365,7 +374,6 @@
     "files_tab_history": "Historique",
     "files_search": "Rechercher un fichier…",
     "files_print_title": "Imprimer {name}",
-    "files_print_hint": "Décochez les objets à ne pas imprimer. Ils seront ignorés dès le début.",
     "files_delete_title": "Supprimer {name} ?",
     "files_delete_hint": "Le fichier sera retiré du stockage du bridge.",
     "files_uploading": "Envoi…",
@@ -489,6 +497,7 @@
     "api_ace_not_detected": "ACE {n} non détecté",
     "api_no_upload_url": "L'imprimante n'a pas fourni d'URL d'upload (info/report)",
     "api_file_not_in_store": "Fichier introuvable dans le GCode store",
+    "api_no_usable_assignments": "Aucune affectation de filament utilisable pour le mode actuel",
     "api_print_no_response": "Pas de réponse de l'imprimante au démarrage de l'impression",
     "api_unknown_store_file": "Fichier inconnu du GCode store : {name}",
     "api_spoolman_not_configured": "Spoolman non configuré",
@@ -603,7 +612,6 @@
     "files_web_warning_title": "Fichier envoyé depuis le navigateur",
     "files_web_warning_hint": "{name} n'a pas été tranché pour cette imprimante depuis OrcaSlicer. Vérifiez le profil imprimante avant de lancer.",
     "files_web_warning_action": "Imprimer quand même",
-    "upload_ready_hint": "Fichier ajouté au store. Que faire ?",
     "upload_ready_later": "Plus tard",
     "ha_hint": "Publie l'état des imprimantes sur un broker MQTT avec auto-découverte Home Assistant (capteurs, lumière, boutons pause/reprise/annulation, caméra).",
     "ha_enabled": "Activer la publication MQTT",

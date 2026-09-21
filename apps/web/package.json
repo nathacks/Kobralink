@@ -4,7 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "bunx --bun vite --port 5173 --strictPort",
+        "dev": "bunx --bun vite",
         "generate": "bunx tsr generate && bunx paraglide-js compile --project ../../packages/i18n/project.inlang --outdir ./src/paraglide --strategy localStorage preferredLanguage baseLocale --output-structure message-modules --emit-ts-declarations --no-emit-readme --no-emit-prettier-ignore",
         "build": "bunx --bun vite build && bunx tsc -b",
         "preview": "bunx --bun vite preview",
