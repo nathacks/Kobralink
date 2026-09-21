@@ -15,7 +15,6 @@ const SPEED_MODES = [
     { value: 1, label: m.controls_speed_quiet },
     { value: 2, label: m.controls_speed_standard },
     { value: 3, label: m.controls_speed_fast },
-    { value: 4, label: m.controls_speed_ultra },
 ];
 
 export function ControlsCard({ printerId }: { printerId: string }) {

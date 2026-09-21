@@ -8,7 +8,7 @@ export const macroActionSchema = z.discriminatedUnion('type', [
     }),
     z.object({ type: z.literal('fan'), speed: z.number().int().min(0).max(100) }),
     z.object({ type: z.literal('light'), on: z.boolean(), brightness: z.number().int().min(0).max(100).optional() }),
-    z.object({ type: z.literal('speed'), mode: z.number().int().min(1).max(4) }),
+    z.object({ type: z.literal('speed'), mode: z.number().int().min(1).max(3) }),
     z.object({ type: z.literal('home'), axis: z.enum(['all', 'xy', 'z']) }),
     z.object({
         type: z.literal('move'),

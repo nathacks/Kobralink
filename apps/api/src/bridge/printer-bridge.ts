@@ -50,6 +50,7 @@ import { CameraCache } from './camera';
 const MAX_SAMPLES = 120;
 const SAMPLE_INTERVAL_MS = 2000;
 const RECONNECT_WINDOW_MS = 30000;
+const PRINT_HOLD_MS = 60000;
 
 export interface BridgePrinterConfig {
     id: string;
@@ -121,6 +122,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private jobsReconciled = false;
     private peakPrintTimeSec = 0;
     private lastUpload: LastUpload | null = null;
+    private printHold: { fileId: string; until: number } | null = null;
     private layerHeight = 0;
     private firstLayerHeight = 0;
     private cameraAutostarted = false;
@@ -1253,6 +1255,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     clearFileReady(): void {
         this.s.fileReady = '';
+        this.printHold = null;
         this.publish();
     }
 
@@ -1295,7 +1298,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (opts.print && !this.config.settings.printStartDialog) {
             await this.startPrint(file, { serveBase: opts.serveBase });
         } else {
-            if (opts.print) this.log.log(`Print of ${file.filename} held for the print start dialog`);
+            if (this.config.settings.printStartDialog) {
+                this.printHold = { fileId: file.id, until: Date.now() + PRINT_HOLD_MS };
+                this.log.log(`${file.filename} held for the print start dialog (print=${opts.print})`);
+            }
             this.s.fileReady = file.filename;
             this.publish();
         }
@@ -1320,8 +1326,19 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.client.requestFileDetails(file.filename);
     }
 
+    isHeldForDialog(fileId: string): boolean {
+        const hold = this.printHold;
+        if (!hold) return false;
+        if (Date.now() > hold.until) {
+            this.printHold = null;
+            return false;
+        }
+        return hold.fileId === fileId;
+    }
+
     async printStoredFile(fileId: string, opts: StartPrintOptions): Promise<StoredFile> {
         this.ensureConnected();
+        this.printHold = null;
         const loaded = await this.gcode.readData(fileId);
         if (!loaded) throw new BridgeRequestError(m.api_file_not_in_store());
         await this.pushToPrinter(loaded.file, loaded.data);

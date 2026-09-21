@@ -198,7 +198,7 @@ export function PrintReadyForm({
     }
 
     return (
-        <div className="grid gap-4 py-2">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 py-2">
             <div className="flex items-center gap-4 rounded-2xl bg-secondary p-4">
                 <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
                     {file.thumbnail ? (

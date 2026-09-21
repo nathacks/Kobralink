@@ -1,5 +1,5 @@
 import type { GcodeFileDto } from '@kobralink/shared';
-import { Box, Crosshair, RotateCcw } from 'lucide-react';
+import { Box, Crosshair, Move, RotateCcw } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useEffect, useState } from 'react';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [layer, setLayer] = useState(0);
     const [follow, setFollow] = useState(false);
     const [mode, setMode] = useState<SceneMode>('lines');
+    const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
     const live = usePrinter(printerId)?.live;
     const printingThis = Boolean(
@@ -43,11 +44,19 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                 {status.kind === 'ready' ? (
                     <>
                         <Suspense fallback={null}>
-                            <GcodeScene data={status.data} shown={shown} mode={mode} resetSignal={resetSignal} />
+                            <GcodeScene
+                                data={status.data}
+                                shown={shown}
+                                mode={mode}
+                                pan={pan}
+                                resetSignal={resetSignal}
+                            />
                         </Suspense>
                         <SceneOverlay
                             mode={mode}
+                            pan={pan}
                             onToggleMode={() => setMode((v) => (v === 'solid' ? 'lines' : 'solid'))}
+                            onTogglePan={() => setPan((v) => !v)}
                             onReset={() => setResetSignal((v) => v + 1)}
                         />
                     </>
@@ -73,20 +82,32 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
 
 function SceneOverlay({
     mode,
+    pan,
     onToggleMode,
+    onTogglePan,
     onReset,
 }: {
     mode: SceneMode;
+    pan: boolean;
     onToggleMode: () => void;
+    onTogglePan: () => void;
     onReset: () => void;
 }) {
     return (
         <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
             <span className="rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur-xs">
-                {m.preview_orbit_hint()}
+                {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
             </span>
             <OverlayButton label={m.preview_reset_view()} onClick={onReset}>
                 <RotateCcw />
+            </OverlayButton>
+            <OverlayButton
+                label={m.preview_pan()}
+                variant={pan ? 'default' : 'secondary'}
+                aria-pressed={pan}
+                onClick={onTogglePan}
+            >
+                <Move />
             </OverlayButton>
             <OverlayButton
                 label={m.preview_solid()}

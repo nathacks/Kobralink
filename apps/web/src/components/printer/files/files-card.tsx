@@ -178,8 +178,8 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     e.target.value = '';
                 }}
             />
-            <ScrollAreaWithShadow bottomShadow className="h-full px-6" viewportClassName="pt-5">
-                {renderContent()}
+            <ScrollAreaWithShadow bottomShadow className="h-full" viewportClassName="pt-5">
+                <div className={'px-6'}>{renderContent()}</div>
             </ScrollAreaWithShadow>
         </section>
     );

@@ -126,6 +126,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 const filename = String(params.filename ?? bridge.lastUploadedFilename);
                 const file = await this.moon.gcode.getByFilename(filename);
                 if (!file) return 'unknown file';
+                if (bridge.isHeldForDialog(file.id)) return 'ok';
                 const base = `http://${localIpFor(bridge.config.ip)}:${bridge.config.httpPort}`;
                 await bridge.printStoredFile(file.id, { serveBase: base });
                 return 'ok';

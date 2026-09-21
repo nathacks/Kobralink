@@ -25,11 +25,15 @@ export function ConfirmationDialog() {
             >
                 {hasHeader && (
                     <DialogHeader>
-                        {title && <DialogTitle>{title}</DialogTitle>}
+                        {title && <DialogTitle className="[overflow-wrap:anywhere]">{title}</DialogTitle>}
                         {description && <DialogDescription>{description}</DialogDescription>}
                     </DialogHeader>
                 )}
-                <ScrollAreaWithShadow bottomShadow className="-mx-6 h-full" viewportClassName="px-6 [&>div]:!block">
+                <ScrollAreaWithShadow
+                    bottomShadow
+                    className="-mx-6 h-full min-w-0"
+                    viewportClassName="px-6 [&>div]:!block [&>div]:min-w-0"
+                >
                     {content}
                 </ScrollAreaWithShadow>
             </DialogContent>

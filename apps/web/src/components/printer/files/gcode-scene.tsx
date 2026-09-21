@@ -2,7 +2,7 @@ import { Grid } from '@react-three/drei/core/Grid';
 import { OrbitControls } from '@react-three/drei/core/OrbitControls';
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { BoxGeometry, BufferAttribute, BufferGeometry, Color, InstancedMesh, Object3D } from 'three';
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color, InstancedMesh, MOUSE, Object3D, TOUCH } from 'three';
 import { type ThemeColors, useThemeColors } from '@/hooks/use-theme-colors';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 
@@ -157,11 +157,13 @@ export function GcodeScene({
     data,
     shown,
     mode,
+    pan,
     resetSignal,
 }: {
     data: ParsedGcode;
     shown: number;
     mode: SceneMode;
+    pan: boolean;
     resetSignal: number;
 }) {
     const colors = useThemeColors();
@@ -203,6 +205,10 @@ export function GcodeScene({
                 target={[0, height / 2, 0]}
                 enableDamping
                 dampingFactor={0.12}
+                enablePan
+                panSpeed={1}
+                mouseButtons={{ LEFT: pan ? MOUSE.PAN : MOUSE.ROTATE, MIDDLE: MOUSE.PAN, RIGHT: MOUSE.PAN }}
+                touches={{ ONE: pan ? TOUCH.PAN : TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
                 minDistance={5}
                 maxDistance={distance * 6}
                 maxPolarAngle={Math.PI / 2}

@@ -220,6 +220,10 @@ export class MoonrakerController {
         if (!filename) return { error: 'no filename' };
         const file = await this.gcode.getByFilename(filename);
         if (!file) throw new NotFoundException(m.api_unknown_store_file({ name: filename }));
+        if (this.moon.bridge.isHeldForDialog(file.id)) {
+            this.log.log(`print/start for ${filename} ignored: waiting for the print start dialog`);
+            return { result: 'ok' };
+        }
         await this.moon.bridge.printStoredFile(file.id, {
             serveBase: await this.publicBase(req),
             autoLeveling: body?.auto_leveling === undefined ? undefined : Boolean(body.auto_leveling),

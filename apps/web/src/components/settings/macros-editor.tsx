@@ -469,7 +469,6 @@ function ActionParams({ action, onChange }: { action: MacroAction; onChange: (a:
                         <SelectItem value="1">{m.controls_speed_quiet()}</SelectItem>
                         <SelectItem value="2">{m.controls_speed_standard()}</SelectItem>
                         <SelectItem value="3">{m.controls_speed_fast()}</SelectItem>
-                        <SelectItem value="4">{m.controls_speed_ultra()}</SelectItem>
                     </SelectContent>
                 </Select>
             );
