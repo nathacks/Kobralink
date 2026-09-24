@@ -1,9 +1,11 @@
+import type { GcodeFileDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { openPrintReadyDialog } from '@/components/printer/print-ready-watcher';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { Ring } from '@/components/viz/ring';
+import { useParsedGcode } from '@/hooks/use-parsed-gcode';
 import { usePrintClock } from '@/hooks/use-print-clock';
 import { usePrinterAction } from '@/hooks/use-printer-action';
 import { useLiveState } from '@/hooks/use-printers';
@@ -169,11 +171,15 @@ export function PrintCard({ printerId }: { printerId: string }) {
                     v={active ? formatDuration(remaining, { zero: true }) : '—'}
                     strong={active}
                 />
-                <Kv
-                    k={m.print_layer()}
-                    v={state.totalLayers ? `${state.currLayer}/${state.totalLayers}` : '—'}
-                    strong={active}
-                />
+                {liveFile ? (
+                    <LayerKv printerId={printerId} file={liveFile} currLayer={state.currLayer} strong={active} />
+                ) : (
+                    <Kv
+                        k={m.print_layer()}
+                        v={state.totalLayers ? `${state.currLayer}/${state.totalLayers}` : '—'}
+                        strong={active}
+                    />
+                )}
             </dl>
 
             {state.fileReady && !active && (
@@ -202,6 +208,22 @@ export function PrintCard({ printerId }: { printerId: string }) {
             )}
         </section>
     );
+}
+
+function LayerKv({
+    printerId,
+    file,
+    currLayer,
+    strong,
+}: {
+    printerId: string;
+    file: GcodeFileDto;
+    currLayer: number;
+    strong: boolean;
+}) {
+    const status = useParsedGcode(printerId, file);
+    const total = status.kind === 'ready' ? status.data.layers.length : undefined;
+    return <Kv k={m.print_layer()} v={total ? `${currLayer}/${total}` : '—'} strong={strong} />;
 }
 
 function Kv({ k, v, strong }: { k: string; v: string; strong: boolean }) {
