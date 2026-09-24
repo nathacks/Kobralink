@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.2 AS build
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.2 AS build
 WORKDIR /repo
 COPY package.json bun.lock turbo.json tsconfig.base.json biome.json ./
 COPY apps/api/package.json apps/api/
