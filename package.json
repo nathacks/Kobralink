@@ -1,6 +1,6 @@
 {
     "name": "kobralink",
-    "version": "0.3.4",
+    "version": "0.3.5",
     "private": true,
     "packageManager": "bun@1.4.2",
     "scripts": {
