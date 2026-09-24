@@ -1,7 +1,7 @@
 {
     "name": "@kobralink/desktop",
     "productName": "Kobralink",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "private": true,
     "description": "Kobralink desktop (macOS) — embeds the local bridge API.",
     "main": "./out/main/index.js",
