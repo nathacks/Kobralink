@@ -77,7 +77,20 @@ export const appSettingsSchema = z.object({
     failureDetection: failureDetectionSettingsSchema.default(failureDetectionSettingsSchema.parse({})),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
-export const updateAppSettingsSchema = appSettingsSchema.partial();
+type OptionalWithoutDefaults<T extends z.ZodRawShape> = {
+    [K in keyof T]: z.ZodOptional<T[K] extends z.ZodDefault<infer I> ? I : T[K]>;
+};
+
+function optionalWithoutDefaults<T extends z.ZodRawShape>(shape: T): OptionalWithoutDefaults<T> {
+    return Object.fromEntries(
+        Object.entries(shape).map(([key, field]) => [
+            key,
+            z.optional(field instanceof z.ZodDefault ? field.unwrap() : field),
+        ]),
+    ) as OptionalWithoutDefaults<T>;
+}
+
+export const updateAppSettingsSchema = z.object(optionalWithoutDefaults(appSettingsSchema.shape));
 export type UpdateAppSettingsInput = z.infer<typeof updateAppSettingsSchema>;
 
 export interface SpoolmanFilament {

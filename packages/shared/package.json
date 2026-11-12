@@ -24,7 +24,8 @@
     "scripts": {
         "build": "bunx tsdown",
         "dev": "bunx tsdown --watch",
-        "check-types": "bunx tsc --noEmit"
+        "check-types": "bunx tsc --noEmit",
+        "test": "bun test"
     },
     "dependencies": {
         "zod": "catalog:"
