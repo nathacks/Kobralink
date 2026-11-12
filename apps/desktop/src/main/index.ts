@@ -37,7 +37,6 @@ function createWindow(): BrowserWindow {
             sandbox: false,
         },
     });
-    w.once('ready-to-show', () => w.show());
     w.on('closed', () => {
         if (win === w) win = null;
     });
@@ -59,6 +58,14 @@ async function loadLauncher(w: BrowserWindow, query: Record<string, string> = {}
 }
 
 async function boot(w: BrowserWindow): Promise<void> {
+    try {
+        await bootContent(w);
+    } finally {
+        if (!w.isDestroyed()) w.show();
+    }
+}
+
+async function bootContent(w: BrowserWindow): Promise<void> {
     const url = baseUrl();
     await loadLauncher(w, { status: 'starting' });
 
