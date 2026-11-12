@@ -7,6 +7,16 @@ export type KobraState =
     | 'preheating'
     | 'auto_leveling'
     | 'checking'
+    | 'hotbed_heating'
+    | 'nozzle_heating'
+    | 'nozzle_cooling'
+    | 'nozzle_cooling_off'
+    | 'hotbed_cooling_off'
+    | 'nozzle_purging'
+    | 'nozzle_wiping'
+    | 'frequency_sweeping'
+    | 'z_offset_calibrating'
+    | 'extfilbox_filament_feeding'
     | 'updated'
     | 'init'
     | 'pausing'
@@ -133,6 +143,16 @@ export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {
     checking: 'printing',
     updated: 'printing',
     init: 'printing',
+    hotbed_heating: 'printing',
+    nozzle_heating: 'printing',
+    nozzle_cooling: 'printing',
+    nozzle_cooling_off: 'printing',
+    hotbed_cooling_off: 'printing',
+    nozzle_purging: 'printing',
+    nozzle_wiping: 'printing',
+    frequency_sweeping: 'printing',
+    z_offset_calibrating: 'printing',
+    extfilbox_filament_feeding: 'printing',
     pausing: 'paused',
     paused: 'paused',
     pause: 'paused',
@@ -153,6 +173,38 @@ export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
     return slot.boxId === -1;
 }
 
-export const PRE_PRINT_STATES = new Set(['preheating', 'auto_leveling', 'checking', 'updated', 'init']);
-export const ACTIVE_PRINT_STATES = new Set(['printing', 'preheating', 'auto_leveling', 'checking', 'init']);
+export const PRE_PRINT_STATES = new Set([
+    'preheating',
+    'auto_leveling',
+    'checking',
+    'updated',
+    'init',
+    'hotbed_heating',
+    'nozzle_heating',
+    'nozzle_cooling',
+    'nozzle_cooling_off',
+    'hotbed_cooling_off',
+    'nozzle_purging',
+    'nozzle_wiping',
+    'frequency_sweeping',
+    'z_offset_calibrating',
+    'extfilbox_filament_feeding',
+]);
+export const ACTIVE_PRINT_STATES = new Set([
+    'printing',
+    'preheating',
+    'auto_leveling',
+    'checking',
+    'init',
+    'hotbed_heating',
+    'nozzle_heating',
+    'nozzle_cooling',
+    'nozzle_cooling_off',
+    'hotbed_cooling_off',
+    'nozzle_purging',
+    'nozzle_wiping',
+    'frequency_sweeping',
+    'z_offset_calibrating',
+    'extfilbox_filament_feeding',
+]);
 export const TERMINAL_PRINT_STATES = new Set(['finished', 'stoped', 'canceled']);

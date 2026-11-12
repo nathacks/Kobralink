@@ -1,4 +1,9 @@
-import { type PrinterLiveState, type QueueItemDto, TERMINAL_PRINT_STATES } from '@kobralink/shared';
+import {
+    ACTIVE_PRINT_STATES,
+    type PrinterLiveState,
+    type QueueItemDto,
+    TERMINAL_PRINT_STATES,
+} from '@kobralink/shared';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { localIpFor } from '../common/net';
@@ -57,7 +62,7 @@ export class QueueService {
             w.notified = false;
             return;
         }
-        if (s.kobraState === 'printing' || s.kobraState === 'preheating') {
+        if (ACTIVE_PRINT_STATES.has(s.kobraState)) {
             w.armed = false;
             w.notified = false;
             if (w.timer) {
