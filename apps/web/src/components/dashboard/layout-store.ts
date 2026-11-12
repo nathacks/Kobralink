@@ -32,13 +32,13 @@ export const DEFAULT_LAYOUT: Layout = [
     { i: 'activity', x: 0, y: 0, w: 8, h: 10, minW: 4, minH: 8 },
     { i: 'print', x: 8, y: 0, w: 4, h: 10, minW: 3, minH: 9 },
     { i: 'camera', x: 0, y: 10, w: 8, h: 15, minW: 4, minH: 8 },
-    { i: 'ams', x: 8, y: 10, w: 4, h: 6, minW: 3, minH: 6 },
-    { i: 'controls', x: 8, y: 16, w: 4, h: 8, minW: 3, minH: 8 },
+    { i: 'ams', x: 8, y: 10, w: 4, h: 9, minW: 3, minH: 6 },
+    { i: 'controls', x: 8, y: 19, w: 4, h: 8, minW: 3, minH: 8 },
     { i: 'temperature', x: 0, y: 25, w: 8, h: 8, minW: 4, minH: 7 },
-    { i: 'axes', x: 8, y: 24, w: 4, h: 9, minW: 3, minH: 9 },
-    { i: 'macros', x: 0, y: 33, w: 4, h: 7, minW: 3, minH: 5 },
-    { i: 'queue', x: 4, y: 33, w: 8, h: 7, minW: 4, minH: 6 },
-    { i: 'files', x: 0, y: 40, w: 12, h: 16, minW: 4, minH: 12 },
+    { i: 'axes', x: 8, y: 27, w: 4, h: 9, minW: 3, minH: 9 },
+    { i: 'macros', x: 0, y: 36, w: 4, h: 7, minW: 3, minH: 5 },
+    { i: 'queue', x: 4, y: 36, w: 8, h: 7, minW: 4, minH: 6 },
+    { i: 'files', x: 0, y: 43, w: 12, h: 16, minW: 4, minH: 12 },
 ];
 
 export interface LayoutPreset {
