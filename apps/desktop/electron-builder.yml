@@ -59,6 +59,7 @@ nsis:
   uninstallerSidebar: build/installerSidebar.bmp
   installerHeader: build/installerHeader.bmp
 linux:
+  artifactName: ${productName}-${version}-${arch}.${ext}
   executableName: kobralink
   category: Utility
   desktop:
