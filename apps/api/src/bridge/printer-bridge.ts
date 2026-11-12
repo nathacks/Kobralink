@@ -116,6 +116,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private loopDone: Promise<void> | null = null;
 
     private filamentMode: FilamentMode = 'toolhead';
+    private externalSpoolOnly = false;
     private currentJobId = '';
     private currentJobFilename = '';
     private jobSync: Promise<void> | null = null;
@@ -529,8 +530,11 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private onPrint(p: KobraMessage<KobraPrintData>): void {
         const d = p.data ?? {};
         const kobraState = p.state ?? '';
+        if (d.supplies_usage !== undefined) {
+            this.suppliesUsageMm = Number(d.supplies_usage) || 0;
+            if (this.externalSpoolOnly) this.spoolmanAttribute(0, new Map());
+        }
         if (kobraState) this.applyKobraState(kobraState, 'printing');
-        if (d.supplies_usage !== undefined) this.suppliesUsageMm = Number(d.supplies_usage) || 0;
 
         if (kobraState === 'pause' || kobraState === 'paused') {
             if (p.msg) {
@@ -673,6 +677,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.spoolUsage.clear();
         this.spoolReported.clear();
         this.spoolLastUsage = 0;
+        this.spoolBaselineMm = 0;
         this.s.progress = 0;
         this.s.filename = '';
         this.s.fileReady = '';
@@ -784,6 +789,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             return;
         }
         const boxes = p.data?.multi_color_box ?? [];
+        this.externalSpoolOnly = boxes.length === 0;
         if (!boxes.length) return;
         this.filamentMode = detectFilamentMode(boxes);
         this.s.filamentMode = this.filamentMode;
@@ -827,12 +833,15 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private readonly spoolUsage = new Map<number, number>();
     private readonly spoolReported = new Map<string, Map<number, number>>();
     private spoolLastUsage = 0;
+    private spoolBaselineMm = 0;
     private readonly spoolLastSync = new Map<string, number>();
 
     resetSpoolUsage(): void {
+        this.spoolmanReport(0.1);
         this.spoolUsage.clear();
         this.spoolReported.clear();
         this.spoolLastUsage = this.suppliesUsageMm;
+        this.spoolBaselineMm = this.suppliesUsageMm;
         this.spoolLastSync.clear();
     }
 
@@ -871,7 +880,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (map.size === 1) {
             const slot = [...map.keys()][0];
-            out.set(slot, this.suppliesUsageMm - (reported.get(slot) ?? 0));
+            out.set(slot, this.suppliesUsageMm - this.spoolBaselineMm - (reported.get(slot) ?? 0));
         }
         return out;
     }
