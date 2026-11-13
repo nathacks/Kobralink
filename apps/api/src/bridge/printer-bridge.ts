@@ -102,6 +102,25 @@ interface LastUpload {
     size: number;
 }
 
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+function isPng(buf: Buffer): boolean {
+    return buf.length >= 24 && buf.subarray(0, 8).equals(PNG_SIGNATURE);
+}
+
+export function moonrakerThumbnails(filename: string, b64: string) {
+    const png = Buffer.from(b64, 'base64');
+    if (!isPng(png)) return [];
+    return [
+        {
+            width: png.readUInt32BE(16),
+            height: png.readUInt32BE(20),
+            size: png.length,
+            relative_path: `.thumbs/${Buffer.from(filename).toString('base64url')}.png`,
+        },
+    ];
+}
+
 export class PrinterBridge extends EventEmitter<BridgeEvents> {
     readonly client: KobraMqttClient;
     private readonly log: Logger;
@@ -1113,8 +1132,21 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             first_layer_height: firstH || null,
             layer_count: totalLayers || null,
             object_height: objectHeight || null,
-            thumbnails: [],
+            thumbnails: moonrakerThumbnails(
+                filename,
+                (tracked && this.s.thumbnail) || gf?.thumbnail || this.printerThumbs.get(filename) || '',
+            ),
         };
+    }
+
+    async fileThumbnail(filename: string): Promise<Buffer | null> {
+        const b64 =
+            (filename === this.s.filename && this.s.thumbnail) ||
+            (await this.gcode.getByFilename(filename))?.thumbnail ||
+            this.printerThumbs.get(filename) ||
+            '';
+        const png = Buffer.from(b64, 'base64');
+        return isPng(png) ? png : null;
     }
 
     get lastUploadedFilename(): string {

@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} 不是通过 OrcaSlicer 为此打印机切片的。启动前请检查打印机配置。",
     "files_web_warning_action": "仍然打印",
     "upload_ready_later": "稍后",
-    "ha_hint": "将打印机状态发布到 MQTT 代理，并支持 Home Assistant 自动发现（传感器、灯光、暂停/继续/取消按钮、摄像头）。",
+    "ha_hint": "将打印机状态发布到 MQTT 代理，并支持 Home Assistant 自动发现（传感器、灯光、暂停/继续/取消按钮、摄像头、打印缩略图）。",
     "ha_enabled": "启用 MQTT 发布",
     "ha_url": "代理 URL",
     "ha_username": "用户名",

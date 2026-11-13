@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} non è stato affettato per questa stampante da OrcaSlicer. Controlla il profilo della stampante prima di avviare.",
     "files_web_warning_action": "Stampa comunque",
     "upload_ready_later": "Più tardi",
-    "ha_hint": "Pubblica lo stato della stampante su un broker MQTT con auto-discovery di Home Assistant (sensori, luce, pulsanti pausa/riprendi/annulla, fotocamera).",
+    "ha_hint": "Pubblica lo stato della stampante su un broker MQTT con auto-discovery di Home Assistant (sensori, luce, pulsanti pausa/riprendi/annulla, fotocamera, miniatura della stampa).",
     "ha_enabled": "Attiva la pubblicazione MQTT",
     "ha_url": "URL del broker",
     "ha_username": "Nome utente",

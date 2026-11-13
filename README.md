@@ -29,7 +29,7 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 - **Filaments**: spool inventory + optional Spoolman sync
 - **Camera** (MJPEG, shared with Moonraker clients) and **timelapses** per job
 - **AI failure detection** (optional, Obico model) with notify / pause / cancel
-- **Notifications**: webhook, Discord, Telegram, ntfy · **Home Assistant** MQTT discovery
+- **Notifications**: webhook, Discord, Telegram, ntfy · **Home Assistant** MQTT discovery (sensors, controls, camera, print thumbnail)
 - **History & stats**, **macros**, backup / restore, update check, multi-user
 - UI in **French**, **English**, **German**, **Spanish**, **Italian** and **Simplified Chinese**
 
@@ -112,6 +112,12 @@ it in OrcaSlicer targets that printer. Clients send it as an `X-Api-Key` header 
 field, Fluidd, Obico, Home Assistant), as `Authorization: Bearer`, or as `?api_key=` in the URL (camera `<img>`
 tags). WebSocket clients can also use the standard Moonraker `/access/oneshot_token` flow. Mainsail has no
 API key field and will not connect while the option is on.
+
+Home Assistant can also read the printers through the HACS **Moonraker** integration (host = bridge IP, port =
+the printer's Moonraker port), which shows the print thumbnail as a camera entity. That integration always fetches
+the thumbnail on port `7125`: for the second printer onward, set its **Thumbnail Port** option (integration
+options) to the printer's port (`7126`, …), otherwise it shows the first printer's thumbnail. The built-in MQTT
+discovery has no such limit.
 
 ## How it works
 

@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} n'a pas été tranché pour cette imprimante depuis OrcaSlicer. Vérifiez le profil imprimante avant de lancer.",
     "files_web_warning_action": "Imprimer quand même",
     "upload_ready_later": "Plus tard",
-    "ha_hint": "Publie l'état des imprimantes sur un broker MQTT avec auto-découverte Home Assistant (capteurs, lumière, boutons pause/reprise/annulation, caméra).",
+    "ha_hint": "Publie l'état des imprimantes sur un broker MQTT avec auto-découverte Home Assistant (capteurs, lumière, boutons pause/reprise/annulation, caméra, miniature de l'impression).",
     "ha_enabled": "Activer la publication MQTT",
     "ha_url": "URL du broker",
     "ha_username": "Utilisateur",

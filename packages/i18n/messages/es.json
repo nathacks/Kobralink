@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} no se ha laminado para esta impresora desde OrcaSlicer. Comprueba el perfil de la impresora antes de iniciar.",
     "files_web_warning_action": "Imprimir de todos modos",
     "upload_ready_later": "Más tarde",
-    "ha_hint": "Publica el estado de la impresora en un broker MQTT con auto-descubrimiento de Home Assistant (sensores, luz, botones pausar/reanudar/cancelar, cámara).",
+    "ha_hint": "Publica el estado de la impresora en un broker MQTT con auto-descubrimiento de Home Assistant (sensores, luz, botones pausar/reanudar/cancelar, cámara, miniatura de la impresión).",
     "ha_enabled": "Activar publicación MQTT",
     "ha_url": "URL del broker",
     "ha_username": "Usuario",

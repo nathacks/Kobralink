@@ -91,6 +91,14 @@ export class MoonrakerController {
         return { result: name ? await this.moon.fileMetadata(name) : {} };
     }
 
+    @Get('server/files/gcodes/.thumbs/:name')
+    async thumbnail(@Param('name') name: string, @Res() res: Response) {
+        const filename = Buffer.from(name.replace(/\.png$/i, ''), 'base64url').toString();
+        const png = await this.moon.bridge.fileThumbnail(filename);
+        if (!png) throw new NotFoundException();
+        res.type('png').send(png);
+    }
+
     @Get('access/api_key')
     apiKey() {
         return { result: this.authz.required ? 'managed-by-kobralink' : 'kobralink-no-auth' };

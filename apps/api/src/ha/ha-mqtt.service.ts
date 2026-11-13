@@ -12,6 +12,7 @@ interface Attached {
     pending: PrinterLiveState | null;
     off: () => void;
     announced: boolean;
+    thumbnail: string;
 }
 
 @Injectable()
@@ -61,6 +62,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
                 client.publish(`${cfg.topicPrefix}/status`, 'online', { retain: true });
                 for (const a of this.attached.values()) {
                     a.announced = false;
+                    a.thumbnail = '';
                     this.announce(a.bridge);
                     this.publishState(a.bridge, a.bridge.snapshot());
                 }
@@ -81,7 +83,14 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     attach(bridge: PrinterBridge): void {
-        const entry: Attached = { bridge, timer: null, pending: null, off: () => undefined, announced: false };
+        const entry: Attached = {
+            bridge,
+            timer: null,
+            pending: null,
+            off: () => undefined,
+            announced: false,
+            thumbnail: '',
+        };
         const onState = (state: PrinterLiveState) => {
             entry.pending = state;
             if (entry.timer) return;
@@ -268,10 +277,20 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             ['resume', 'button', { name: 'Resume', command_topic: this.topic(id, 'cmd/resume'), icon: 'mdi:play' }],
             ['cancel', 'button', { name: 'Cancel', command_topic: this.topic(id, 'cmd/cancel'), icon: 'mdi:stop' }],
             ['camera', 'camera', { name: 'Camera', topic: this.topic(id, 'camera'), image_encoding: 'b64' }],
+            [
+                'thumbnail',
+                'image',
+                {
+                    name: 'Thumbnail',
+                    image_topic: this.topic(id, 'thumbnail'),
+                    image_encoding: 'b64',
+                    content_type: 'image/png',
+                },
+            ],
         ];
         for (const [key, component, extra] of sensors) {
             const payload = base(key, extra);
-            if (component === 'button' || component === 'camera')
+            if (component === 'button' || component === 'camera' || component === 'image')
                 delete (payload as { state_topic?: string }).state_topic;
             client.publish(
                 `${cfg.discoveryPrefix}/${component}/kobralink_${id}/${key}/config`,
@@ -311,6 +330,11 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         const jpeg = bridge.camera.latestJpeg;
         if (jpeg && s.printState === 'printing' && Date.now() - bridge.camera.latestJpegAt < 10_000) {
             client.publish(this.topic(bridge.id, 'camera'), jpeg.toString('base64'));
+        }
+        const entry = this.attached.get(bridge.id);
+        if (entry && s.thumbnail && s.thumbnail !== entry.thumbnail) {
+            entry.thumbnail = s.thumbnail;
+            client.publish(this.topic(bridge.id, 'thumbnail'), s.thumbnail, { retain: true });
         }
     }
 

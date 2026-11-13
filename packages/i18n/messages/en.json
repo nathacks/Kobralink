@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} was not sliced for this printer from OrcaSlicer. Check the printer profile before starting.",
     "files_web_warning_action": "Print anyway",
     "upload_ready_later": "Later",
-    "ha_hint": "Publishes printer state to an MQTT broker with Home Assistant auto-discovery (sensors, light, pause/resume/cancel buttons, camera).",
+    "ha_hint": "Publishes printer state to an MQTT broker with Home Assistant auto-discovery (sensors, light, pause/resume/cancel buttons, camera, print thumbnail).",
     "ha_enabled": "Enable MQTT publishing",
     "ha_url": "Broker URL",
     "ha_username": "Username",

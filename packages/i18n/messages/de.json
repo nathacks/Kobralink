@@ -614,7 +614,7 @@
     "files_web_warning_hint": "{name} wurde nicht in OrcaSlicer für diesen Drucker gesliced. Prüfen Sie das Druckerprofil vor dem Start.",
     "files_web_warning_action": "Trotzdem drucken",
     "upload_ready_later": "Später",
-    "ha_hint": "Veröffentlicht den Druckerstatus an einen MQTT-Broker mit Home-Assistant-Auto-Discovery (Sensoren, Licht, Pause/Fortsetzen/Abbrechen-Buttons, Kamera).",
+    "ha_hint": "Veröffentlicht den Druckerstatus an einen MQTT-Broker mit Home-Assistant-Auto-Discovery (Sensoren, Licht, Pause/Fortsetzen/Abbrechen-Buttons, Kamera, Druck-Vorschaubild).",
     "ha_enabled": "MQTT-Veröffentlichung aktivieren",
     "ha_url": "Broker-URL",
     "ha_username": "Benutzername",
