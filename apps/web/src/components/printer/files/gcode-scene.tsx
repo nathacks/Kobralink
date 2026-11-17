@@ -8,7 +8,7 @@ import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 
 export type SceneMode = 'lines' | 'solid';
 
-const STRIDE = 5;
+const STRIDE = 6;
 const FILAMENT_AREA = Math.PI * 0.875 ** 2;
 
 function buildLines(data: ParsedGcode) {
@@ -49,6 +49,7 @@ function buildSolid(data: ParsedGcode) {
     const geometry = new BoxGeometry(1, 1, 1);
     const mesh = new InstancedMesh(geometry, undefined, count);
     const dummy = new Object3D();
+    const tools = new Uint8Array(count);
     const ends: number[] = [];
     let i = 0;
     let prevZ = 0;
@@ -69,12 +70,13 @@ function buildSolid(data: ParsedGcode) {
             dummy.rotation.set(0, Math.atan2(dy, dx), 0);
             dummy.scale.set(len + w, h, w);
             dummy.updateMatrix();
+            tools[i] = s[k + 5];
             mesh.setMatrixAt(i++, dummy.matrix);
         }
         ends.push(i);
     }
     mesh.instanceMatrix.needsUpdate = true;
-    return { mesh, geometry, ends };
+    return { mesh, geometry, ends, tools };
 }
 
 function Lines({ data, shown, colors }: { data: ParsedGcode; shown: number; colors: ThemeColors }) {
@@ -108,32 +110,37 @@ function Lines({ data, shown, colors }: { data: ParsedGcode; shown: number; colo
     );
 }
 
-function Solid({ data, shown, colors }: { data: ParsedGcode; shown: number; colors: ThemeColors }) {
+function Solid({
+    data,
+    shown,
+    palette,
+    fallback,
+}: {
+    data: ParsedGcode;
+    shown: number;
+    palette: string[];
+    fallback: string;
+}) {
     const built = useMemo(() => buildSolid(data), [data]);
-    const painted = useRef(-1);
     useEffect(() => {
         const { mesh, geometry } = built;
-        painted.current = -1;
         return () => {
             geometry.dispose();
             mesh.dispose();
         };
     }, [built]);
     useLayoutEffect(() => {
+        const { mesh, tools } = built;
+        const swatches = palette.map((hex) => new Color(hex));
+        const base = new Color(fallback);
+        for (let i = 0; i < tools.length; i++) mesh.setColorAt(i, swatches[tools[i]] ?? swatches[0] ?? base);
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }, [built, palette, fallback]);
+    useLayoutEffect(() => {
         const { mesh, ends } = built;
         if (!ends.length) return;
-        const index = Math.min(Math.max(shown, 1), ends.length) - 1;
-        const base = new Color(colors.muted);
-        const top = new Color(colors.primary);
-        const prev = painted.current;
-        const from = prev < 0 ? 0 : Math.min(prev, index) > 0 ? ends[Math.min(prev, index) - 1] : 0;
-        const to = ends[Math.max(prev < 0 ? index : prev, index)];
-        const topStart = index > 0 ? ends[index - 1] : 0;
-        for (let i = from; i < to; i++) mesh.setColorAt(i, i >= topStart ? top : base);
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        mesh.count = ends[index];
-        painted.current = index;
-    }, [built, shown, colors]);
+        mesh.count = ends[Math.min(Math.max(shown, 1), ends.length) - 1];
+    }, [built, shown]);
 
     return (
         <primitive object={built.mesh}>
@@ -157,12 +164,14 @@ export function GcodeScene({
     data,
     shown,
     mode,
+    palette,
     pan,
     resetSignal,
 }: {
     data: ParsedGcode;
     shown: number;
     mode: SceneMode;
+    palette: string[];
     pan: boolean;
     resetSignal: number;
 }) {
@@ -196,7 +205,7 @@ export function GcodeScene({
                 fadeStrength={1}
             />
             {mode === 'solid' ? (
-                <Solid data={data} shown={shown} colors={colors} />
+                <Solid data={data} shown={shown} palette={palette} fallback={colors.primary} />
             ) : (
                 <Lines data={data} shown={shown} colors={colors} />
             )}

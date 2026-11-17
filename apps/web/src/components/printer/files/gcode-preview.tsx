@@ -1,12 +1,14 @@
-import type { GcodeFileDto } from '@kobralink/shared';
+import { type GcodeFileDto, slotUsableForPrint } from '@kobralink/shared';
 import { Box, Crosshair, Move, RotateCcw } from 'lucide-react';
-import { type ComponentProps, lazy, Suspense, useEffect, useState } from 'react';
+import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
+import { defaultAssignments } from '@/components/printer/files/print-ready-form';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useParsedGcode } from '@/hooks/use-parsed-gcode';
 import { usePrinter } from '@/hooks/use-printers';
+import { rgbToHex } from '@/lib/color';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -17,13 +19,34 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const status = useParsedGcode(printerId, file);
     const [layer, setLayer] = useState(0);
     const [follow, setFollow] = useState(false);
-    const [mode, setMode] = useState<SceneMode>('lines');
+    const [mode, setMode] = useState<SceneMode>('solid');
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
     const live = usePrinter(printerId)?.live;
     const printingThis = Boolean(
         live && live.filename === file.filename && (live.printState === 'printing' || live.printState === 'paused'),
     );
+    const slots = live?.amsSlots;
+    const filamentMode = live?.filamentMode;
+    const paletteKey = useMemo(() => {
+        const usable = (slots ?? [])
+            .filter((s) => filamentMode && slotUsableForPrint(s, filamentMode))
+            .sort((a, b) => a.globalIndex - b.globalIndex);
+        const channels = file.filaments.map((f) => ({
+            paintIndex: f.slotIndex,
+            colorHex: f.colorHex,
+            material: f.material,
+            isUsed: f.isUsed,
+        }));
+        const assigned = defaultAssignments(channels, usable);
+        return channels
+            .map((ch) => {
+                const slot = usable.find((s) => s.globalIndex === assigned[ch.paintIndex]);
+                return slot ? rgbToHex(slot.color) : ch.colorHex;
+            })
+            .join(',');
+    }, [file.filaments, slots, filamentMode]);
+    const palette = useMemo(() => (paletteKey ? paletteKey.split(',') : []), [paletteKey]);
     const data = status.kind === 'ready' ? status.data : null;
     const total = data?.layers.length ?? 0;
 
@@ -48,6 +71,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 data={status.data}
                                 shown={shown}
                                 mode={mode}
+                                palette={palette}
                                 pan={pan}
                                 resetSignal={resetSignal}
                             />
@@ -72,8 +96,21 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                 <LayerControls
                     data={data}
                     shown={shown}
-                    onChange={setLayer}
-                    follow={printingThis ? { checked: follow, onChange: setFollow } : null}
+                    onChange={(v) => {
+                        setFollow(false);
+                        setLayer(v);
+                    }}
+                    follow={
+                        printingThis
+                            ? {
+                                  checked: follow,
+                                  onChange: (v) => {
+                                      if (!v) setLayer(shown);
+                                      setFollow(v);
+                                  },
+                              }
+                            : null
+                    }
                 />
             )}
         </div>
@@ -160,7 +197,6 @@ function LayerControls({
                 min={1}
                 max={Math.max(1, total)}
                 step={1}
-                disabled={follow?.checked ?? false}
                 onValueChange={([v]) => onChange(v)}
                 className="flex-1"
             />

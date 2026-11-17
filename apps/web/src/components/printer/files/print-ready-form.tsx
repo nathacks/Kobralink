@@ -41,7 +41,7 @@ export interface PrintReadyResult {
     autoLeveling: boolean;
 }
 
-interface Channel {
+export interface Channel {
     paintIndex: number;
     colorHex: string;
     material: string;
@@ -60,7 +60,7 @@ function compatibleSlots(channel: Channel, slots: AmsSlot[]): AmsSlot[] {
     return slots.filter((s) => materialFamily(s.type) === fam);
 }
 
-function defaultAssignments(channels: Channel[], slots: AmsSlot[]): Record<number, number> {
+export function defaultAssignments(channels: Channel[], slots: AmsSlot[]): Record<number, number> {
     const out: Record<number, number> = {};
     const taken = new Set<number>();
     for (const ch of channels) {

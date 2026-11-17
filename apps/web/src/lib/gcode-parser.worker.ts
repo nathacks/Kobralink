@@ -23,6 +23,7 @@ function parse(text: string, report: (p: number) => void): ParsedGcode {
     let e = 0;
     let absPos = true;
     let absE = true;
+    let tool = 0;
     let minX = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
@@ -90,7 +91,7 @@ function parse(text: string, report: (p: number) => void): ParsedGcode {
                 const extruding = hasE && ne > e + 1e-6 && (nx !== x || ny !== y);
                 if (extruding) {
                     const layer = ensureLayer(nz);
-                    layer.segs.push(x, y, nx, ny, ne - e);
+                    layer.segs.push(x, y, nx, ny, ne - e, tool);
                     if (nx < minX) minX = nx;
                     if (nx > maxX) maxX = nx;
                     if (ny < minY) minY = ny;
@@ -116,13 +117,16 @@ function parse(text: string, report: (p: number) => void): ParsedGcode {
                 const mZ = /Z(-?[\d.]+)/i.exec(line);
                 if (mZ) z = Number.parseFloat(mZ[1]);
             }
+        } else if (c0 === 84 || c0 === 116) {
+            const t = Number.parseInt(line.slice(1), 10);
+            if (t >= 0 && t < 64) tool = t;
         } else if (c0 === 77 || c0 === 109) {
             if (line.startsWith('M82') || line.startsWith('m82')) absE = true;
             else if (line.startsWith('M83') || line.startsWith('m83')) absE = false;
         }
     }
     const out = layers
-        .filter((l) => l.segs.length >= 5)
+        .filter((l) => l.segs.length >= 6)
         .sort((a, b) => a.z - b.z)
         .map((l) => ({ z: l.z, segs: Float32Array.from(l.segs) }));
     if (!Number.isFinite(minX)) {
