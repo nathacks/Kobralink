@@ -94,7 +94,8 @@ This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/K
   back to the front of the queue when the printer is busy. Maintenance tasks (`maintenance/`) are due by print
   hours, jobs or days since the last completion and notify once (`maintenance_due`).
 - Costs: `stats/job-cost.ts` prices a job from the spool (or default) filament price plus `settings.costs` (energy
-  per kWh × printer power, or the kWh measured by Home Assistant); there is no machine-time cost. `GET /api/v1/stats/export.csv` exports one row per job. A cancelled
+  per kWh × printer power, or the kWh measured by Home Assistant); there is no machine-time cost. The estimate before printing is computed in the web (`useCostEstimate`
+  → `estimateCost`/`spoolPriceFor` in `packages/shared/src/cost.ts`). `GET /api/v1/stats/export.csv` exports one row per job. A cancelled
   or errored job keeps the printer error code, the last camera frame (`dataDir/failures/<jobId>.jpg`) and a user
   label (`failureReason`, `note`) editable with `PATCH history/:jobId`; `POST print/cancel` takes an optional
   `reason` the bridge stores on the job when it ends. `stats/stats-metrics.ts` defines utilisation, MTBF, idle time

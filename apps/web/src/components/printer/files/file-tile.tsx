@@ -1,5 +1,5 @@
 import type { GcodeFileDto } from '@farolprint/shared';
-import { Box, Clock, Download, Eye, ListPlus, MoreVertical, Play, Trash2 } from 'lucide-react';
+import { Box, Clock, Coins, Download, Eye, ListPlus, MoreVertical, Play, Trash2 } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,6 +18,7 @@ export function FileTile({
     file,
     printerId,
     highlight,
+    estimatedCost = null,
     canPrint,
     onPrint,
     onDelete,
@@ -27,6 +28,7 @@ export function FileTile({
     file: GcodeFileDto;
     printerId: string;
     highlight: boolean;
+    estimatedCost?: string | null;
     canPrint: boolean;
     onPrint: () => void;
     onDelete: () => void;
@@ -148,6 +150,14 @@ export function FileTile({
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <Clock className="size-3.5 shrink-0" />
                             <span className="tabular-nums">{formatDuration(file.estPrintTimeSec)}</span>
+                            {estimatedCost && (
+                                <span
+                                    className="inline-flex items-center gap-1 tabular-nums"
+                                    title={m.cost_estimate_title({ value: estimatedCost })}
+                                >
+                                    <Coins className="ml-1.5 size-3.5 shrink-0" />≈ {estimatedCost}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-1.5">
                             {usedFilaments.map((f) => (

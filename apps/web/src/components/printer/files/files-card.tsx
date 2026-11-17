@@ -3,9 +3,11 @@ import { Loader2, Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
+import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useFileActions } from '@/hooks/use-file-actions';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import { parseFilename } from '@/lib/filename';
+import { formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
@@ -40,6 +42,11 @@ export function FilesCard({ printerId, className }: { printerId: string; classNa
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     const actions = useFileActions(printerId);
+    const cost = useCostEstimate(printerId);
+    const estimatedCost = (f: Parameters<typeof cost.estimate>[0]) => {
+        const e = cost.estimate(f);
+        return e ? formatMoney(e.total, cost.currency) : null;
+    };
     const dragging = useFileDrop(sectionRef, tab === 'files' || tab === 'web', actions.uploadMany);
 
     const pick = () => inputRef.current?.click();
@@ -98,6 +105,7 @@ export function FilesCard({ printerId, className }: { printerId: string; classNa
                         file={f}
                         printerId={printerId}
                         highlight={i === 0 && f.lastJob?.status === 'printing'}
+                        estimatedCost={estimatedCost(f)}
                         canPrint={actions.canPrint}
                         onPrint={() => actions.requestPrint(f)}
                         onQueue={() => actions.enqueue(f)}

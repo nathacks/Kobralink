@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { SlotForm } from '@/components/printer/ams/slot-form';
+import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import { PrintPreview3D } from '@/components/printer/files/print-preview-3d';
 import { ObjectPicker } from '@/components/printer/skip/object-picker';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { useSpoolLookup } from '@/hooks/use-slot-spool';
 import { hexToRgb, rgbCss, rgbToHex, textOn } from '@/lib/color';
@@ -137,6 +139,7 @@ export function PrintReadyForm({
 }) {
     const state = useLiveState(printerId);
     const printer = usePrinter(printerId);
+    const cost = useCostEstimate(printerId);
     const slotInfos = useQuery(filamentSlotsQuery(printerId));
     const objects = useQuery(fileObjectsQuery(printerId, file.id));
     const close = confirmationDialogStore.actions.closeDialog;
@@ -207,6 +210,15 @@ export function PrintReadyForm({
         (slotKey) => spoolOf(slotKey).remainingG,
     );
     const shortBlocked = anyShort(checks) && !acceptShort;
+    const estimate = cost.estimate(
+        file,
+        new Map(
+            channels.map((ch) => [
+                ch.paintIndex,
+                usable.length ? String(assignments[ch.paintIndex] ?? -1) : EXTERNAL_SLOT,
+            ]),
+        ),
+    );
     const remaining = names.length - excluded.length;
     const { name, plate } = parseFilename(file.filename);
     const tint = channels.find((ch) => ch.isUsed)?.colorHex ?? channels[0]?.colorHex;
@@ -279,6 +291,7 @@ export function PrintReadyForm({
                         ))}
                     </div>
                 </div>
+                <CostEstimateCard estimate={estimate} currency={cost.currency} />
             </div>
 
             <div className="grid min-w-0 content-start gap-4">

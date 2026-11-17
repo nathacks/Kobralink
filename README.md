@@ -43,7 +43,8 @@ by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker cli
   the light or the smart plug, load or unload filament and notify
 - **Notifications**: webhook, Discord, Telegram, ntfy, each linking to the right screen · **Home Assistant** MQTT
   discovery, and the real energy of each print read from the plug's meter in Home Assistant
-- **History & stats**: cost per print (filament and energy) on a history of cards with the preview of each print, comparison with the previous
+- **History & stats**: estimated cost before printing (file card, preview and print dialog), actual cost per print
+  (filament and energy) on a history of cards with the preview of each print, comparison with the previous
   period, utilisation, mean time between failures, idle time and estimate accuracy per printer, failures by reason
   (Pareto) with the camera snapshot of the moment, wasted filament, CSV export
 - **Preventive maintenance** per printer: tasks due by print hours, number of prints or days, with history

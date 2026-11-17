@@ -62,4 +62,15 @@ describe('FileTile', () => {
         await userEvent.click(print);
         expect(props.onPrint).not.toHaveBeenCalled();
     });
+
+    it('shows the estimated cost next to the print time', () => {
+        renderTile({ estimatedCost: 'R$ 1,23' });
+        const cost = screen.getByTitle('Estimated cost: R$ 1,23');
+        expect(cost.textContent).toContain('≈ R$ 1,23');
+    });
+
+    it('shows no cost without an estimate', () => {
+        renderTile();
+        expect(screen.queryByText(/≈/)).toBeNull();
+    });
 });

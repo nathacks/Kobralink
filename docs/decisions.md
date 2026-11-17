@@ -115,6 +115,12 @@ later and build on these.
   expected lifespan) was removed in November 2026 at the maintainer's request: the setting, the profile fields, the
   machine part of the totals and the `cost_machine` CSV column are gone, and values saved by older versions are
   dropped when the settings are read.
+- **Estimated cost before printing.** A file card shows `≈ total`, and the G-code preview and the print dialog show
+  the breakdown (filament with its weight, energy, total). Filament is the G-code weight priced with the Spoolman spool
+  mapped to a slot of the same material family (in the print dialog, the slot chosen for each filament), else the
+  default price per kg; energy is the slicer's estimated time × the printer power draw (its profile, else the default)
+  × the price per kWh. It is computed in the browser (`estimateCost` in `packages/shared/src/cost.ts`) and is not
+  stored; the history keeps showing only the actual cost.
 - **History is a grid of cards.** Each print shows the G-code thumbnail, its status, printer, date and duration, the
   failure label when it failed, and the cost broken down into filament, energy (with the measured kWh) and total.
 - **Failures keep their evidence.** A cancelled or errored job records the printer error code and message, the last

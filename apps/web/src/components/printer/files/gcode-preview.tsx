@@ -1,10 +1,12 @@
 import type { GcodeFileDto } from '@farolprint/shared';
 import { Box, Crosshair, Move, RotateCcw } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useEffect, useState } from 'react';
+import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useParsedGcode } from '@/hooks/use-parsed-gcode';
 import { usePrinter } from '@/hooks/use-printers';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
@@ -21,6 +23,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
     const live = usePrinter(printerId)?.live;
+    const cost = useCostEstimate(printerId);
     const printingThis = Boolean(
         live && live.filename === file.filename && (live.printState === 'printing' || live.printState === 'paused'),
     );
@@ -76,6 +79,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                     follow={printingThis ? { checked: follow, onChange: setFollow } : null}
                 />
             )}
+            <CostEstimateCard estimate={cost.estimate(file)} currency={cost.currency} />
         </div>
     );
 }

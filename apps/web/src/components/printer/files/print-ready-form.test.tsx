@@ -2,11 +2,15 @@ import type { GcodeFileDto, PrinterLiveState } from '@farolprint/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { renderWithProviders } from '@/test/render';
 import { PrintReadyForm } from './print-ready-form';
 
 vi.mock('@/lib/queries', () => ({
+    appSettingsQuery: { queryKey: ['settings'], queryFn: async () => mocks.settings },
+    spoolmanStatusQuery: () => ({ queryKey: ['spoolman-status'], queryFn: async () => mocks.spoolman }),
+    spoolmanSpoolsQuery: () => ({ queryKey: ['spoolman-spools'], queryFn: async () => mocks.spools }),
     filamentSlotsQuery: () => ({ queryKey: ['slots'], queryFn: async () => [] }),
     fileObjectsQuery: () => ({ queryKey: ['objects'], queryFn: async () => ({ names: [], svgB64: '' }) }),
 }));
@@ -19,9 +23,18 @@ vi.mock('./print-preview-3d', () => ({ PrintPreview3D: () => <div data-testid="p
 
 const mocks = vi.hoisted(() => ({
     remaining: {} as Record<string, number | undefined>,
+    settings: null as unknown,
+    spoolman: { configured: false, slotSpools: {} } as unknown,
+    spools: [] as unknown[],
     live: { connected: true, printState: 'standby', amsSlots: [], filamentMode: 'single' },
     printer: {
-        settings: { autoLeveling: true, vibrationCompensation: false, timelapseEnabled: true, failureDetection: false },
+        settings: {
+            autoLeveling: true,
+            vibrationCompensation: false,
+            timelapseEnabled: true,
+            failureDetection: false,
+            profile: { powerW: null },
+        },
     },
 }));
 
@@ -142,5 +155,50 @@ describe('PrintReadyForm filament check', () => {
         mocks.remaining = { '0': 10 };
         await renderWithProviders(<PrintReadyForm printerId="p1" file={used(undefined)} onPrint={vi.fn()} />);
         expect(screen.queryByText(m.print_ready_filament_title())).toBeNull();
+    });
+});
+
+describe('PrintReadyForm cost estimate', () => {
+    const priced = {
+        ...file,
+        filaments: [{ slotIndex: 0, material: 'PETG', colorHex: '#111111', isUsed: true, usedG: 30 }],
+    } as unknown as GcodeFileDto;
+
+    it('prices the file with the spool loaded in the external slot and the energy', async () => {
+        mocks.settings = {
+            currency: 'BRL',
+            filamentPricePerKg: 100,
+            costs: { energyPricePerKwh: 1, printerPowerW: 100 },
+        };
+        mocks.spoolman = { configured: true, slotSpools: { '0': 7 } };
+        mocks.spools = [
+            { id: 7, price: 20, initial_weight: 1000, filament: { material: 'PETG', density: 1.27, diameter: 1.75 } },
+        ];
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={priced} onPrint={vi.fn()} />);
+        const card = await screen.findByRole('region', { name: m.cost_estimate() });
+        expect(card.textContent).toContain(formatMoney(0.6, 'BRL'));
+        expect(card.textContent).toContain(formatMoney(0.13, 'BRL'));
+        expect(card.textContent).toContain(`≈ ${formatMoney(0.73, 'BRL')}`);
+        expect(card.textContent).toContain('30 g');
+    });
+
+    it('falls back to the default price without a mapped spool', async () => {
+        mocks.settings = {
+            currency: 'BRL',
+            filamentPricePerKg: 100,
+            costs: { energyPricePerKwh: 0, printerPowerW: 0 },
+        };
+        mocks.spoolman = { configured: false, slotSpools: {} };
+        mocks.spools = [];
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={priced} onPrint={vi.fn()} />);
+        const card = await screen.findByRole('region', { name: m.cost_estimate() });
+        expect(card.textContent).toContain(`≈ ${formatMoney(3, 'BRL')}`);
+    });
+
+    it('shows no estimate when nothing is priced', async () => {
+        mocks.settings = { currency: 'BRL', filamentPricePerKg: 0, costs: { energyPricePerKwh: 0, printerPowerW: 0 } };
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={priced} onPrint={vi.fn()} />);
+        await screen.findByText('Anti-Wobble V2');
+        expect(screen.queryByRole('region', { name: m.cost_estimate() })).toBeNull();
     });
 });
