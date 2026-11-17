@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/riccardoalv/farolprint/compare/v0.16.1...v0.17.0) (2026-11-17)
+
+
+### Features
+
+* **history:** show prints as cards with a preview and a cost breakdown ([#47](https://github.com/riccardoalv/farolprint/issues/47)) ([0f21e2a](https://github.com/riccardoalv/farolprint/commit/0f21e2af40ec260d750987b134dd9b4150d256b4))
+
 ## [0.16.1](https://github.com/riccardoalv/farolprint/compare/v0.16.0...v0.16.1) (2026-11-01)
 
 
