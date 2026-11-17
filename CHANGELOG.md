@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/riccardoalv/farolprint/compare/v0.17.0...v0.18.0) (2026-11-17)
+
+
+### Features
+
+* **files:** show the estimated cost before printing ([#49](https://github.com/riccardoalv/farolprint/issues/49)) ([74c6bb5](https://github.com/riccardoalv/farolprint/commit/74c6bb5ef1f394569720b1ec1733cf1d265353e7))
+
 ## [0.17.0](https://github.com/riccardoalv/farolprint/compare/v0.16.1...v0.17.0) (2026-11-17)
 
 
