@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { hasAnyPricing, type PricingContext, priceJob } from '../src/stats/job-cost';
 
-const noCosts = { energyPricePerKwh: 0, printerPowerW: 0, hourlyRate: 0 };
+const noCosts = { energyPricePerKwh: 0, printerPowerW: 0 };
 
 function ctx(over: Partial<PricingContext> = {}): PricingContext {
     return { spools: new Map(), filamentPricePerKg: 0, costs: noCosts, ...over };
@@ -39,11 +39,9 @@ describe('priceJob', () => {
         expect(p.cost.filament).toBeCloseTo(0.72, 2);
     });
 
-    it('adds energy and machine time from the cost settings', () => {
-        const p = priceJob(job, ctx({ costs: { energyPricePerKwh: 1, printerPowerW: 100, hourlyRate: 3 } }));
-        expect(p.cost.energy).toBe(0.1);
-        expect(p.cost.machine).toBe(3);
-        expect(p.cost.total).toBe(3.1);
+    it('adds energy from the cost settings, with no machine time', () => {
+        const p = priceJob(job, ctx({ costs: { energyPricePerKwh: 1, printerPowerW: 100 } }));
+        expect(p.cost).toEqual({ filament: 0, energy: 0.1, total: 0.1 });
     });
 });
 
@@ -51,7 +49,6 @@ describe('hasAnyPricing', () => {
     it('is false with no price anywhere and true as soon as one source is set', () => {
         expect(hasAnyPricing(ctx())).toBe(false);
         expect(hasAnyPricing(ctx({ filamentPricePerKg: 1 }))).toBe(true);
-        expect(hasAnyPricing(ctx({ costs: { ...noCosts, hourlyRate: 1 } }))).toBe(true);
         expect(hasAnyPricing(ctx({ costs: { ...noCosts, energyPricePerKwh: 1 } }))).toBe(false);
         expect(hasAnyPricing(ctx({ costs: { ...noCosts, energyPricePerKwh: 1, printerPowerW: 50 } }))).toBe(true);
     });
@@ -59,21 +56,20 @@ describe('hasAnyPricing', () => {
 
 describe('priceJob with printer profiles', () => {
     const printers = new Map([
-        ['p1', { powerW: 300, depreciationPerHour: 0.5 }],
-        ['p2', { powerW: null, depreciationPerHour: 0 }],
+        ['p1', { powerW: 300 }],
+        ['p2', { powerW: null }],
     ]);
-    const costs = { energyPricePerKwh: 1, printerPowerW: 100, hourlyRate: 3 };
+    const costs = { energyPricePerKwh: 1, printerPowerW: 100 };
 
-    it('uses the power draw and the depreciation of the printer that ran the job', () => {
+    it('uses the power draw of the printer that ran the job', () => {
         const p = priceJob({ ...job, printerId: 'p1' }, ctx({ costs, printers }));
         expect(p.cost.energy).toBe(0.3);
-        expect(p.cost.machine).toBe(3.5);
+        expect(p.cost.total).toBe(0.3);
     });
 
     it('falls back to the default power draw when the printer has none', () => {
         const p = priceJob({ ...job, printerId: 'p2' }, ctx({ costs, printers }));
         expect(p.cost.energy).toBe(0.1);
-        expect(p.cost.machine).toBe(3);
     });
 
     it('ignores profiles of other printers', () => {
@@ -83,7 +79,8 @@ describe('priceJob with printer profiles', () => {
 
     it('counts a printer profile as pricing', () => {
         const energy = { ...noCosts, energyPricePerKwh: 1 };
-        expect(hasAnyPricing(ctx({ printers: new Map([['p', { depreciationPerHour: 0.2 }]]) }))).toBe(true);
+        expect(hasAnyPricing(ctx({ costs: energy, printers: new Map([['p', { measuresEnergy: true }]]) }))).toBe(true);
+        expect(hasAnyPricing(ctx({ costs: energy, printers: new Map([['p', { powerW: null }]]) }))).toBe(false);
         expect(hasAnyPricing(ctx({ costs: energy, printers: new Map([['p', { powerW: 200 }]]) }))).toBe(true);
         expect(hasAnyPricing(ctx({ printers: new Map([['p', { powerW: 200 }]]) }))).toBe(false);
     });

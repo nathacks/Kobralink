@@ -1,5 +1,4 @@
 import {
-    depreciationPerHour,
     type PrintJobDto,
     round2,
     type StatsBucket,
@@ -53,7 +52,6 @@ export class StatsService {
                         p.id,
                         {
                             powerW: parsed.profile.powerW,
-                            depreciationPerHour: depreciationPerHour(parsed.profile),
                             measuresEnergy: Boolean(parsed.energySensor),
                         },
                     ];
@@ -162,7 +160,6 @@ export class StatsService {
         let totalFilamentG = 0;
         let filamentCost = 0;
         let energyCost = 0;
-        let machineCost = 0;
         let unpricedG = 0;
         let energyKwh: number | null = null;
 
@@ -243,7 +240,6 @@ export class StatsService {
             unpricedG += priced.unpricedG;
             filamentCost += priced.cost.filament;
             energyCost += priced.cost.energy;
-            machineCost += priced.cost.machine;
         }
 
         for (const p of printerRows) {
@@ -275,10 +271,9 @@ export class StatsService {
             estimateRatio: estimateRatio(finished),
             totalFilamentMm: Math.round(totalFilament),
             totalFilamentG: Math.round(totalFilamentG),
-            totalCost: round2(filamentCost + energyCost + machineCost),
+            totalCost: round2(filamentCost + energyCost),
             filamentCost: round2(filamentCost),
             energyCost: round2(energyCost),
-            machineCost: round2(machineCost),
             unpricedG: Math.round(unpricedG),
             currency,
             firstJobAt: first?.toISOString() ?? null,

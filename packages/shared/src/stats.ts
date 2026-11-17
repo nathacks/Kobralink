@@ -88,7 +88,6 @@ export interface StatsDto {
     totalCost: number;
     filamentCost: number;
     energyCost: number;
-    machineCost: number;
     unpricedG: number;
     currency: string;
     firstJobAt: string | null;

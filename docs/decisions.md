@@ -108,10 +108,15 @@ later and build on these.
   prints, days) and is due when any is reached; suggestions are offered but nothing is created by default. Usage is
   computed from the print history since the last completion, so it needs no new counters. A due task notifies once
   until it is completed.
-- **Cost per print = filament + energy + machine time.** Filament comes from the Spoolman spool price, frozen into the
-  job when it ends (or the default price per kg), energy from the price per kWh × the printer's average power (its
-  profile, else the default), machine time from an hourly rate plus the printer's depreciation (purchase price over its
-  expected lifespan). Everything is zero by default; the cost is only shown once at least one source is set.
+- **Cost per print = filament + energy.** Filament comes from the Spoolman spool price, frozen into the job when it
+  ends (or the default price per kg), energy from the kWh measured by the Home Assistant plug, else the price per kWh ×
+  the printer's average power (its profile, else the default). Everything is zero by default; the cost is only shown
+  once at least one source is set. The machine time (hourly rate plus the depreciation from the purchase price and
+  expected lifespan) was removed in November 2026 at the maintainer's request: the setting, the profile fields, the
+  machine part of the totals and the `cost_machine` CSV column are gone, and values saved by older versions are
+  dropped when the settings are read.
+- **History is a grid of cards.** Each print shows the G-code thumbnail, its status, printer, date and duration, the
+  failure label when it failed, and the cost broken down into filament, energy (with the measured kWh) and total.
 - **Failures keep their evidence.** A cancelled or errored job records the printer error code and message, the last
   camera frame if the stream was running (best effort, no ffmpeg start), and a user-chosen reason from a fixed list
   (spaghetti, adhesion, clog, runout, layer shift, power loss, cancelled on purpose, other) plus a note. Statistics

@@ -5,24 +5,29 @@ import { materialDensity, spoolmanPricing } from '../src/spools';
 
 describe('cost settings', () => {
     it('default to zero so no cost is shown until the user sets a price', () => {
-        expect(costSettingsSchema.parse({})).toEqual({ energyPricePerKwh: 0, printerPowerW: 0, hourlyRate: 0 });
-        expect(appSettingsSchema.parse({}).costs).toEqual({ energyPricePerKwh: 0, printerPowerW: 0, hourlyRate: 0 });
+        expect(costSettingsSchema.parse({})).toEqual({ energyPricePerKwh: 0, printerPowerW: 0 });
+        expect(appSettingsSchema.parse({}).costs).toEqual({ energyPricePerKwh: 0, printerPowerW: 0 });
     });
 
     it('accept realistic values and reject negative or absurd ones', () => {
-        expect(costSettingsSchema.parse({ energyPricePerKwh: 0.21, printerPowerW: 180, hourlyRate: 0.5 })).toEqual({
+        expect(costSettingsSchema.parse({ energyPricePerKwh: 0.21, printerPowerW: 180 })).toEqual({
             energyPricePerKwh: 0.21,
             printerPowerW: 180,
-            hourlyRate: 0.5,
         });
         expect(costSettingsSchema.safeParse({ energyPricePerKwh: -1 }).success).toBe(false);
         expect(costSettingsSchema.safeParse({ printerPowerW: 6000 }).success).toBe(false);
-        expect(costSettingsSchema.safeParse({ hourlyRate: 10001 }).success).toBe(false);
+    });
+
+    it('drop the machine rate saved by older versions', () => {
+        expect(costSettingsSchema.parse({ printerPowerW: 120, hourlyRate: 2 })).toEqual({
+            energyPricePerKwh: 0,
+            printerPowerW: 120,
+        });
     });
 
     it('survive a partial patch of the app settings', () => {
         const parsed = appSettingsSchema.parse({ costs: { printerPowerW: 120 } });
-        expect(parsed.costs).toEqual({ energyPricePerKwh: 0, printerPowerW: 120, hourlyRate: 0 });
+        expect(parsed.costs).toEqual({ energyPricePerKwh: 0, printerPowerW: 120 });
     });
 });
 

@@ -67,7 +67,6 @@ export const DEFAULT_DRY_PRESETS: AceDryPreset[] = [
 export const costSettingsSchema = z.object({
     energyPricePerKwh: z.number().min(0).max(100).default(0),
     printerPowerW: z.number().min(0).max(5000).default(0),
-    hourlyRate: z.number().min(0).max(10000).default(0),
 });
 export type CostSettings = z.infer<typeof costSettingsSchema>;
 

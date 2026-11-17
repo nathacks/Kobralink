@@ -90,7 +90,7 @@ const stored: AppSettings = appSettingsSchema.parse({
     locale: 'en',
     currency: 'BRL',
     filamentPricePerKg: 89.41,
-    costs: { energyPricePerKwh: 0.3, printerPowerW: 150, hourlyRate: 0.8 },
+    costs: { energyPricePerKwh: 0.3, printerPowerW: 150 },
     updateCheck: false,
     verboseHttpLog: true,
     spoolmanUrl: 'http://spoolman.test:7912',
@@ -223,8 +223,13 @@ describe('editing the new settings', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Save' }));
         await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
         expect(mocks.save.mock.calls[0][0]).toEqual({
-            costs: { energyPricePerKwh: 0.5, printerPowerW: 150, hourlyRate: 0.8 },
+            costs: { energyPricePerKwh: 0.5, printerPowerW: 150 },
         });
+    });
+
+    it('no longer asks for a machine rate', async () => {
+        await renderWithProviders(<CostsCard settings={stored} />);
+        expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
     });
 
     it('lists the scheduled print and maintenance events and saves their switches', async () => {

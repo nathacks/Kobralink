@@ -29,7 +29,7 @@ vi.mock('@/components/printer/filament-profiles-card', () => ({
 const stored: AppSettings = appSettingsSchema.parse({
     locale: 'en',
     currency: 'BRL',
-    costs: { energyPricePerKwh: 0.3, printerPowerW: 150, hourlyRate: 0.8 },
+    costs: { energyPricePerKwh: 0.3, printerPowerW: 150 },
     aceDryPresets: [{ name: 'PETG', targetTemp: 55, duration: 300 }],
 });
 

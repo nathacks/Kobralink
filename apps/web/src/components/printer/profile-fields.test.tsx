@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { nozzleChoices, ProfileFields } from './profile-fields';
 
@@ -15,7 +14,6 @@ function Harness({ initial = empty, onChange }: { initial?: PrinterProfile; onCh
         <ProfileFields
             value={value}
             modeId="20028"
-            currency="EUR"
             onChange={(next) => {
                 setValue(next);
                 onChange(next);
@@ -54,18 +52,11 @@ describe('ProfileFields', () => {
         expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ powerW: 180 }));
         fireEvent.change(power, { target: { value: '' } });
         expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ powerW: null }));
-        fireEvent.change(screen.getByLabelText(m.profile_lifespan()), { target: { value: '5000.7' } });
-        expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ lifespanHours: 5001 }));
     });
 
-    it('shows the depreciation once the price and the lifespan are known', () => {
-        render(<Harness initial={{ ...empty, purchasePrice: 3000, lifespanHours: 6000 }} onChange={vi.fn()} />);
-        expect(screen.getByText(m.profile_depreciation({ value: formatMoney(0.5, 'EUR') }))).toBeTruthy();
-    });
-
-    it('hides the depreciation without both values', () => {
-        render(<Harness initial={{ ...empty, purchasePrice: 3000 }} onChange={vi.fn()} />);
-        expect(screen.queryByText(/0\.5/)).toBeNull();
+    it('has no purchase price or lifespan field', () => {
+        render(<Harness onChange={vi.fn()} />);
+        expect(screen.getAllByRole('spinbutton')).toHaveLength(1);
     });
 
     it('shows the nozzle as not set until one is chosen', () => {

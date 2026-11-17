@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-    depreciationPerHour,
-    PRINTER_TAG_MAX,
-    printerProfileSchema,
-    printerSettingsSchema,
-    updatePrinterSchema,
-} from '../src/printer';
+import { PRINTER_TAG_MAX, printerProfileSchema, printerSettingsSchema, updatePrinterSchema } from '../src/printer';
 
 describe('printerProfileSchema', () => {
     it('starts empty, with nothing invented', () => {
@@ -14,8 +8,6 @@ describe('printerProfileSchema', () => {
             tags: [],
             nozzleMm: null,
             powerW: null,
-            purchasePrice: null,
-            lifespanHours: null,
         });
         expect(printerSettingsSchema.parse({}).profile).toEqual(printerProfileSchema.parse({}));
     });
@@ -34,7 +26,6 @@ describe('printerProfileSchema', () => {
     it('bounds the numbers and accepts clearing them', () => {
         expect(printerProfileSchema.safeParse({ nozzleMm: 0.05 }).success).toBe(false);
         expect(printerProfileSchema.safeParse({ powerW: -1 }).success).toBe(false);
-        expect(printerProfileSchema.safeParse({ lifespanHours: 1.5 }).success).toBe(false);
         expect(printerProfileSchema.parse({ nozzleMm: 0.6, powerW: null }).nozzleMm).toBe(0.6);
     });
 
@@ -44,15 +35,14 @@ describe('printerProfileSchema', () => {
     });
 });
 
-describe('depreciationPerHour', () => {
-    it('spreads the purchase price over the expected lifespan', () => {
-        expect(depreciationPerHour({ purchasePrice: 3000, lifespanHours: 6000 })).toBe(0.5);
-    });
-
-    it('is zero when either value is missing', () => {
-        expect(depreciationPerHour({ purchasePrice: 3000, lifespanHours: null })).toBe(0);
-        expect(depreciationPerHour({ purchasePrice: null, lifespanHours: 6000 })).toBe(0);
-        expect(depreciationPerHour({ purchasePrice: 3000, lifespanHours: 0 })).toBe(0);
+describe('printerProfileSchema without machine cost', () => {
+    it('drops the purchase price and lifespan saved by older versions', () => {
+        expect(printerProfileSchema.parse({ powerW: 200, purchasePrice: 3000, lifespanHours: 6000 })).toEqual({
+            location: '',
+            tags: [],
+            nozzleMm: null,
+            powerW: 200,
+        });
     });
 });
 

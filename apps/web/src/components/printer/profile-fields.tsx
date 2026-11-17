@@ -1,9 +1,8 @@
-import { depreciationPerHour, type PrinterProfile, printerSpecs } from '@farolprint/shared';
+import { type PrinterProfile, printerSpecs } from '@farolprint/shared';
 import { TagsInput } from '@/components/form/tags-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
 
 const COMMON_NOZZLES = [0.2, 0.25, 0.4, 0.6, 0.8, 1];
@@ -57,15 +56,12 @@ export function ProfileFields({
     value,
     onChange,
     modeId,
-    currency,
 }: {
     value: PrinterProfile;
     onChange: (next: PrinterProfile) => void;
     modeId: string | null | undefined;
-    currency: string;
 }) {
     const set = <K extends keyof PrinterProfile>(key: K, v: PrinterProfile[K]) => onChange({ ...value, [key]: v });
-    const perHour = depreciationPerHour(value);
     return (
         <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
@@ -114,25 +110,6 @@ export function ProfileFields({
                     step={5}
                 />
             </div>
-            <NumberField
-                id="profile-price"
-                label={m.profile_purchase_price({ currency })}
-                value={value.purchasePrice}
-                onChange={(v) => set('purchasePrice', v)}
-                step={1}
-            />
-            <NumberField
-                id="profile-lifespan"
-                label={m.profile_lifespan()}
-                value={value.lifespanHours}
-                onChange={(v) => set('lifespanHours', v === null ? null : Math.round(v))}
-                step={100}
-            />
-            {perHour > 0 && (
-                <p className="px-4 text-xs text-muted-foreground md:col-span-2">
-                    {m.profile_depreciation({ value: formatMoney(perHour, currency) })}
-                </p>
-            )}
         </div>
     );
 }

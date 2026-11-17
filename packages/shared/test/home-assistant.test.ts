@@ -50,7 +50,7 @@ describe('Home Assistant settings', () => {
 });
 
 describe('jobCost with measured energy', () => {
-    const costs = { energyPricePerKwh: 0.8, printerPowerW: 200, hourlyRate: 0 };
+    const costs = { energyPricePerKwh: 0.8, printerPowerW: 200 };
 
     it('prices the measured kWh instead of the average draw', () => {
         expect(jobCost(3600, 0, costs, {}, 0.5).energy).toBe(0.4);

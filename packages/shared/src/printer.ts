@@ -30,15 +30,8 @@ export const printerProfileSchema = z.object({
         .default([]),
     nozzleMm: z.number().min(0.1).max(2).nullable().default(null),
     powerW: nullableNumber(5000),
-    purchasePrice: nullableNumber(1_000_000),
-    lifespanHours: z.number().int().min(0).max(1_000_000).nullable().default(null),
 });
 export type PrinterProfile = z.infer<typeof printerProfileSchema>;
-
-export function depreciationPerHour(profile: Pick<PrinterProfile, 'purchasePrice' | 'lifespanHours'>): number {
-    const { purchasePrice, lifespanHours } = profile;
-    return purchasePrice && lifespanHours ? purchasePrice / lifespanHours : 0;
-}
 
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),

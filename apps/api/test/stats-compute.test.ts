@@ -9,7 +9,7 @@ let current: AppSettings;
 const settings = { get: () => current } as unknown as SettingsService;
 const priced = appSettingsSchema.parse({
     currency: 'EUR',
-    costs: { energyPricePerKwh: 0.5, printerPowerW: 200, hourlyRate: 1 },
+    costs: { energyPricePerKwh: 0.5, printerPowerW: 200 },
 });
 const unpriced = appSettingsSchema.parse({ currency: 'EUR' });
 const day = 86_400_000;
@@ -59,15 +59,15 @@ describe('StatsService.compute', () => {
         ]);
     });
 
-    it('breaks the cost down into energy and machine time', async () => {
+    it('breaks the cost down into filament and energy', async () => {
         current = priced;
         const stats = await new StatsService(db.prisma, settings).compute('p1', 30);
         expect(stats.filamentCost).toBe(0);
         expect(stats.energyCost).toBe(0.15);
-        expect(stats.machineCost).toBe(1.5);
-        expect(stats.totalCost).toBe(1.65);
+        expect(stats.totalCost).toBe(0.15);
+        expect(stats).not.toHaveProperty('machineCost');
         expect(stats.currency).toBe('EUR');
-        expect(stats.printers).toEqual([expect.objectContaining({ printerId: 'p1', name: 'Kobra', cost: 1.65 })]);
+        expect(stats.printers).toEqual([expect.objectContaining({ printerId: 'p1', name: 'Kobra', cost: 0.15 })]);
     });
 
     it('reports zero cost without any pricing', async () => {
@@ -75,7 +75,6 @@ describe('StatsService.compute', () => {
         const stats = await new StatsService(db.prisma, settings).compute('p1', 30);
         expect(stats.totalCost).toBe(0);
         expect(stats.energyCost).toBe(0);
-        expect(stats.machineCost).toBe(0);
     });
 
     it('filters by printer and by period', async () => {
@@ -101,7 +100,7 @@ describe('StatsService.history', () => {
             'old.gcode',
         ]);
         expect(rows[0].cost).toBeNull();
-        expect(rows[4].cost).toEqual({ filament: 0, energy: 0.1, machine: 1, total: 1.1 });
+        expect(rows[4].cost).toEqual({ filament: 0, energy: 0.1, total: 0.1 });
         expect(rows[4].thumbnail).toBeNull();
     });
 
@@ -122,7 +121,7 @@ describe('StatsService.exportCsv', () => {
         expect(lines).toHaveLength(6);
         expect(lines[0]).toContain('printer');
         expect(lines.some((l) => l.includes('Kobra') && l.includes('spaghetti'))).toBe(true);
-        expect(lines.some((l) => l.includes('bracket.gcode') && l.includes('1.1'))).toBe(true);
+        expect(lines.some((l) => l.includes('bracket.gcode') && l.endsWith(',0,0.1,0.1,EUR'))).toBe(true);
     });
 
     it('covers every printer when none is given', async () => {
@@ -221,21 +220,20 @@ describe('StatsService.compute with printer profiles', () => {
 
     afterAll(() => profiled.close());
 
-    it('prices energy and machine time with the printer power draw and depreciation', async () => {
+    it('prices energy with the printer power draw', async () => {
         current = appSettingsSchema.parse({
             currency: 'EUR',
-            costs: { energyPricePerKwh: 0.5, printerPowerW: 100, hourlyRate: 1 },
+            costs: { energyPricePerKwh: 0.5, printerPowerW: 100 },
         });
         const stats = await new StatsService(profiled.prisma, settings).compute('pp', 30);
         expect(stats.energyCost).toBe(0.4);
-        expect(stats.machineCost).toBe(3);
+        expect(stats.totalCost).toBe(0.4);
     });
 
-    it('prices a printer with only a depreciation even without other costs', async () => {
+    it('ignores the purchase price and lifespan saved by older versions', async () => {
         current = unpriced;
         const stats = await new StatsService(profiled.prisma, settings).compute('pp', 30);
-        expect(stats.machineCost).toBe(1);
-        expect(stats.totalCost).toBe(1);
+        expect(stats.totalCost).toBe(0);
     });
 });
 

@@ -16,7 +16,7 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
 - A setup wizard: admin account, language and currency, FarolPrint's own URL (for notification links), the first
   printer (LAN mode checklist, IP, connection test, model read from the printer), Spoolman (strongly recommended,
   skippable) and connecting OrcaSlicer. A "getting started" checklist afterwards.
-- Printer profile: location, tags, installed nozzle, power draw, purchase price and expected lifespan; build volume
+- Printer profile: location, tags, installed nozzle and power draw; build volume
   from Anycubic's official specifications.
 - Home page with status counters that filter the printer grid; a single printer opens straight on its page.
 
@@ -39,7 +39,8 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
   that would run out is held with a notification.
 - Opt-in light trigger: the light turned on three times within a short window on the printer screen confirms the bed
   is clear.
-- Pages: Queue (queued, awaiting removal, scheduled), Files, History (every printer, filterable by printer),
+- Pages: Queue (queued, awaiting removal, scheduled), Files, History (cards with the preview and the cost breakdown,
+  every printer, filterable by printer),
   Maintenance (all printers).
 
 ## 5. Statistics (done)

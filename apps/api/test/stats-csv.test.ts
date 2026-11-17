@@ -21,7 +21,7 @@ const base: PrintJobDto = {
     note: 'line1\nline2',
     hasSnapshot: true,
     pausedAt: null,
-    cost: { filament: 0.5, energy: 0.1, machine: 2, total: 2.6 },
+    cost: { filament: 0.5, energy: 0.1, total: 0.6 },
 };
 
 describe('jobsToCsv', () => {
@@ -31,13 +31,14 @@ describe('jobsToCsv', () => {
         expect(header.startsWith('started_at,finished_at,printer,file,status')).toBe(true);
         expect(row).toContain('"part, ""v2"".gcode"');
         expect(row).toContain(',Kobra,');
-        expect(row).toContain(',filament_runout,12,Filament runout,"line1\nline2",0.5,0.1,2,2.6,EUR');
+        expect(header.endsWith(',note,cost_filament,cost_energy,cost_total,currency')).toBe(true);
+        expect(row).toContain(',filament_runout,12,Filament runout,"line1\nline2",0.5,0.1,0.6,EUR');
         expect(row).toContain(',1235,');
         expect(tail).toBe('');
     });
 
     it('leaves cost columns empty for unpriced jobs', () => {
         const csv = jobsToCsv([{ ...base, cost: null, errorCode: 0 }], new Map(), 'EUR');
-        expect(csv.split('\r\n')[1]?.endsWith(',,,,,')).toBe(true);
+        expect(csv.split('\r\n')[1]?.endsWith('"line1\nline2",,,,')).toBe(true);
     });
 });

@@ -85,7 +85,6 @@ export function PrinterSettingsForm({
         onError: (e) => toast.error(e.message),
     });
     const appSettings = useQuery(appSettingsQuery).data;
-    const currency = appSettings?.currency ?? 'EUR';
     const haConfigured = Boolean(appSettings?.homeAssistant?.url && appSettings.homeAssistant.token);
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const remove = useMutation({
@@ -146,7 +145,6 @@ export function PrinterSettingsForm({
                                     value={field.state.value as PrinterProfile}
                                     onChange={field.handleChange}
                                     modeId={printer.modeId}
-                                    currency={currency}
                                 />
                             )}
                         </form.Field>

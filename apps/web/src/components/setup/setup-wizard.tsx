@@ -287,7 +287,6 @@ export function initialProfile(printer: PrinterWithLive): PrinterProfile {
 
 function ProfileStep({ onNext, printer }: StepProps & { printer: PrinterWithLive }) {
     const qc = useQueryClient();
-    const currency = useQuery(appSettingsQuery).data?.currency ?? 'EUR';
     const [profile, setProfile] = useState(() => initialProfile(printer));
     const save = useMutation({
         mutationFn: () => api.printers.update(printer.id, { settings: { profile } }),
@@ -300,7 +299,7 @@ function ProfileStep({ onNext, printer }: StepProps & { printer: PrinterWithLive
     return (
         <div>
             <StepHeader title={m.setup_profile_title()} hint={m.setup_profile_hint()} />
-            <ProfileFields value={profile} onChange={setProfile} modeId={printer.modeId} currency={currency} />
+            <ProfileFields value={profile} onChange={setProfile} modeId={printer.modeId} />
             <Footer onNext={() => save.mutate()} onSkip={onNext} disabled={save.isPending} />
         </div>
     );

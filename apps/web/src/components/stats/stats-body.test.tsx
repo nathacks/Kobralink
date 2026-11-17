@@ -49,7 +49,6 @@ const data: StatsDto = {
     totalCost: 1.65,
     filamentCost: 0,
     energyCost: 0.15,
-    machineCost: 1.5,
     unpricedG: 0,
     currency: 'EUR',
     firstJobAt: '2026-10-01T00:00:00.000Z',
@@ -100,7 +99,6 @@ describe('StatsBody', () => {
                 m.stats_cost_breakdown({
                     filament: formatMoney(0, 'EUR'),
                     energy: formatMoney(0.15, 'EUR'),
-                    machine: formatMoney(1.5, 'EUR'),
                 }),
             ),
         ).toBeTruthy();
@@ -119,7 +117,7 @@ describe('StatsBody', () => {
 
     it('hides the cost tile and the failures card when there is nothing to show', async () => {
         await renderWithProviders(
-            <StatsBody data={{ ...data, totalCost: 0, energyCost: 0, machineCost: 0, failures: [] }} days={30} />,
+            <StatsBody data={{ ...data, totalCost: 0, energyCost: 0, failures: [] }} days={30} />,
         );
         expect(screen.queryByText(m.stats_failures())).toBeNull();
         expect(screen.queryByText(formatMoney(0, 'EUR'))).toBeNull();
@@ -127,17 +125,14 @@ describe('StatsBody', () => {
 
     it('tells when all filament is priced and when some is not', async () => {
         await renderWithProviders(
-            <StatsBody data={{ ...data, totalCost: 2, energyCost: 0, machineCost: 0, filamentCost: 2 }} days={30} />,
+            <StatsBody data={{ ...data, totalCost: 2, energyCost: 0, filamentCost: 2 }} days={30} />,
         );
         expect(screen.getByText(m.stats_cost_all_priced())).toBeTruthy();
     });
 
     it('mentions unpriced filament', async () => {
         await renderWithProviders(
-            <StatsBody
-                data={{ ...data, totalCost: 2, energyCost: 0, machineCost: 0, filamentCost: 2, unpricedG: 12 }}
-                days={30}
-            />,
+            <StatsBody data={{ ...data, totalCost: 2, energyCost: 0, filamentCost: 2, unpricedG: 12 }} days={30} />,
         );
         expect(screen.getByText(m.stats_cost_unpriced({ g: 12 }))).toBeTruthy();
     });

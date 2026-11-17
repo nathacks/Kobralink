@@ -5,7 +5,7 @@ import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
 import { SettingsCard, SwitchRow } from './settings-form-card';
 
-type CostField = 'energyPricePerKwh' | 'printerPowerW' | 'hourlyRate';
+type CostField = 'energyPricePerKwh' | 'printerPowerW';
 
 export const COSTS_KEYS = ['costs'] as const satisfies readonly (keyof AppSettings)[];
 
@@ -15,7 +15,6 @@ export function CostsCard({ settings }: { settings: AppSettings }) {
         defaultValues: {
             energyPricePerKwh: settings.costs.energyPricePerKwh,
             printerPowerW: settings.costs.printerPowerW,
-            hourlyRate: settings.costs.hourlyRate,
         },
         onSubmit: ({ value, formApi }) =>
             save
@@ -53,7 +52,6 @@ export function CostsCard({ settings }: { settings: AppSettings }) {
         >
             {num('energyPricePerKwh', m.settings_energy_price(), m.settings_energy_price_hint(), 0.01, 'cost-energy')}
             {num('printerPowerW', m.settings_printer_power(), m.settings_printer_power_hint(), 5, 'cost-power')}
-            {num('hourlyRate', m.settings_hourly_rate(), m.settings_hourly_rate_hint(), 0.1, 'cost-hourly')}
         </SettingsCard>
     );
 }

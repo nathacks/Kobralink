@@ -4,7 +4,7 @@ import {
     filamentWeightG,
     type JobCost,
     jobCost,
-    type MachineCost,
+    type PrinterEnergy,
     type SpoolUsageEntry,
 } from '@farolprint/shared';
 import { jobMaterial } from './job-material';
@@ -19,7 +19,7 @@ export interface PricingContext {
     spools: ReadonlyMap<string, PricedSpool>;
     filamentPricePerKg: number;
     costs: CostSettings;
-    printers?: ReadonlyMap<string, MachineCost>;
+    printers?: ReadonlyMap<string, PrinterEnergy>;
 }
 
 export interface PricedUsage {
@@ -99,12 +99,8 @@ export function hasAnyPricing(ctx: PricingContext): boolean {
     const c = ctx.costs;
     return (
         ctx.filamentPricePerKg > 0 ||
-        c.hourlyRate > 0 ||
-        (c.energyPricePerKwh > 0 && c.printerPowerW > 0) ||
-        [...(ctx.printers?.values() ?? [])].some(
-            (p) =>
-                (p.depreciationPerHour ?? 0) > 0 ||
-                (c.energyPricePerKwh > 0 && ((p.powerW ?? 0) > 0 || Boolean(p.measuresEnergy))),
-        )
+        (c.energyPricePerKwh > 0 &&
+            (c.printerPowerW > 0 ||
+                [...(ctx.printers?.values() ?? [])].some((p) => (p.powerW ?? 0) > 0 || Boolean(p.measuresEnergy))))
     );
 }

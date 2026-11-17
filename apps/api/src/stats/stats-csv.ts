@@ -16,7 +16,6 @@ const COLUMNS = [
     'note',
     'cost_filament',
     'cost_energy',
-    'cost_machine',
     'cost_total',
     'currency',
 ] as const;
@@ -47,7 +46,6 @@ export function jobsToCsv(jobs: PrintJobDto[], printerNames: ReadonlyMap<string,
                 j.note,
                 j.cost?.filament ?? '',
                 j.cost?.energy ?? '',
-                j.cost?.machine ?? '',
                 j.cost?.total ?? '',
                 j.cost ? currency : '',
             ]

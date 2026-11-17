@@ -115,11 +115,10 @@ export function StatsBody({ data, days }: { data: StatsDto; days: number }) {
                         value={money(data.totalCost)}
                         sub={m.stats_cost_avg({ value: money(data.totalCost / Math.max(1, data.totalJobs)) })}
                         extra={
-                            data.energyCost > 0 || data.machineCost > 0
+                            data.energyCost > 0
                                 ? m.stats_cost_breakdown({
                                       filament: money(data.filamentCost),
                                       energy: money(data.energyCost),
-                                      machine: money(data.machineCost),
                                   })
                                 : data.unpricedG > 0
                                   ? m.stats_cost_unpriced({ g: data.unpricedG })
