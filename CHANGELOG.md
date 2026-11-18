@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/riccardoalv/farolprint/compare/v0.19.0...v0.20.0) (2026-11-18)
+
+
+### Features
+
+* **schedule:** pick the time from a 24 h grid grouped by period of the day ([#54](https://github.com/riccardoalv/farolprint/issues/54)) ([fff2f46](https://github.com/riccardoalv/farolprint/commit/fff2f4644b3e7c621e377a3a2d2114309ac79677))
+
 ## [0.19.0](https://github.com/riccardoalv/farolprint/compare/v0.18.0...v0.19.0) (2026-11-18)
 
 
