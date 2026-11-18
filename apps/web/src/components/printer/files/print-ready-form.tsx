@@ -26,13 +26,13 @@ import {
     TriangleAlert,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { DateTimePicker, defaultStart } from '@/components/form/date-time-picker';
 import { SlotForm } from '@/components/printer/ams/slot-form';
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import { PrintPreview3D } from '@/components/printer/files/print-preview-3d';
 import { ObjectPicker } from '@/components/printer/skip/object-picker';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -175,7 +175,7 @@ export function PrintReadyForm({
     const [pending, setPending] = useState(false);
     const [editing, setEditing] = useState<AmsSlot | null>(null);
     const [scheduling, setScheduling] = useState(false);
-    const [startAt, setStartAt] = useState('');
+    const [startAt, setStartAt] = useState<Date | null>(null);
     const [acceptShort, setAcceptShort] = useState(false);
     const [queueChoice, setQueueChoice] = useState('this');
     const spoolOf = useSpoolLookup(printerId);
@@ -488,20 +488,17 @@ export function PrintReadyForm({
                 </div>
             </div>
 
+            {onSchedule && scheduling && startAt && (
+                <div className="md:col-span-2">
+                    <DateTimePicker value={startAt} onChange={setStartAt} label={m.schedule_start_at()} />
+                </div>
+            )}
+
             <DialogFooter className="gap-2 sm:justify-between md:col-span-2">
                 <Button type="button" variant="ghost" className="rounded-full" onClick={close}>
                     {m.upload_ready_later()}
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
-                    {onSchedule && scheduling && (
-                        <Input
-                            type="datetime-local"
-                            aria-label={m.schedule_start_at()}
-                            className="w-52 rounded-full"
-                            value={startAt}
-                            onChange={(e) => setStartAt(e.target.value)}
-                        />
-                    )}
                     {onSchedule && (
                         <Button
                             type="button"
@@ -510,13 +507,14 @@ export function PrintReadyForm({
                             disabled={pending || blocked || shortBlocked || (names.length > 0 && remaining <= 0)}
                             onClick={async () => {
                                 if (!scheduling) {
+                                    setStartAt(defaultStart(new Date()));
                                     setScheduling(true);
                                     return;
                                 }
-                                if (!startAt) return;
+                                if (!startAt || startAt.getTime() <= Date.now()) return;
                                 setPending(true);
                                 try {
-                                    await onSchedule(build(), new Date(startAt).toISOString());
+                                    await onSchedule(build(), startAt.toISOString());
                                     close();
                                 } finally {
                                     setPending(false);

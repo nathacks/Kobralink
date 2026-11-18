@@ -1,5 +1,5 @@
 import type { GcodeFileDto, PrinterLiveState } from '@farolprint/shared';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { formatMoney } from '@/lib/format';
@@ -93,23 +93,37 @@ describe('PrintReadyForm scheduling', () => {
         expect(screen.queryByRole('button', { name: m.schedule_button() })).toBeNull();
     });
 
-    it('asks for a start time, ignores an empty one and schedules with the options', async () => {
+    it('opens the date and time picker at the next full hour and schedules with the options', async () => {
         const onSchedule = vi.fn().mockResolvedValue(undefined);
         await renderWithProviders(
             <PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} onSchedule={onSchedule} />,
         );
-        expect(screen.queryByLabelText(m.schedule_start_at())).toBeNull();
+        expect(screen.queryByRole('group', { name: m.schedule_start_at() })).toBeNull();
         await userEvent.click(screen.getByRole('button', { name: m.schedule_button() }));
-        const input = screen.getByLabelText(m.schedule_start_at());
-        await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
-        expect(onSchedule).not.toHaveBeenCalled();
-        fireEvent.change(input, { target: { value: '2026-11-01T08:00' } });
+        expect(screen.getByRole('group', { name: m.schedule_start_at() })).toBeTruthy();
+        await userEvent.click(screen.getByRole('button', { name: /^Tomorrow, / }));
         await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
         await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
         await waitFor(() => expect(onSchedule).toHaveBeenCalledOnce());
         const [options, startAt] = onSchedule.mock.calls[0];
         expect(options).toMatchObject({ autoLeveling: true, timelapse: false });
-        expect(startAt).toBe(new Date('2026-11-01T08:00').toISOString());
+        const expected = new Date();
+        expected.setDate(expected.getDate() + 1);
+        expected.setHours(8, 0, 0, 0);
+        expect(startAt).toBe(expected.toISOString());
+    });
+
+    it('does not schedule a time in the past', async () => {
+        const onSchedule = vi.fn().mockResolvedValue(undefined);
+        await renderWithProviders(
+            <PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} onSchedule={onSchedule} />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: m.schedule_button() }));
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(Date.now() + 3 * 3_600_000);
+        await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
+        vi.useRealTimers();
+        expect(onSchedule).not.toHaveBeenCalled();
     });
 });
 

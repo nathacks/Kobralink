@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Droplets, Thermometer, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { DateTimePicker, defaultStart } from '@/components/form/date-time-picker';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,7 @@ export function AceControls({
     const presets = settings.data?.aceDryPresets ?? [];
     const schedule = useQuery(dryScheduleQuery(printerId));
     const [scheduling, setScheduling] = useState(false);
-    const [startAt, setStartAt] = useState(() => defaultStart());
+    const [startAt, setStartAt] = useState(() => defaultStart(new Date()));
     const addSchedule = useMutation({
         mutationFn: (input: { targetTemp: number; duration: number; startAt: string }) =>
             api.drySchedule.create(printerId, { ...input, aceId: null }),
@@ -66,7 +67,9 @@ export function AceControls({
         validators: { onSubmit: aceDryFormSchema },
         onSubmit: ({ value }) =>
             scheduling
-                ? addSchedule.mutateAsync({ ...value, startAt: new Date(startAt).toISOString() }).catch(() => undefined)
+                ? startAt.getTime() > Date.now()
+                    ? addSchedule.mutateAsync({ ...value, startAt: startAt.toISOString() }).catch(() => undefined)
+                    : undefined
                 : dry.mutateAsync({ action: 'start', ...value }).catch(() => undefined),
     });
 
@@ -189,14 +192,8 @@ export function AceControls({
                             )}
                         </form.Field>
                         {scheduling && (
-                            <div className="grid gap-1">
-                                <Label className="text-xs text-muted-foreground">{m.ace_schedule_at()}</Label>
-                                <Input
-                                    type="datetime-local"
-                                    className="w-52 rounded-full"
-                                    value={startAt}
-                                    onChange={(e) => setStartAt(e.target.value)}
-                                />
+                            <div className="basis-full">
+                                <DateTimePicker value={startAt} onChange={setStartAt} label={m.ace_schedule_at()} />
                             </div>
                         )}
                         <form.Subscribe selector={(s) => s.isSubmitting}>
@@ -217,7 +214,10 @@ export function AceControls({
                                         className={cn('rounded-full', scheduling && 'bg-secondary text-foreground')}
                                         title={m.ace_schedule()}
                                         aria-label={m.ace_schedule()}
-                                        onClick={() => setScheduling((v) => !v)}
+                                        onClick={() => {
+                                            if (!scheduling) setStartAt(defaultStart(new Date()));
+                                            setScheduling((v) => !v);
+                                        }}
                                     >
                                         {scheduling ? <X /> : <CalendarClock />}
                                     </Button>
@@ -256,11 +256,4 @@ export function AceControls({
             </div>
         </div>
     );
-}
-
-function defaultStart(): string {
-    const d = new Date(Date.now() + 60 * 60_000);
-    d.setSeconds(0, 0);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
