@@ -1,14 +1,19 @@
 import dayjs from 'dayjs';
-import { CalendarClock, Zap } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarClock, type LucideIcon, MoonStar, Sun, Sunrise, Sunset, Zap } from 'lucide-react';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 const DAYS = 14;
 const MINUTE_STEP = 5;
-const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const MINUTES = Array.from({ length: 60 / MINUTE_STEP }, (_, i) => i * MINUTE_STEP);
+
+const PERIODS: { from: number; icon: LucideIcon; label: () => string }[] = [
+    { from: 0, icon: MoonStar, label: () => m.schedule_period_night() },
+    { from: 6, icon: Sunrise, label: () => m.schedule_period_morning() },
+    { from: 12, icon: Sun, label: () => m.schedule_period_afternoon() },
+    { from: 18, icon: Sunset, label: () => m.schedule_period_evening() },
+];
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -23,12 +28,14 @@ export function defaultStart(now: Date): Date {
 
 function Chip({
     active,
+    disabled,
     onClick,
     children,
     className,
     label,
 }: {
     active?: boolean;
+    disabled?: boolean;
     onClick: () => void;
     children: React.ReactNode;
     className?: string;
@@ -39,11 +46,12 @@ function Chip({
             type="button"
             aria-pressed={active}
             aria-label={label}
+            disabled={disabled}
             onClick={onClick}
             className={cn(
-                'shrink-0 rounded-2xl px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'shrink-0 rounded-2xl px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35',
                 active
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-background/70 text-foreground hover:bg-accent hover:text-accent-foreground',
                 className,
             )}
@@ -65,14 +73,19 @@ export function DateTimePicker({
     now?: Date;
 }) {
     const current = dayjs(value);
-    const today = dayjs(now).startOf('day');
+    const moment = dayjs(now);
+    const today = moment.startOf('day');
     const days = Array.from({ length: DAYS }, (_, i) => today.add(i, 'day'));
     const setDay = (day: dayjs.Dayjs) =>
         onChange(day.hour(current.hour()).minute(current.minute()).second(0).millisecond(0).toDate());
-    const setTime = (hour: number, minute: number) => onChange(current.hour(hour).minute(minute).second(0).toDate());
+    const setHour = (hour: number) => {
+        const next = current.hour(hour).second(0).millisecond(0);
+        onChange((next.isAfter(moment) ? next : roundUp(moment.add(1, 'minute'))).toDate());
+    };
+    const setMinute = (minute: number) => onChange(current.minute(minute).second(0).millisecond(0).toDate());
     const presets = [
-        { label: m.schedule_in_hours({ n: 1 }), at: roundUp(dayjs(now).add(1, 'hour')) },
-        { label: m.schedule_in_hours({ n: 3 }), at: roundUp(dayjs(now).add(3, 'hour')) },
+        { label: m.schedule_in_hours({ n: 1 }), at: roundUp(moment.add(1, 'hour')) },
+        { label: m.schedule_in_hours({ n: 3 }), at: roundUp(moment.add(3, 'hour')) },
         {
             label: m.schedule_tomorrow_at({ time: today.add(1, 'day').hour(8).format('LT') }),
             at: today.add(1, 'day').hour(8),
@@ -80,10 +93,15 @@ export function DateTimePicker({
     ];
     const inSec = (value.getTime() - now.getTime()) / 1000;
     const past = inSec <= 0;
-    const minute = MINUTES.includes(current.minute()) ? current.minute() : null;
+    const isToday = current.isSame(moment, 'day');
+    const hourPast = (h: number) => isToday && h < moment.hour();
+    const minutePast = (n: number) => isToday && !current.minute(n).isAfter(moment);
 
     return (
-        <fieldset aria-label={label} className="m-0 grid min-w-0 gap-3 rounded-3xl border-0 bg-secondary/60 p-3">
+        <fieldset
+            aria-label={label}
+            className="@container m-0 grid min-w-0 gap-4 rounded-3xl border-0 bg-secondary/60 p-3"
+        >
             <div className="flex flex-wrap gap-2">
                 {presets.map((p) => (
                     <Chip key={p.label} onClick={() => onChange(p.at.toDate())} active={p.at.isSame(current, 'minute')}>
@@ -120,37 +138,68 @@ export function DateTimePicker({
                     );
                 })}
             </fieldset>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5">
-                    <Select value={String(current.hour())} onValueChange={(v) => setTime(Number(v), current.minute())}>
-                        <SelectTrigger aria-label={m.schedule_hour()} className="w-20 rounded-full tabular-nums">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-64 rounded-2xl">
-                            {HOURS.map((h) => (
-                                <SelectItem key={h} value={String(h)} className="rounded-xl tabular-nums">
-                                    {pad(h)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <span className="text-lg font-semibold text-muted-foreground">:</span>
-                    <Select
-                        value={minute === null ? undefined : String(minute)}
-                        onValueChange={(v) => setTime(current.hour(), Number(v))}
-                    >
-                        <SelectTrigger aria-label={m.schedule_minute()} className="w-20 rounded-full tabular-nums">
-                            <SelectValue placeholder={pad(current.minute())} />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-64 rounded-2xl">
-                            {MINUTES.map((n) => (
-                                <SelectItem key={n} value={String(n)} className="rounded-xl tabular-nums">
-                                    {pad(n)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+            <div className="grid min-w-0 gap-4 @2xl:grid-cols-[minmax(0,1fr)_13rem]">
+                <fieldset aria-label={m.schedule_hour()} className="m-0 grid min-w-0 gap-2 border-0 p-0">
+                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        {m.schedule_hour()}
+                    </span>
+                    {PERIODS.map(({ from, icon: Icon, label: period }) => (
+                        <div
+                            key={from}
+                            className="grid min-w-0 gap-1.5 @md:grid-cols-[6.5rem_minmax(0,1fr)] @md:items-center"
+                        >
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Icon className="size-3.5 shrink-0" />
+                                {period()}
+                            </span>
+                            <div className="grid grid-cols-6 gap-1.5">
+                                {Array.from({ length: 6 }, (_, i) => from + i).map((h) => (
+                                    <Chip
+                                        key={h}
+                                        active={current.hour() === h}
+                                        disabled={hourPast(h)}
+                                        onClick={() => setHour(h)}
+                                        className="h-9 rounded-xl px-0 py-0 font-medium tabular-nums"
+                                    >
+                                        {pad(h)}
+                                    </Chip>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </fieldset>
+                <fieldset
+                    aria-label={m.schedule_minute()}
+                    className="m-0 grid min-w-0 content-start gap-2 border-0 p-0"
+                >
+                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        {m.schedule_minute()}
+                    </span>
+                    <div className="grid grid-cols-6 gap-1.5 @2xl:grid-cols-3">
+                        {MINUTES.map((n) => (
+                            <Chip
+                                key={n}
+                                active={current.minute() === n}
+                                disabled={minutePast(n)}
+                                onClick={() => setMinute(n)}
+                                className="h-9 rounded-xl px-0 py-0 font-medium tabular-nums"
+                            >
+                                :{pad(n)}
+                            </Chip>
+                        ))}
+                    </div>
+                </fieldset>
+            </div>
+            <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-background/70 px-4 py-3">
+                <span
+                    data-testid="schedule-time"
+                    className={cn(
+                        'text-3xl font-semibold leading-none tabular-nums',
+                        past ? 'text-destructive' : 'text-primary-strong',
+                    )}
+                >
+                    {current.format('HH:mm')}
+                </span>
                 <p
                     role="status"
                     className={cn(
@@ -159,10 +208,10 @@ export function DateTimePicker({
                     )}
                 >
                     <CalendarClock className="size-4 shrink-0" />
-                    <span className="truncate">
+                    <span className="min-w-0">
                         {past
                             ? m.schedule_past()
-                            : `${current.format('dddd L LT')} · ${m.schedule_starts_in({ duration: formatDuration(inSec, { units: 2 }) })}`}
+                            : `${current.format('dddd L')} · ${m.schedule_starts_in({ duration: formatDuration(inSec, { units: 2 }) })}`}
                     </span>
                 </p>
             </div>
