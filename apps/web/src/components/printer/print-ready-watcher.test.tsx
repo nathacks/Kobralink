@@ -4,7 +4,7 @@ import { isValidElement, type ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
-import { openPrintReadyDialog } from './print-ready-watcher';
+import { openPrintReadyDialog, pendingFileReady } from './print-ready-watcher';
 
 const { queueAdd, print, scheduleCreate, clearFileReady, toast } = vi.hoisted(() => ({
     queueAdd: vi.fn(),
@@ -111,5 +111,34 @@ describe('openPrintReadyDialog', () => {
         );
         expect(toast.error).toHaveBeenCalledWith('start time is in the past');
         expect(clearFileReady).not.toHaveBeenCalled();
+    });
+});
+
+describe('pendingFileReady', () => {
+    const printer = (printState: string, fileReady: string, printStartDialog = true) => ({
+        settings: { printStartDialog },
+        live: { printState, fileReady, fileReadyTs: 42 },
+    });
+    const state = (printers: Record<string, ReturnType<typeof printer>>) =>
+        ({ order: Object.keys(printers), printers }) as unknown as Parameters<typeof pendingFileReady>[0];
+
+    it('offers a file sent from the slicer while another print is running', () => {
+        expect(pendingFileReady(state({ p1: printer('printing', 'next.gcode') }))).toEqual({
+            printerId: 'p1',
+            filename: 'next.gcode',
+            ts: 42,
+        });
+        expect(pendingFileReady(state({ p1: printer('paused', 'next.gcode') }))?.filename).toBe('next.gcode');
+    });
+
+    it('offers a file on an idle printer', () => {
+        expect(pendingFileReady(state({ p1: printer('standby', 'part.gcode') }))?.printerId).toBe('p1');
+    });
+
+    it('skips printers without a ready file or with the dialog turned off', () => {
+        expect(pendingFileReady(state({ p1: printer('printing', '') }))).toBeNull();
+        expect(
+            pendingFileReady(state({ p1: printer('standby', 'a.gcode', false), p2: printer('printing', 'b.gcode') })),
+        ).toMatchObject({ printerId: 'p2', filename: 'b.gcode' });
     });
 });

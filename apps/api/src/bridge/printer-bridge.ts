@@ -766,6 +766,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         return out;
     }
 
+    private clearFileReadyOf(filename: string | undefined): void {
+        if (filename && this.s.fileReady === filename) this.s.fileReady = '';
+    }
+
     private resetPrintFields(): void {
         this.suppliesUsageMm = 0;
         this.spoolUsage.clear();
@@ -773,8 +777,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.spoolLastUsage = 0;
         this.spoolBaselineMm = 0;
         this.s.progress = 0;
+        this.clearFileReadyOf(this.s.filename);
         this.s.filename = '';
-        this.s.fileReady = '';
         this.s.printDurationSec = 0;
         this.peakPrintTimeSec = 0;
         this.s.remainTimeSec = 0;
@@ -850,7 +854,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (kobraState) {
             this.applyKobraState(kobraState, 'standby');
             if (TERMINAL_PRINT_STATES.has(kobraState)) {
-                this.s.fileReady = '';
+                this.clearFileReadyOf(project.filename || this.s.filename);
                 this.s.currLayer = 0;
                 this.s.totalLayers = 0;
             }

@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
-import { printersStore } from '@/stores/printers';
+import { type PrintersState, printersStore } from '@/stores/printers';
 
 const DISMISSED_KEY = 'farolprint:print-ready-dismissed';
 
@@ -85,21 +85,21 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
     return true;
 }
 
+export function pendingFileReady(
+    s: Pick<PrintersState, 'order' | 'printers'>,
+): { printerId: string; filename: string; ts: number } | null {
+    for (const id of s.order) {
+        const p = s.printers[id];
+        const live = p?.live;
+        if (!live?.fileReady || !p.settings.printStartDialog) continue;
+        return { printerId: id, filename: live.fileReady, ts: live.fileReadyTs };
+    }
+    return null;
+}
+
 export function PrintReadyWatcher() {
     const qc = useQueryClient();
-    const ready = useSelector(
-        printersStore,
-        (s) => {
-            for (const id of s.order) {
-                const p = s.printers[id];
-                const live = p?.live;
-                if (!live?.fileReady || live.printState !== 'standby' || !p.settings.printStartDialog) continue;
-                return { printerId: id, filename: live.fileReady, ts: live.fileReadyTs };
-            }
-            return null;
-        },
-        { compare: shallow },
-    );
+    const ready = useSelector(printersStore, pendingFileReady, { compare: shallow });
     const dialogOpen = useSelector(confirmationDialogStore, (s) => s.isOpen);
     const opened = useRef<string | null>(null);
 
