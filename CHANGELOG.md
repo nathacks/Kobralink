@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0](https://github.com/riccardoalv/farolprint/compare/v0.18.0...v0.19.0) (2026-11-18)
+
+
+### Features
+
+* **schedule:** replace the native date and time input with a picker ([#52](https://github.com/riccardoalv/farolprint/issues/52)) ([fbbeb3c](https://github.com/riccardoalv/farolprint/commit/fbbeb3c7ccdc83affc1a965c0a15604f5445bb68))
+
+
+### Bug Fixes
+
+* **print:** open the print dialog for a file sent while printing ([#51](https://github.com/riccardoalv/farolprint/issues/51)) ([f1308c4](https://github.com/riccardoalv/farolprint/commit/f1308c42264f302857dbcfd1a5cc794311267a79))
+
 ## [0.18.0](https://github.com/riccardoalv/farolprint/compare/v0.17.0...v0.18.0) (2026-11-17)
 
 
