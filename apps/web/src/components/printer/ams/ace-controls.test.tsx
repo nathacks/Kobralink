@@ -1,5 +1,5 @@
 import type { AceUnit } from '@farolprint/shared';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { m } from '@/lib/i18n';
@@ -42,22 +42,32 @@ async function openSchedule() {
 describe('AceControls scheduled drying', () => {
     it('picks the start with the date and time picker instead of a native input', async () => {
         const { container } = await openSchedule();
-        expect(screen.getByRole('group', { name: m.ace_schedule_at() })).toBeTruthy();
+        expect(screen.getByRole('button', { name: m.ace_schedule_at() })).toBeTruthy();
         expect(container.querySelector('input[type="datetime-local"]')).toBeNull();
     });
 
     it('schedules the drying at the chosen time', async () => {
-        const { submit } = await openSchedule();
-        await userEvent.click(screen.getByRole('button', { name: /^Tomorrow, / }));
-        await userEvent.click(submit);
-        await waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
-        const expected = new Date();
-        expected.setDate(expected.getDate() + 1);
-        expected.setHours(8, 0, 0, 0);
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(2026, 10, 17, 10, 7));
+        try {
+            const { submit } = await openSchedule();
+            await userEvent.click(screen.getByRole('button', { name: m.ace_schedule_at() }));
+            await userEvent.click(
+                document.querySelector(`[data-day="${new Date(2026, 10, 19).toLocaleDateString()}"]`) as HTMLElement,
+            );
+            const hour = screen.getByRole('slider', { name: m.schedule_hour() });
+            for (let i = 0; i < 9; i++) fireEvent.keyDown(hour, { key: 'ArrowUp' });
+            fireEvent.keyDown(hour, { key: 'Enter' });
+            await userEvent.click(screen.getByRole('button', { name: m.common_ok() }));
+            await userEvent.click(submit);
+            await waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+        } finally {
+            vi.useRealTimers();
+        }
         expect(mocks.create).toHaveBeenCalledWith('p1', {
             targetTemp: 45,
             duration: 240,
-            startAt: expected.toISOString(),
+            startAt: new Date(2026, 10, 19, 20, 0).toISOString(),
             aceId: null,
         });
         expect(mocks.dry).not.toHaveBeenCalled();

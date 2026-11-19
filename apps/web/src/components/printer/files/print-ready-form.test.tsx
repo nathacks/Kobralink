@@ -1,5 +1,5 @@
 import type { GcodeFileDto, PrinterLiveState } from '@farolprint/shared';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { formatMoney } from '@/lib/format';
@@ -87,6 +87,8 @@ describe('PrintReadyForm', () => {
     });
 });
 
+const pickDay = (d: Date) => document.querySelector(`[data-day="${d.toLocaleDateString()}"]`) as HTMLElement;
+
 describe('PrintReadyForm scheduling', () => {
     it('offers no schedule button without a handler', async () => {
         await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
@@ -98,19 +100,26 @@ describe('PrintReadyForm scheduling', () => {
         await renderWithProviders(
             <PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} onSchedule={onSchedule} />,
         );
-        expect(screen.queryByRole('group', { name: m.schedule_start_at() })).toBeNull();
-        await userEvent.click(screen.getByRole('button', { name: m.schedule_button() }));
-        expect(screen.getByRole('group', { name: m.schedule_start_at() })).toBeTruthy();
-        await userEvent.click(screen.getByRole('button', { name: /^Tomorrow, / }));
-        await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
-        await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
-        await waitFor(() => expect(onSchedule).toHaveBeenCalledOnce());
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(2026, 10, 17, 10, 7));
+        try {
+            expect(screen.queryByRole('button', { name: m.schedule_start_at() })).toBeNull();
+            await userEvent.click(screen.getByRole('button', { name: m.schedule_button() }));
+            const trigger = screen.getByRole('button', { name: m.schedule_start_at() });
+            expect(trigger.textContent).toContain('11:00');
+            await userEvent.click(trigger);
+            await userEvent.click(pickDay(new Date(2026, 10, 18)));
+            fireEvent.keyDown(screen.getByRole('slider', { name: m.schedule_hour() }), { key: 'Enter' });
+            await userEvent.click(screen.getByRole('button', { name: m.common_ok() }));
+            await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
+            await userEvent.click(screen.getByRole('button', { name: m.schedule_confirm() }));
+            await waitFor(() => expect(onSchedule).toHaveBeenCalledOnce());
+        } finally {
+            vi.useRealTimers();
+        }
         const [options, startAt] = onSchedule.mock.calls[0];
         expect(options).toMatchObject({ autoLeveling: true, timelapse: false });
-        const expected = new Date();
-        expected.setDate(expected.getDate() + 1);
-        expected.setHours(8, 0, 0, 0);
-        expect(startAt).toBe(expected.toISOString());
+        expect(startAt).toBe(new Date(2026, 10, 18, 11, 0).toISOString());
     });
 
     it('does not schedule a time in the past', async () => {

@@ -121,6 +121,11 @@ later and build on these.
   default price per kg; energy is the slicer's estimated time × the printer power draw (its profile, else the default)
   × the price per kWh. It is computed in the browser (`estimateCost` in `packages/shared/src/cost.ts`) and is not
   stored; the history keeps showing only the actual cost.
+- **Dates and times are picked with a calendar and a clock dial.** Scheduling a print or an ACE drying opens a
+  popover with the shadcn `Calendar` (`react-day-picker`, the only date dependency besides dayjs), then an
+  Android-style dial for the hour (outer ring 1 to 12, inner ring 00 and 13 to 23) and the minute, applied with OK.
+  It replaced the native `datetime-local` input and two custom attempts (chips, then a 24 h grid) the maintainer
+  rejected.
 - **History is a grid of cards.** Each print shows the G-code thumbnail, its status, printer, date and duration, the
   failure label when it failed, and the cost broken down into filament, energy (with the measured kWh) and total.
 - **Failures keep their evidence.** A cancelled or errored job records the printer error code and message, the last
