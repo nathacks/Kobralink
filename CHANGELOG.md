@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/riccardoalv/farolprint/compare/v0.20.0...v0.21.0) (2026-11-19)
+
+
+### Features
+
+* **schedule:** pick the date in a calendar and the time on a clock dial ([#56](https://github.com/riccardoalv/farolprint/issues/56)) ([8625043](https://github.com/riccardoalv/farolprint/commit/86250436c916dce2e73674dde186bc64f6045f45))
+
 ## [0.20.0](https://github.com/riccardoalv/farolprint/compare/v0.19.0...v0.20.0) (2026-11-18)
 
 
