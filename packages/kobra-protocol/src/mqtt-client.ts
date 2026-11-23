@@ -2,7 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import mqtt, { type IClientOptions, type MqttClient } from 'mqtt';
 import { KobraProtocolError } from './errors';
-import type { KobraInfoData, KobraMessage, KobraMultiColorBoxData, KobraPrintData, KobraSkipData } from './types';
+import {
+    CAMERA_LIGHT_TYPE,
+    type KobraInfoData,
+    type KobraMessage,
+    type KobraMultiColorBoxData,
+    type KobraPrintData,
+    type KobraSkipData,
+} from './types';
 
 export interface KobraLogger {
     debug(msg: string, ...args: unknown[]): void;
@@ -155,10 +162,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         });
 
         client.on('message', (topic, payload) => this.onMessage(topic, payload));
-        client.on('error', (err) => {
-            this.log.warn(`MQTT error: ${err.message}`);
-            this.emit('error', err);
-        });
+        client.on('error', (err) => this.onClientError(err));
         client.on('close', () => {
             this.failAllPending();
             if (this.client === client) this.client = null;
@@ -170,6 +174,11 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         });
         this.log.info(`MQTT connected to ${this.opts.host}:${this.opts.port ?? 9883}`);
         this.emit('connected');
+    }
+
+    private onClientError(err: Error): void {
+        this.log.warn(`MQTT error: ${err.message}`);
+        if (this.listenerCount('error') > 0) this.emit('error', err);
     }
 
     async disconnect(): Promise<void> {
@@ -338,7 +347,11 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
     }
 
     setLight(on: boolean, brightness = 80) {
-        this.send('light', 'control', { type: 3, status: on ? 1 : 0, brightness });
+        this.send('light', 'control', { type: CAMERA_LIGHT_TYPE, status: on ? 1 : 0, brightness });
+    }
+
+    queryLight() {
+        this.publishWeb('light', 'query');
     }
 
     setPrintSpeedMode(taskid: string, mode: number) {
@@ -424,8 +437,8 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         return this.request<KobraSkipData>('skip', 'start', { objects_skip_parts: names }, 5000);
     }
 
-    listLocalFiles() {
-        this.send('file', 'listLocal', { page_num: 1, page_size: 1000, path: '/' });
+    listLocalFiles(path = '/') {
+        this.send('file', 'listLocal', { page_num: 1, page_size: 1000, path });
     }
 
     deleteLocalFiles(filenames: string[]) {

@@ -94,7 +94,7 @@ export class TimelapseService implements OnModuleInit {
     }
 
     private async begin(bridge: PrinterBridge, jobId: string, filename: string): Promise<void> {
-        if (!bridge.settings.timelapseEnabled) return;
+        if (!bridge.timelapseForJob) return;
         if (this.recordings.has(bridge.id)) return;
         const row = await this.prisma.client.timelapse.create({
             data: { printerId: bridge.id, jobId, filename, status: 'recording' },

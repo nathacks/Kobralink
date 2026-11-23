@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { installCrashGuard } from './common/crash-guard';
 import { loadEnv } from './config/env';
 import { installI18n, localeMiddleware } from './i18n/locale';
 import { BufferedLogger } from './logs/log-buffer';
@@ -12,6 +13,7 @@ import { applyPendingRestore } from './system/restore';
 async function bootstrap() {
     const env = loadEnv();
     const log = new Logger('Kobralink');
+    installCrashGuard(log);
     installI18n();
     applyPendingRestore(env.dataDir, (msg) => log.log(msg));
     await initPrisma();
@@ -45,7 +47,7 @@ async function bootstrap() {
     const runtime = process.versions.bun ? `bun ${process.versions.bun}` : `node ${process.versions.node}`;
     if (env.isDev) {
         log.log(`API: ${env.baseUrl}  (data: ${env.dataDir}, runtime: ${runtime})`);
-        log.log('UI dev (HMR): http://localhost:5173  — do not use :7100 for the front in dev');
+        log.log(`UI dev (HMR): http://localhost:5454  — do not use :${env.port} for the front in dev`);
     } else {
         log.log(`UI + API: ${env.baseUrl}  (data: ${env.dataDir}, runtime: ${runtime})`);
         if (!env.webDir) log.warn('Web build not found — UI served by Vite in dev (bun dev)');

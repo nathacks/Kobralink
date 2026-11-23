@@ -1,5 +1,6 @@
 import { type ChildProcessByStdio, spawn } from 'node:child_process';
 import type { Readable } from 'node:stream';
+import { redactPrinterUrl } from '@kobralink/kobra-protocol';
 import type { Logger } from '@nestjs/common';
 import type { Response } from 'express';
 import { m } from '../i18n/locale';
@@ -22,6 +23,43 @@ export function resolveFfmpeg(): string {
     return 'ffmpeg';
 }
 
+function inputArgs(url: string): string[] {
+    const base = ['-fflags', 'nobuffer', '-flags', 'low_delay', '-timeout', '10000000'];
+    if (url.toLowerCase().startsWith('rtsp://')) {
+        return [...base, '-probesize', '32', '-analyzeduration', '0', '-rtsp_transport', 'tcp'];
+    }
+    return [...base, '-use_wallclock_as_timestamps', '1', '-probesize', '500000', '-analyzeduration', '500000'];
+}
+
+export function cameraFfmpegArgs(url: string): string[] {
+    return [
+        '-loglevel',
+        'warning',
+        ...inputArgs(url),
+        '-i',
+        url,
+        '-vsync',
+        'passthrough',
+        '-f',
+        'image2pipe',
+        '-vcodec',
+        'mjpeg',
+        '-q:v',
+        '2',
+        '-flush_packets',
+        '1',
+        'pipe:1',
+        '-c:v',
+        'copy',
+        '-an',
+        '-f',
+        'mpegts',
+        '-flush_packets',
+        '1',
+        'pipe:3',
+    ];
+}
+
 export class CameraCache {
     private url = '';
     private proc: FfmpegProc | null = null;
@@ -34,6 +72,7 @@ export class CameraCache {
     private lastError = '';
     latestJpeg: Buffer | null = null;
     latestJpegAt = 0;
+    keepAlive = false;
 
     constructor(private readonly log: Logger) {}
 
@@ -171,49 +210,16 @@ export class CameraCache {
     private touch(): void {
         if (this.idleTimer) clearTimeout(this.idleTimer);
         this.idleTimer = setTimeout(() => {
-            if (this.subscribers.size === 0 && this.tsSubscribers.size === 0 && this.proc) {
+            if (!this.keepAlive && this.subscribers.size === 0 && this.tsSubscribers.size === 0 && this.proc) {
                 this.log.log('Camera idle, stopping ffmpeg');
                 this.stop();
             }
         }, IDLE_STOP_MS);
     }
 
-    private inputArgs(url: string): string[] {
-        const base = ['-fflags', 'nobuffer', '-flags', 'low_delay', '-timeout', '10000000'];
-        if (url.toLowerCase().startsWith('rtsp://')) {
-            return [...base, '-probesize', '32', '-analyzeduration', '0', '-rtsp_transport', 'tcp'];
-        }
-        return [...base, '-use_wallclock_as_timestamps', '1', '-probesize', '500000', '-analyzeduration', '500000'];
-    }
-
     private spawnFfmpeg(): void {
         const url = this.url;
-        const args = [
-            '-loglevel',
-            'warning',
-            ...this.inputArgs(url),
-            '-i',
-            url,
-            '-vf',
-            'fps=15,scale=640:-2',
-            '-f',
-            'image2pipe',
-            '-vcodec',
-            'mjpeg',
-            '-q:v',
-            '3',
-            '-flush_packets',
-            '1',
-            'pipe:1',
-            '-c:v',
-            'copy',
-            '-an',
-            '-f',
-            'mpegts',
-            '-flush_packets',
-            '1',
-            'pipe:3',
-        ];
+        const args = cameraFfmpegArgs(url);
         let proc: FfmpegProc;
         try {
             proc = spawn(resolveFfmpeg(), args, { stdio: ['ignore', 'pipe', 'pipe', 'pipe'] }) as FfmpegProc;
@@ -222,7 +228,7 @@ export class CameraCache {
             return;
         }
         this.proc = proc;
-        this.log.log(`ffmpeg started (${url.replace(/\?.*$/, '')})`);
+        this.log.log(`ffmpeg started (${redactPrinterUrl(url.replace(/\?.*$/, ''))})`);
 
         let buf: Buffer = Buffer.alloc(0);
         let stderr = '';
@@ -274,7 +280,8 @@ export class CameraCache {
         for (const s of this.subscribers) s(frame);
     }
 
-    private onExit(code: number | null, detail: string): void {
+    private onExit(code: number | null, raw: string): void {
+        const detail = redactPrinterUrl(raw);
         for (const w of this.waiters) w(null);
         this.waiters.clear();
         this.failCount += 1;
@@ -285,7 +292,8 @@ export class CameraCache {
         this.log.warn(`ffmpeg exited (code ${code}), retrying in ${Math.round(delay / 1000)} s — ${detail}`);
         this.restartTimer = setTimeout(() => {
             this.restartTimer = null;
-            if (this.subscribers.size > 0 || this.tsSubscribers.size > 0 || this.waiters.size > 0) this.spawnFfmpeg();
+            if (this.keepAlive || this.subscribers.size > 0 || this.tsSubscribers.size > 0 || this.waiters.size > 0)
+                this.spawnFfmpeg();
         }, delay);
     }
 }

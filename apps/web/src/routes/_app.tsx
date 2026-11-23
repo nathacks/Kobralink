@@ -1,7 +1,7 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { AppHeader } from '@/components/layout/app-header';
-import { AppRail } from '@/components/layout/app-rail';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 import { PrintReadyWatcher } from '@/components/printer/print-ready-watcher';
 import { SseProvider } from '@/components/providers/sse-provider';
 import { useDesktopNavigation } from '@/hooks/use-desktop-navigation';
@@ -40,15 +40,16 @@ export const Route = createFileRoute('/_app')({
 function AppLayout() {
     const { session } = Route.useRouteContext();
     const pinned = usePinnedPrinter();
+    const navigate = useNavigate();
 
     usePrintersSync();
     useDesktopNavigation();
 
     return (
-        <SseProvider>
+        <SseProvider onOpen={(to) => void navigate({ to })}>
             <PrintReadyWatcher />
             <div className={`flex min-h-svh gap-4 p-4 pt-(--inset-top) ${pinned ? '' : 'pb-24 md:pb-4'}`}>
-                {!pinned && <AppRail />}
+                {!pinned && <AppSidebar user={session.user} />}
                 <div className="flex min-w-0 flex-1 flex-col gap-6">
                     <AppHeader user={session.user} />
                     <main className="min-w-0 flex-1">

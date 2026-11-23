@@ -1,6 +1,6 @@
-import type { PrinterFileDto } from '@kobralink/shared';
+import { PRINTER_FILE_LIST_LIMIT, type PrinterFileDto, printerFilePath } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Eye, HardDrive, ImageOff, Loader2, MoreVertical, Play, RefreshCw, Trash2 } from 'lucide-react';
+import { Box, Check, Eye, HardDrive, ImageOff, Loader2, MoreVertical, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
 import { formatBytes, formatShortDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { printerFilesQuery, printerFileThumbQuery } from '@/lib/queries';
@@ -49,12 +50,14 @@ export function PrinterFilesGrid({
         },
         onError: (e) => toast.error(e.message),
     });
-    const all = files.data ?? [];
-    const filtered = all.filter((f) => f.filename.toLowerCase().includes(search.toLowerCase()));
+    const all = files.data?.files ?? [];
+    const matches = (f: PrinterFileDto) => f.filename.toLowerCase().includes(search.toLowerCase());
+    const filtered = all.filter(matches);
     const list = filtered.slice(0, visible);
+    const testModels = (files.data?.testModels ?? []).filter(matches);
     const print = useMutation({
         mutationFn: (f: PrinterFileDto) =>
-            api.printerFiles.print(printerId, { filename: f.filename, sizeBytes: f.sizeBytes }),
+            api.printerFiles.print(printerId, { filename: printerFilePath(f), sizeBytes: f.sizeBytes }),
         onSuccess: (_, f) => toast.success(m.files_print_started({ name: f.filename })),
         onError: (e) => toast.error(e.message),
     });
@@ -64,6 +67,19 @@ export function PrinterFilesGrid({
         setVisible(PAGE);
     }
     const toggle = (n: string) => setSelected((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
+    const preview = (f: PrinterFileDto) =>
+        openDialog({
+            title: parseFilename(f.filename).name,
+            props: { className: 'rounded-3xl sm:max-w-xl' },
+            content: <PrinterFilePreview printerId={printerId} file={f} />,
+        });
+    const confirmPrint = (f: PrinterFileDto) =>
+        openAlertDialog({
+            title: m.pfiles_print_title({ name: f.filename }),
+            description: m.pfiles_print_hint(),
+            actionLabel: m.common_print(),
+            onAction: () => print.mutateAsync(f),
+        });
     const confirmDelete = (names: string[]) =>
         openAlertDialog({
             title:
@@ -95,6 +111,7 @@ export function PrinterFilesGrid({
                         ? m.pfiles_results({ count: filtered.length, total: all.length })
                         : m.pfiles_count({ count: all.length })}
                 </span>
+                {files.data?.truncated && <span>{m.pfiles_truncated({ count: PRINTER_FILE_LIST_LIMIT })}</span>}
                 <Button
                     size="sm"
                     variant="ghost"
@@ -124,7 +141,7 @@ export function PrinterFilesGrid({
             {list.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{m.pfiles_empty()}</p>
             ) : (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
                     {list.map((f) => (
                         <PrinterFileTile
                             key={f.filename}
@@ -133,22 +150,9 @@ export function PrinterFilesGrid({
                             selected={selected.includes(f.filename)}
                             onToggle={() => toggle(f.filename)}
                             onDelete={() => confirmDelete([f.filename])}
-                            onPreview={() =>
-                                openDialog({
-                                    title: f.filename,
-                                    props: { className: 'rounded-3xl sm:max-w-xl' },
-                                    content: <PrinterFilePreview printerId={printerId} file={f} />,
-                                })
-                            }
+                            onPreview={() => preview(f)}
                             canPrint={canPrint && !print.isPending}
-                            onPrint={() =>
-                                openAlertDialog({
-                                    title: m.pfiles_print_title({ name: f.filename }),
-                                    description: m.pfiles_print_hint(),
-                                    actionLabel: m.common_print(),
-                                    onAction: () => print.mutateAsync(f),
-                                })
-                            }
+                            onPrint={() => confirmPrint(f)}
                         />
                     ))}
                 </div>
@@ -164,6 +168,29 @@ export function PrinterFilesGrid({
                     </Button>
                 </div>
             )}
+            {testModels.length > 0 && (
+                <section aria-labelledby="printer-test-models" className="space-y-3 pt-3">
+                    <div>
+                        <h3 id="printer-test-models" className="text-sm font-medium">
+                            {m.pfiles_test_models()}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">{m.pfiles_test_models_hint()}</p>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
+                        {testModels.map((f) => (
+                            <PrinterFileTile
+                                key={printerFilePath(f)}
+                                printerId={printerId}
+                                file={f}
+                                selected={false}
+                                onPreview={() => preview(f)}
+                                canPrint={canPrint && !print.isPending}
+                                onPrint={() => confirmPrint(f)}
+                            />
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }
@@ -172,17 +199,20 @@ function PrinterFilesLoading() {
     return (
         <div className="space-y-3" aria-busy="true">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="relative flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span className="relative flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary-strong">
                     <HardDrive className="size-3.5" />
-                    <Loader2 className="absolute inset-0 size-full animate-spin text-primary/60" strokeWidth={1.5} />
+                    <Loader2
+                        className="absolute inset-0 size-full animate-spin text-primary-strong/60"
+                        strokeWidth={1.5}
+                    />
                 </span>
                 <span>{m.pfiles_reading()}</span>
             </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
                 {LOADING_TILES.map((delay) => (
                     <div
                         key={delay}
-                        className="flex min-h-44 animate-pulse flex-col rounded-3xl bg-secondary/60 p-4"
+                        className="flex min-h-64 animate-pulse flex-col rounded-3xl bg-secondary/60 p-4"
                         style={{ animationDelay: `${delay}ms` }}
                     >
                         <div className="flex justify-center">
@@ -215,52 +245,66 @@ function PrinterFileTile({
     printerId: string;
     file: PrinterFileDto;
     selected: boolean;
-    onToggle: () => void;
-    onDelete: () => void;
+    onToggle?: () => void;
+    onDelete?: () => void;
     onPreview: () => void;
     canPrint: boolean;
     onPrint: () => void;
 }) {
-    const thumb = useQuery(printerFileThumbQuery(printerId, file.filename));
+    const thumb = useQuery(printerFileThumbQuery(printerId, printerFilePath(file)));
+    const { name, plate } = parseFilename(file.filename);
     return (
-        <div
+        <article
             className={cn(
-                'group relative flex min-h-44 flex-col rounded-3xl bg-secondary p-4 text-secondary-foreground transition-shadow',
+                'group relative flex flex-col overflow-hidden rounded-3xl bg-secondary text-secondary-foreground transition-shadow',
                 selected && 'ring-2 ring-primary',
             )}
         >
-            <div className="flex items-start justify-between gap-2">
+            <div className="relative">
                 <button
                     type="button"
-                    onClick={onToggle}
-                    aria-pressed={selected}
-                    title={selected ? m.pfiles_deselect() : m.pfiles_select()}
-                    className={cn(
-                        'flex size-6 items-center justify-center rounded-full border transition-colors',
-                        selected
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-muted-foreground/40 opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
-                    )}
+                    onClick={onPreview}
+                    aria-label={`${m.files_preview()}: ${name}`}
+                    className="flex aspect-[4/3] w-full items-center justify-center bg-background/40 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                 >
-                    {selected && <Check className="size-3.5" />}
-                </button>
-                <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
                     {thumb.data?.thumbnail ? (
                         <img
                             src={`data:image/png;base64,${thumb.data.thumbnail}`}
                             alt=""
-                            className="size-full object-contain"
+                            className="size-full object-contain p-3"
                         />
+                    ) : thumb.isPending ? (
+                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
                     ) : (
-                        <span className="text-[10px] text-muted-foreground">{thumb.isPending ? '…' : 'GCode'}</span>
+                        <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                            <Box className="size-8 opacity-60" />
+                            {m.files_no_preview()}
+                        </span>
                     )}
-                </div>
+                </button>
+                {onToggle && (
+                    <button
+                        type="button"
+                        onClick={onToggle}
+                        aria-pressed={selected}
+                        aria-label={selected ? m.pfiles_deselect() : m.pfiles_select()}
+                        title={selected ? m.pfiles_deselect() : m.pfiles_select()}
+                        className={cn(
+                            'absolute left-2.5 top-2.5 flex size-7 items-center justify-center rounded-full border backdrop-blur-sm transition-colors',
+                            selected
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-foreground/30 bg-background/60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100',
+                        )}
+                    >
+                        {selected && <Check className="size-4" />}
+                    </button>
+                )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            aria-label="Actions"
-                            className="flex size-8 items-center justify-center rounded-full bg-background/40 text-foreground opacity-0 transition-opacity hover:bg-background/70 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 [&_svg]:size-4"
+                            aria-label={m.files_actions()}
+                            className="absolute right-2.5 top-2.5 flex size-9 items-center justify-center rounded-full bg-background/70 text-foreground backdrop-blur-sm transition-opacity hover:bg-background/90 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 [&_svg]:size-4"
                         >
                             <MoreVertical />
                         </button>
@@ -270,26 +314,35 @@ function PrinterFileTile({
                             <Eye />
                             <span>{m.files_preview()}</span>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={onDelete}
-                            className="rounded-xl cursor-pointer"
-                        >
-                            <Trash2 />
-                            <span>{m.common_delete()}</span>
-                        </DropdownMenuItem>
+                        {onDelete && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={onDelete}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    <Trash2 />
+                                    <span>{m.common_delete()}</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+            <div className="flex flex-1 items-end justify-between gap-2 p-3.5">
                 <div className="min-w-0 space-y-1">
-                    <div className="truncate text-sm font-medium" title={file.filename}>
-                        {file.filename}
-                    </div>
+                    <h3 className="line-clamp-2 text-sm font-medium leading-snug" title={file.filename}>
+                        {name}
+                    </h3>
                     <div className="text-xs text-muted-foreground">
-                        {formatBytes(file.sizeBytes)}
-                        {file.timestamp ? ` · ${formatShortDate(file.timestamp)}` : ''}
+                        {[
+                            plate !== null ? m.files_plate({ n: plate }) : '',
+                            formatBytes(file.sizeBytes),
+                            file.timestamp ? formatShortDate(file.timestamp) : '',
+                        ]
+                            .filter(Boolean)
+                            .join(', ')}
                     </div>
                 </div>
                 <button
@@ -297,17 +350,18 @@ function PrinterFileTile({
                     onClick={onPrint}
                     disabled={!canPrint}
                     title={m.pfiles_print_from_printer()}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+                    aria-label={`${m.pfiles_print_from_printer()}: ${name}`}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
                 >
                     <Play className="size-4" />
                 </button>
             </div>
-        </div>
+        </article>
     );
 }
 
 function PrinterFilePreview({ printerId, file }: { printerId: string; file: PrinterFileDto }) {
-    const thumb = useQuery(printerFileThumbQuery(printerId, file.filename));
+    const thumb = useQuery(printerFileThumbQuery(printerId, printerFilePath(file)));
     return (
         <div className="grid gap-3 py-2">
             <div className="flex aspect-square max-h-[55svh] w-full items-center justify-center overflow-hidden rounded-2xl bg-secondary">

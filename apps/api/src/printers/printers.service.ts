@@ -1,6 +1,7 @@
 import { fetchPrinterCredentials } from '@kobralink/kobra-protocol';
 import {
     type AddPrinterInput,
+    mergePatch,
     type Printer as PrinterDto,
     type PrinterSettings,
     printerSettingsSchema,
@@ -38,6 +39,8 @@ export class PrintersService {
             model: p.model,
             httpPort: p.httpPort,
             settings: PrintersService.parseSettings(p.settings),
+            maintenance: p.maintenance,
+            awaitingBedClear: p.awaitingBedClear,
             createdAt: p.createdAt.toISOString(),
         };
     }
@@ -52,6 +55,7 @@ export class PrintersService {
             password: p.password,
             deviceId: p.deviceId,
             modeId: p.modeId,
+            model: p.model,
             httpPort: p.httpPort,
             settings: PrintersService.parseSettings(p.settings),
         };
@@ -98,7 +102,7 @@ export class PrintersService {
         if (clash) throw new ConflictException(m.api_port_in_use({ port: httpPort, name: clash.name }));
         return this.prisma.client.printer.create({
             data: {
-                name: input.name?.trim() || creds.model || 'Anycubic Kobra X',
+                name: input.name?.trim() || creds.model || 'Anycubic Kobra',
                 ip: creds.printerIp || input.ip,
                 username: creds.username,
                 password: creds.password,
@@ -120,10 +124,7 @@ export class PrintersService {
             if (clash) throw new ConflictException(m.api_port_in_use({ port: input.httpPort, name: clash.name }));
         }
         const settings = input.settings
-            ? printerSettingsSchema.parse({
-                  ...PrintersService.parseSettings(current.settings),
-                  ...input.settings,
-              })
+            ? printerSettingsSchema.parse(mergePatch(PrintersService.parseSettings(current.settings), input.settings))
             : undefined;
         return this.prisma.client.printer.update({
             where: { id },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { appSettingsSchema, updateAppSettingsSchema } from '../src/settings';
+import { aceDryPresetSchema, appSettingsSchema, DEFAULT_DRY_PRESETS, updateAppSettingsSchema } from '../src/settings';
 
 describe('updateAppSettingsSchema', () => {
     it('keeps only the keys present in the body', () => {
@@ -32,5 +32,55 @@ describe('updateAppSettingsSchema', () => {
         expect(next.currency).toBe('BRL');
         expect(next.spoolmanUrl).toBe('http://spoolman:8000');
         expect(next.failureDetection.enabled).toBe(true);
+    });
+});
+
+describe('failureDetection.light', () => {
+    it('turns the camera light on during detection by default, settings saved before it included', () => {
+        expect(appSettingsSchema.parse({}).failureDetection.light).toBe(true);
+        const saved = appSettingsSchema.parse({ failureDetection: { enabled: true, action: 'pause' } });
+        expect(saved.failureDetection).toMatchObject({ enabled: true, action: 'pause', light: true });
+    });
+
+    it('keeps the light off when the user turned it off', () => {
+        expect(appSettingsSchema.parse({ failureDetection: { light: false } }).failureDetection.light).toBe(false);
+    });
+});
+
+describe('publicUrl', () => {
+    it('is empty until the address of Kobralink is set', () => {
+        expect(appSettingsSchema.parse({}).publicUrl).toBe('');
+    });
+
+    it('accepts a URL and rejects anything else', () => {
+        expect(appSettingsSchema.parse({ publicUrl: 'http://kobralink.local:7100' }).publicUrl).toBe(
+            'http://kobralink.local:7100',
+        );
+        expect(appSettingsSchema.safeParse({ publicUrl: 'kobralink.local' }).success).toBe(false);
+        expect(updateAppSettingsSchema.parse({ publicUrl: '' })).toEqual({ publicUrl: '' });
+    });
+});
+
+describe('DEFAULT_DRY_PRESETS', () => {
+    it('are the presets of the official Anycubic drying dialog', () => {
+        expect(DEFAULT_DRY_PRESETS).toEqual([
+            { name: 'PLA', targetTemp: 45, duration: 240 },
+            { name: 'PLA+', targetTemp: 45, duration: 240 },
+            { name: 'PETG', targetTemp: 50, duration: 240 },
+            { name: 'TPU', targetTemp: 55, duration: 240 },
+            { name: 'ABS / ASA', targetTemp: 55, duration: 480 },
+            { name: 'PA / PC', targetTemp: 55, duration: 720 },
+        ]);
+    });
+
+    it('never ask an ACE for more than 55 °C and stay valid presets', () => {
+        for (const preset of DEFAULT_DRY_PRESETS) {
+            expect(preset.targetTemp).toBeLessThanOrEqual(55);
+            expect(aceDryPresetSchema.safeParse(preset).success).toBe(true);
+        }
+    });
+
+    it('are what a fresh install starts with', () => {
+        expect(appSettingsSchema.parse({}).aceDryPresets).toEqual(DEFAULT_DRY_PRESETS);
     });
 });

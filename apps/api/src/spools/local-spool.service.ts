@@ -3,7 +3,9 @@ import {
     type LocalSpoolDto,
     type LocalSpoolInput,
     localSpoolSchema,
+    materialDensity,
     type UpdateLocalSpoolInput,
+    updateLocalSpoolSchema,
 } from '@kobralink/shared';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import type { FilamentUsageSink } from '../bridge/printer-bridge';
@@ -11,6 +13,7 @@ import type { LocalSpool } from '../generated/prisma/client';
 import { NotificationService } from '../notifications/notification.service';
 import { PrintersService } from '../printers/printers.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
@@ -24,6 +27,7 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
         private readonly prisma: PrismaService,
         private readonly printers: PrintersService,
         private readonly notifications: NotificationService,
+        private readonly settings: SettingsService,
     ) {}
 
     async onModuleInit(): Promise<void> {
@@ -40,8 +44,12 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
         return m;
     }
 
+    get active(): boolean {
+        return !this.settings.get().spoolmanUrl;
+    }
+
     slotMap(printerId: string): ReadonlyMap<number, string> {
-        return this.printerMap(printerId);
+        return this.active ? this.printerMap(printerId) : new Map();
     }
 
     async list(includeArchived = false): Promise<LocalSpoolDto[]> {
@@ -60,13 +68,18 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
 
     async create(input: LocalSpoolInput): Promise<LocalSpoolDto> {
         const data = localSpoolSchema.parse(input);
-        const row = await this.prisma.client.localSpool.create({ data });
+        const row = await this.prisma.client.localSpool.create({
+            data: { ...data, densityGcm3: materialDensity(data.material) },
+        });
         return toDto(row);
     }
 
     async update(id: string, input: UpdateLocalSpoolInput): Promise<LocalSpoolDto> {
-        const data = localSpoolSchema.partial().parse(input);
-        const row = await this.prisma.client.localSpool.update({ where: { id }, data }).catch(() => null);
+        const data = updateLocalSpoolSchema.parse(input);
+        const density = data.material ? { densityGcm3: materialDensity(data.material) } : {};
+        const row = await this.prisma.client.localSpool
+            .update({ where: { id }, data: { ...data, ...density } })
+            .catch(() => null);
         if (!row) throw new NotFoundException();
         this.lowAlerted.delete(id);
         return toDto(row);
@@ -150,14 +163,10 @@ export function toDto(r: LocalSpool): LocalSpoolDto {
         vendor: r.vendor,
         material: r.material,
         colorHex: r.colorHex,
-        diameterMm: r.diameterMm,
-        densityGcm3: r.densityGcm3,
         initialWeightG: r.initialWeightG,
-        price: r.price,
         usedMm: r.usedMm,
         usedG: Math.round(usedG * 10) / 10,
         remainingG: Math.round(remainingG * 10) / 10,
-        remainingValue: r.initialWeightG > 0 ? Math.round((remainingG / r.initialWeightG) * r.price * 100) / 100 : 0,
         archived: r.archived,
         createdAt: r.createdAt.toISOString(),
         lastUsedAt: r.lastUsedAt?.toISOString() ?? null,

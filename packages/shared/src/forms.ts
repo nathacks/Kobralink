@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { addPrinterSchema, alertSettingsSchema, ipv4, printerSettingsSchema } from './printer';
+import { addPrinterSchema, alertSettingsSchema, ipv4, printerProfileSchema, printerSettingsSchema } from './printer';
 
 export const loginFormSchema = z.object({
     name: z.string().trim().max(64),
@@ -26,6 +26,7 @@ export const printerSettingsFormSchema = z.object({
         powerOffUrl: optionalUrl,
         powerStatusUrl: optionalUrl,
         alerts: alertSettingsSchema.required(),
+        profile: printerProfileSchema.required(),
     }),
 });
 export type PrinterSettingsFormValues = z.infer<typeof printerSettingsFormSchema>;

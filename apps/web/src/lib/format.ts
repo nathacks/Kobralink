@@ -6,7 +6,7 @@ import { intlLocale, m } from '@/lib/i18n';
 dayjs.extend(duration);
 dayjs.extend(localizedFormat);
 
-export function formatDuration(sec: number, options: { zero?: boolean } = {}): string {
+export function formatDuration(sec: number, options: { zero?: boolean; units?: number } = {}): string {
     if (!Number.isFinite(sec) || sec < 0 || (!sec && !options.zero)) return '—';
     const d = dayjs.duration(Math.round(sec), 'seconds');
     const units: [number, (a: { n: string | number }) => string][] = [
@@ -16,7 +16,7 @@ export function formatDuration(sec: number, options: { zero?: boolean } = {}): s
         [d.seconds(), m.duration_seconds],
     ];
     const first = units.findIndex(([n]) => n > 0);
-    const shown = first < 0 ? units.slice(-1) : units.slice(first, first + 3);
+    const shown = first < 0 ? units.slice(-1) : units.slice(first, first + (options.units ?? 3));
     return shown.map(([n, msg], i) => msg({ n: i ? String(n).padStart(2, '0') : n })).join(' ');
 }
 
@@ -40,6 +40,10 @@ export function formatShortDate(value: string | number | Date): string {
 
 export function formatTime(value: string | number | Date): string {
     return dayjs(value).format('LTS');
+}
+
+export function formatClock(value: string | number | Date): string {
+    return dayjs(value).format('LT');
 }
 
 export function greeting(now = new Date()): string {

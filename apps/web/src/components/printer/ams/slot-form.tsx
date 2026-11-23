@@ -2,6 +2,7 @@ import {
     AMS_MATERIALS,
     type AmsSlot,
     type AmsSlotFormValues,
+    aceSlotStatus,
     amsSlotFormSchema,
     materialFamily,
     type SlotFilamentInfo,
@@ -19,8 +20,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
-import { hexToRgb, rgbToHex } from '@/lib/color';
+import { hexToRgb, rgbCss, rgbToHex } from '@/lib/color';
 import { m } from '@/lib/i18n';
+import { ACE_SLOT_SOURCE_LABEL, ACE_SLOT_STATUS_LABEL } from '@/lib/labels';
 import {
     filamentProfilesQuery,
     filamentSlotsQuery,
@@ -92,7 +94,7 @@ function SlotFormInner({
                 else delete map[String(slot.globalIndex)];
                 tasks.push(api.spoolman.setSlots(printerId, map));
             }
-            if (v.localSpoolId !== currentLocal) {
+            if (!spoolmanOn && v.localSpoolId !== currentLocal) {
                 tasks.push(api.spools.assign(printerId, { [String(slot.globalIndex)]: v.localSpoolId || null }));
             }
             await Promise.all(tasks);
@@ -142,6 +144,7 @@ function SlotFormInner({
             }}
         >
             <div className="grid gap-4 py-4">
+                <SlotDetails slot={slot} />
                 <form.Field name="type">
                     {(field) => {
                         const custom = !isKnown(field.state.value);
@@ -294,7 +297,7 @@ function SlotFormInner({
                         )}
                     </form.Field>
                 )}
-                {(localSpools.data?.length ?? 0) > 0 && (
+                {!spoolmanOn && (localSpools.data?.length ?? 0) > 0 && (
                     <form.Field name="localSpoolId">
                         {(field) => (
                             <div className="grid gap-2">
@@ -368,4 +371,32 @@ function SlotFormInner({
 
 function profileKey(p: { vendor: string; name: string }): string {
     return `${p.vendor}|||${p.name}`;
+}
+
+export function SlotDetails({ slot }: { slot: AmsSlot }) {
+    const status = aceSlotStatus(slot.status);
+    const statusLabel = slot.boxId >= 0 && status ? ACE_SLOT_STATUS_LABEL[status]?.() : undefined;
+    const chips = [
+        slot.source ? ACE_SLOT_SOURCE_LABEL[slot.source]() : '',
+        slot.remainingPct !== undefined ? m.ace_slot_remaining({ pct: slot.remainingPct }) : '',
+        statusLabel ?? '',
+    ].filter(Boolean);
+    if (chips.length === 0 && !slot.colors) return null;
+    return (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {chips.map((chip) => (
+                <span key={chip} className="rounded-full bg-secondary px-3 py-1">
+                    {chip}
+                </span>
+            ))}
+            {slot.colors && (
+                <span
+                    role="img"
+                    aria-label={m.ace_slot_colors({ count: slot.colors.length })}
+                    className="h-5 w-16 rounded-full border border-border"
+                    style={{ background: `linear-gradient(90deg, ${slot.colors.map(rgbCss).join(', ')})` }}
+                />
+            )}
+        </div>
+    );
 }

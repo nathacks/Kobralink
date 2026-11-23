@@ -33,6 +33,7 @@ export class SystemService {
             platform: `${process.platform} ${process.arch}`,
             dataDir: this.env.dataDir,
             uptimeSec: Math.round((Date.now() - startedAt) / 1000),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             packaged: packaged(),
             lanIps: lanIps(),
             update: this.settings.get().updateCheck ? await this.checkUpdate() : null,

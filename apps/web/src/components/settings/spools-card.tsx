@@ -1,4 +1,4 @@
-import { AMS_MATERIALS, DEFAULT_DENSITY, type LocalSpoolDto, localSpoolSchema } from '@kobralink/shared';
+import { AMS_MATERIALS, type LocalSpoolDto, localSpoolSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -11,9 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
-import { formatDate, formatMoney } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { appSettingsQuery, spoolsQuery } from '@/lib/queries';
+import { spoolsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -23,8 +23,6 @@ export function SpoolsCard() {
     const qc = useQueryClient();
     const [archived, setArchived] = useState(false);
     const spools = useQuery(spoolsQuery(archived));
-    const settings = useQuery(appSettingsQuery);
-    const currency = settings.data?.currency ?? 'EUR';
     const invalidate = () => qc.invalidateQueries({ queryKey: ['spools'] });
     const onError = (e: Error) => toast.error(e.message);
     const update = useMutation({
@@ -96,9 +94,6 @@ export function SpoolsCard() {
                                             total: Math.round(s.initialWeightG),
                                             meters: (s.usedMm / 1000).toFixed(1),
                                         })}
-                                        {s.price > 0
-                                            ? ` · ${m.spools_value({ value: formatMoney(s.remainingValue, currency) })}`
-                                            : ''}
                                         {s.lastUsedAt
                                             ? ` · ${m.spools_last_used({ date: formatDate(s.lastUsedAt) })}`
                                             : ''}
@@ -172,22 +167,14 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
             vendor: spool?.vendor ?? '',
             material: spool?.material ?? 'PLA',
             colorHex: spool?.colorHex ?? '#808080',
-            diameterMm: spool?.diameterMm ?? 1.75,
-            densityGcm3: spool?.densityGcm3 ?? 1.24,
             initialWeightG: spool?.initialWeightG ?? 1000,
-            price: spool?.price ?? 0,
             usedMm: spool?.usedMm ?? 0,
             archived: spool?.archived ?? false,
         },
         validators: { onSubmit: localSpoolSchema.required() },
         onSubmit: ({ value }) => save.mutateAsync(localSpoolSchema.parse(value)).catch(() => undefined),
     });
-    const num = (
-        name: 'diameterMm' | 'densityGcm3' | 'initialWeightG' | 'usedMm' | 'price',
-        label: string,
-        step: number,
-        hint?: string,
-    ) => (
+    const num = (name: 'initialWeightG' | 'usedMm', label: string, step: number, hint?: string) => (
         <form.Field name={name}>
             {(field) => (
                 <div className="grid gap-2">
@@ -250,14 +237,7 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
                     {(field) => (
                         <div className="grid gap-2">
                             <Label htmlFor="spool-material">{m.slot_material()}</Label>
-                            <Select
-                                value={field.state.value}
-                                onValueChange={(v) => {
-                                    field.handleChange(v);
-                                    const d = DEFAULT_DENSITY[v.split('-')[0]];
-                                    if (d) form.setFieldValue('densityGcm3', d);
-                                }}
-                            >
+                            <Select value={field.state.value} onValueChange={field.handleChange}>
                                 <SelectTrigger id="spool-material" className="rounded-full">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -296,10 +276,7 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
                     )}
                 </form.Field>
                 {num('initialWeightG', m.spools_initial_weight(), 50)}
-                {num('price', m.spools_price(), 0.5, m.spools_price_hint())}
                 {num('usedMm', m.spools_used_mm(), 100)}
-                {num('diameterMm', m.spools_diameter(), 0.05)}
-                {num('densityGcm3', m.spools_density(), 0.01)}
             </div>
             <DialogFooter>
                 <form.Subscribe selector={(s) => s.isSubmitting}>

@@ -141,7 +141,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 await bridge.cancel();
                 return 'ok';
             case 'machine.system_info':
-                return { system_info: { cpu_info: { cpu_desc: 'Kobra X Bridge' } } };
+                return { system_info: { cpu_info: { cpu_desc: `${bridge.modelName} Bridge` } } };
             case 'server.files.list':
                 return [];
             case 'printer.gcode.script':
@@ -165,7 +165,7 @@ export class MoonrakerGateway implements OnGatewayInit, OnGatewayConnection, OnG
                 if (params.all) await this.moon.queue.clear(bridge.id);
                 else
                     for (const id of (params.job_ids as string[] | undefined) ?? [])
-                        await this.moon.queue.remove(bridge.id, String(id));
+                        await this.moon.queue.remove(String(id));
                 return this.moon.jobQueueStatus();
             }
             case 'server.job_queue.start':

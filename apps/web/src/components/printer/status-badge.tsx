@@ -1,9 +1,10 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import { isCalibrating, type PrinterLiveState } from '@kobralink/shared';
+import { m } from '@/lib/i18n';
 import { kobraStateLabel } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function StatusBadge({ state, className }: { state: PrinterLiveState; className?: string }) {
-    const label = kobraStateLabel(state.kobraState);
+    const label = isCalibrating(state) ? m.state_calibrating() : kobraStateLabel(state.kobraState);
     const dot = !state.connected
         ? 'bg-muted-foreground/60'
         : state.printState === 'error'

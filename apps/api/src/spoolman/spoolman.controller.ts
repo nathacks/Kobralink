@@ -24,7 +24,8 @@ export class SpoolmanController {
 
     @Get('spoolman/health')
     async health() {
-        return { reachable: await this.spoolman.checkHealth(true), configured: this.spoolman.configured };
+        const reachable = await this.spoolman.checkHealth(true);
+        return { reachable, configured: this.spoolman.configured, pending: await this.spoolman.pendingCount() };
     }
 
     @Get('printers/:id/spoolman')

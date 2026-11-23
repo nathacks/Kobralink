@@ -1,0 +1,15 @@
+{
+    "$schema": "https://turborepo.dev/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build", "@kobralink/i18n#build"]
+        },
+        "check-types": {
+            "dependsOn": ["^build", "@kobralink/i18n#check-types"]
+        },
+        "test": {
+            "dependsOn": ["^build", "@kobralink/i18n#build"]
+        }
+    }
+}

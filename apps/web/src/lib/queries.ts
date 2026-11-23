@@ -118,7 +118,29 @@ export const statsQuery = (printerId: string | undefined, days: number) =>
 export const queueQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'queue'], queryFn: () => api.queue.list(id) });
 
+export const allQueueQuery = queryOptions({ queryKey: ['queue'], queryFn: api.queue.all, refetchInterval: 15_000 });
+
+export const allFilesQuery = queryOptions({ queryKey: ['files'], queryFn: api.files.all });
+
+export const allHistoryQuery = (printerId?: string) =>
+    queryOptions({ queryKey: ['history', printerId ?? ''], queryFn: () => api.files.historyAll(printerId) });
+
+export const queueStatusQuery = (id: string) =>
+    queryOptions({
+        queryKey: ['printers', id, 'queue-status'],
+        queryFn: () => api.queue.status(id),
+        refetchInterval: 15_000,
+    });
+
+export const scheduleQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'schedule'], queryFn: () => api.schedule.list(id) });
+
+export const maintenanceQuery = (id: string) =>
+    queryOptions({ queryKey: ['printers', id, 'maintenance'], queryFn: () => api.maintenance.list(id) });
+
 export const macrosQuery = queryOptions({ queryKey: ['macros'], queryFn: api.macros.list });
+
+export const automationsQuery = queryOptions({ queryKey: ['automations'], queryFn: api.automations.list });
 
 export const dryScheduleQuery = (id: string) =>
     queryOptions({ queryKey: ['printers', id, 'dry-schedule'], queryFn: () => api.drySchedule.list(id) });
@@ -144,3 +166,17 @@ export const printerDetectionQuery = (id: string, enabled: boolean) =>
         enabled,
         refetchInterval: 5000,
     });
+
+export const haEnergySensorsQuery = queryOptions({
+    queryKey: ['home-assistant', 'energy-sensors'],
+    queryFn: api.homeAssistant.energySensors,
+    staleTime: 30_000,
+    retry: false,
+});
+
+export const haSwitchesQuery = queryOptions({
+    queryKey: ['home-assistant', 'switches'],
+    queryFn: api.homeAssistant.switches,
+    staleTime: 30_000,
+    retry: false,
+});

@@ -12,7 +12,7 @@ import { backupInfoQuery, systemInfoQuery } from '@/lib/queries';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { SettingsCard, SwitchRow } from './settings-form-card';
 
-const GITHUB_URL = 'https://github.com/NatHacks/Kobralink';
+const GITHUB_URL = 'https://github.com/nathacks/Kobralink';
 
 export function SystemCard() {
     const qc = useQueryClient();
@@ -55,6 +55,7 @@ export function SystemCard() {
                         <Row k={m.system_runtime()} v={`${d.runtime} · ${d.platform}`} />
                         <Row k={m.system_mode()} v={d.packaged} />
                         <Row k={m.system_uptime()} v={formatDuration(d.uptimeSec, { zero: true })} />
+                        <Row k={m.system_time_zone()} v={d.timeZone} />
                         <Row k={m.system_data_dir()} v={d.dataDir} mono />
                     </dl>
                 )}

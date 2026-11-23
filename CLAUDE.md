@@ -16,9 +16,9 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   `bun run --filter @kobralink/api bundle` produit `apps/api/bundle` (esbuild → `dist/server/main.js`, `@libsql/client`/`express`/`qs` externes installés dans `bundle/node_modules`, certs + migrations copiés) pour Electron.
 - `apps/web` — Vite + React 19, TanStack Router **file-based** (`src/routes`, `routeTree.gen.ts`
   gitignoré), TanStack Query, TanStack Store (`src/stores`), Tailwind v4, shadcn (`src/components/ui`, exclu de biome). Thème
-  dark uniquement (`class="dark"` fixé sur `<html>` dans `index.html`, pas de toggle).
+  dark par défaut, sélecteur système/clair/sombre (`src/stores/theme.ts`).
   Primary = emerald shadcn, radius 1.5rem, police Outfit.
-  Design : rail d'icônes à gauche, cartes très arrondies, carte d'impression en accent quand ça imprime.
+  Design : sidebar à gauche repliable en rail d'icônes (barre en bas sur mobile), cartes très arrondies, carte d'impression en accent quand ça imprime.
   `bun run --filter @kobralink/web generate` = `tsr generate` + compilation Paraglide (`src/paraglide`, gitignoré) ; lancé par `check-types`.
 - `apps/desktop` — electron-vite. En dev lance `apps/api/dist/main.js` ; packagé (`dist:mac`) embarque
   `apps/api/bundle` → `Resources/api` et `apps/web/dist` → `Resources/web` via `extraResources`. Mode local uniquement (pas de bridge distant).
@@ -27,7 +27,7 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
 - `packages/shared` — schémas Zod + types partagés API ↔ web (`control.ts`, `state.ts`, `macros.ts`, `sse.ts`…). Tout body
   d'endpoint `/api/v1` a son schéma ici, validé côté API par `ZodPipe`, typé côté web dans `src/lib/api.ts`.
 - `packages/kobra-protocol` — client MQTT Kobra X (`mqtt-client.ts`), types des payloads, parsing GCode, upload.
-- `packages/i18n` — projet inlang/Paraglide, `messages/{fr,en,de,es,it,zh-cn}.json` (base `fr`). Liste des locales dupliquée dans
+- `packages/i18n` — projet inlang/Paraglide, `messages/{fr,en,de,es,it,zh-cn,pt-br}.json` (base `fr`). Liste des locales dupliquée dans
   `APP_LOCALES` (`packages/shared/src/settings.ts`) ; ajouter une langue = skill `/add-locale`. Le package compile ses
   propres runtime + messages pour l'API ; le web recompile les mêmes messages dans `apps/web/src/paraglide`.
 - Les trois packages : tsdown, sortie ESM + CJS. `build` des packages requis avant `dev`/`check-types`/`test` des apps (turbo `^build`).
@@ -47,21 +47,23 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   (PAUSE/RESUME/CANCEL, M104/M140, SET_HEATER_TEMPERATURE, nom de macro Kobralink) ; tout le reste renvoie `ok` sans effet.
 - L'API principale (:7100) : `/api/auth/*` (Better Auth), `/api/v1/*` (protégé), sert `apps/web/dist`.
   Un module Nest par domaine (`printers`, `core` = contrôle, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
-  `detection`, `notifications`, `ha` = discovery MQTT Home Assistant, `stats`, `system`, `users`, `settings`).
+  `detection`, `notifications`, `ha` = discovery MQTT Home Assistant, `home-assistant` = API HA (énergie, prise), `maintenance`,
+  `automations`, `schedule`, `stats`, `system`, `users`, `settings`).
 - Live state UI : SSE `/api/v1/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query ;
   `patchLiveState` fait l'optimistic update local avant confirmation MQTT.
 - Macros = liste d'actions JSON (`macroActionSchema` dans `packages/shared/src/macros.ts`), pas du GCode ;
   exécutées par `macro.service.ts` via les méthodes du `PrinterBridge`.
-- Caméra : `bridge/camera.ts` (`CameraCache`) = un seul ffmpeg par imprimante (FLV → MJPEG 15 fps/640px),
+- Caméra : `bridge/camera.ts` (`CameraCache`) = un seul ffmpeg par imprimante (FLV → MJPEG résolution et fréquence natives),
   fanout vers `/api/v1/printers/:id/camera/{stream,snapshot}` (dashboard) et `/api/camera/{stream,snapshot}`
   (Moonraker, annoncé par `server/webcams/list`). Binaire via `KOBRALINK_FFMPEG`, sinon `@ffmpeg-installer/ffmpeg`
-  (externe dans le bundle Electron), sinon `ffmpeg` du PATH. Arrêt auto après 60 s sans consommateur.
+  (externe dans le bundle Electron), sinon `ffmpeg` du PATH. Arrêt auto après 60 s sans consommateur, sauf
+  `settings.cameraAlwaysOn` (activé par défaut, par imprimante).
 - Détection d'échec IA : `apps/api/src/detection/` (modèle ONNX Obico YOLOv2 ~200 Mo téléchargé à la demande dans
   `dataDir/models/failure-detection.onnx`, inférence `onnxruntime-node` CPU, décodage `jpeg-js`, algorithme EWM d'Obico
   dans `prediction.ts`). Opt-in global (`settings.failureDetection`) + switch par imprimante ; une image toutes les
   `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
   `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
-- i18n : UI en fr, en, de, es, it, zh-cn. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
+- i18n : UI en fr, en, de, es, it, zh-cn, pt-br. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
   (locale persistée en localStorage, dayjs synchronisé) ; API : `import { m } from '../i18n/locale'` (locale par requête via
   `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = l'ajouter dans **tous** les `messages/*.json`.
 - Aucun commentaire dans le code (demande explicite).
@@ -72,7 +74,7 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
 · `bun run test` · `bun run lint` (biome check) · `bun run format` · `bun run db:migrate` (prisma migrate dev)
 · `bun run db:generate` · `bun run db:studio` · `bun run version:set <x.y.z|major|minor|patch>` (bump tous les package.json).
 
-Tests = `bun test`, fichiers dans `apps/api/test/*.test.ts` et `packages/kobra-protocol/test/*.test.ts`.
+Tests = `bun test`, fichiers dans `apps/api/test/*.test.ts` et `packages/*/test/*.test.ts` ; web = Vitest + Testing Library (`apps/web/src/**/*.test.{ts,tsx}`).
 Un seul fichier : `cd apps/api && bun test test/detection.test.ts` (ou `bun test -t "nom du test"`).
 Hook husky pre-commit : `biome check --write` sur les fichiers stagés (biome : 4 espaces, largeur 120).
 

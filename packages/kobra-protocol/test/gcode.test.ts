@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { createCipheriv } from 'node:crypto';
 import { decryptInfo, generateSignature } from '../src/credentials';
-import { extractFilamentInfo, extractThumbnail, parseEstimatedTime, parseLayerHeights } from '../src/gcode';
+import {
+    extractFilamentInfo,
+    extractPrintTarget,
+    extractThumbnail,
+    parseEstimatedTime,
+    parseLayerHeights,
+} from '../src/gcode';
 
 const sample = Buffer.from(
     [
@@ -50,5 +56,102 @@ describe('credentials', () => {
         const c = createCipheriv('aes-128-cbc', key, iv);
         const enc = Buffer.concat([c.update(JSON.stringify({ username: 'user1' })), c.final()]).toString('base64');
         expect(decryptInfo(enc, key, iv)).toEqual({ username: 'user1' });
+    });
+});
+
+describe('filament usage', () => {
+    const orca = (tail: string[]) =>
+        Buffer.from(
+            [
+                '; filament_colour = #FF0000;#00FF00',
+                '; filament_type = PLA;PETG',
+                '; filament_density: 1.24,1.27',
+                '; filament_diameter: 1.75,1.75',
+                'T0',
+                'G1 X1',
+                'T1',
+                ...tail,
+            ].join('\n'),
+        );
+
+    it('reads the length and the weight of each filament', () => {
+        const f = extractFilamentInfo(
+            orca(['; filament used [mm] = 1234.5, 678.9', '; filament used [g] = 3.68, 2.06']),
+        );
+        expect(f.map((x) => [x.usedMm, x.usedG])).toEqual([
+            [1234.5, 3.68],
+            [678.9, 2.06],
+        ]);
+    });
+
+    it('weighs the length with the density and the diameter when the weights do not line up', () => {
+        const f = extractFilamentInfo(orca(['; filament used [mm] = 1000, 0', '; filament used [g] = 2.98']));
+        expect(f[0].usedMm).toBe(1000);
+        expect(f[0].usedG).toBeCloseTo(2.98, 2);
+        expect(f[1].usedG).toBe(0);
+    });
+
+    it('leaves the usage unknown when the slicer did not write it', () => {
+        const f = extractFilamentInfo(orca([]));
+        expect(f.every((x) => x.usedMm === null && x.usedG === null)).toBe(true);
+    });
+
+    it('does not mistake the total for a filament', () => {
+        const f = extractFilamentInfo(orca(['; total filament used [g] = 9.99', '; filament used [mm] = 10, 20']));
+        expect(f.map((x) => x.usedMm)).toEqual([10, 20]);
+    });
+});
+
+describe('print target', () => {
+    const sliced = Buffer.from(
+        [
+            '; max_z_height: 42.60',
+            'EXCLUDE_OBJECT_DEFINE NAME=bracket CENTER=120,130 POLYGON=[[100,110],[140.25,110],[140.25,150.5],[100,150.5]]',
+            'EXCLUDE_OBJECT_DEFINE NAME=lid CENTER=60,60 POLYGON=[[40,40],[80,40],[80,80],[40,80]]',
+            'G1 X1',
+            '; printer_model = Anycubic Kobra 4',
+            '; nozzle_diameter = 0.4,0.4',
+            '; printable_area = 0x0,260x0,260x260,0x260',
+        ].join('\n'),
+    );
+
+    it('reads the printer, nozzle and bed the file was sliced for and the size of its parts', () => {
+        expect(extractPrintTarget(sliced)).toEqual({
+            printerModel: 'Anycubic Kobra 4',
+            nozzleMm: 0.4,
+            bedX: 260,
+            bedY: 260,
+            extentX: 140.3,
+            extentY: 150.5,
+            maxZ: 42.6,
+        });
+    });
+
+    it('keeps an empty field empty instead of reading the next line', () => {
+        const custom = Buffer.from(
+            [
+                '; printer_model = ',
+                '; printer_notes = ',
+                '; nozzle_diameter =',
+                '; printable_area = 0x0,260x0,260x260,0x260',
+                '; max_z_height:',
+                '; total estimated time:',
+                '; printer_settings_id = Anycubic Kobra 4 0.4 nozzle',
+            ].join('\n'),
+        );
+        expect(extractPrintTarget(custom)).toMatchObject({ printerModel: '', nozzleMm: null, bedX: 260, maxZ: null });
+        expect(parseEstimatedTime(custom)).toBe(0);
+    });
+
+    it('leaves everything unknown in a file without slicer metadata', () => {
+        expect(extractPrintTarget(Buffer.from('G28\nG1 X10\n'))).toEqual({
+            printerModel: '',
+            nozzleMm: null,
+            bedX: null,
+            bedY: null,
+            extentX: null,
+            extentY: null,
+            maxZ: null,
+        });
     });
 });

@@ -14,5 +14,5 @@
         "strictPropertyInitialization": false,
         "isolatedModules": false
     },
-    "include": ["src", "prisma.config.ts"]
+    "include": ["src", "dev", "prisma.config.ts"]
 }

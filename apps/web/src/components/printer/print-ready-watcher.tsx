@@ -4,10 +4,12 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
+import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
-import { printersStore } from '@/stores/printers';
+import { type PrintersState, printersStore } from '@/stores/printers';
 
 const DISMISSED_KEY = 'kobralink:print-ready-dismissed';
 
@@ -34,7 +36,8 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
     confirmationDialogStore.actions.openDialog({
-        title: m.files_print_title({ name: file.filename }),
+        title: m.files_print_title({ name: parseFilename(file.filename).name }),
+        props: { className: 'sm:max-w-5xl' },
         description: m.print_ready_hint(),
         content: (
             <PrintReadyForm
@@ -52,15 +55,29 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
                             throw e;
                         })
                 }
-                onQueue={(r) =>
+                onQueue={(r, target) =>
                     api.queue
-                        .add(printerId, { fileId: file.id, excludedObjects: r.excludedObjects })
+                        .add({ fileId: file.id, ...r, ...target })
                         .then((item) => {
                             toast.success(m.queue_added({ name: item.filename }));
                             void api.control.clearFileReady(printerId);
                             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+                            void qc.invalidateQueries({ queryKey: ['queue'] });
                         })
                         .catch((e: Error) => toast.error(e.message))
+                }
+                onSchedule={(r, startAt) =>
+                    api.schedule
+                        .create(printerId, { fileId: file.id, startAt, ...r })
+                        .then((item) => {
+                            toast.success(m.schedule_added({ name: item.filename, date: formatDate(item.startAt) }));
+                            void api.control.clearFileReady(printerId);
+                            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] });
+                        })
+                        .catch((e: Error) => {
+                            toast.error(e.message);
+                            throw e;
+                        })
                 }
             />
         ),
@@ -68,21 +85,21 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
     return true;
 }
 
+export function pendingFileReady(
+    s: Pick<PrintersState, 'order' | 'printers'>,
+): { printerId: string; filename: string; ts: number } | null {
+    for (const id of s.order) {
+        const p = s.printers[id];
+        const live = p?.live;
+        if (!live?.fileReady || !p.settings.printStartDialog) continue;
+        return { printerId: id, filename: live.fileReady, ts: live.fileReadyTs };
+    }
+    return null;
+}
+
 export function PrintReadyWatcher() {
     const qc = useQueryClient();
-    const ready = useSelector(
-        printersStore,
-        (s) => {
-            for (const id of s.order) {
-                const p = s.printers[id];
-                const live = p?.live;
-                if (!live?.fileReady || live.printState !== 'standby' || !p.settings.printStartDialog) continue;
-                return { printerId: id, filename: live.fileReady, ts: live.fileReadyTs };
-            }
-            return null;
-        },
-        { compare: shallow },
-    );
+    const ready = useSelector(printersStore, pendingFileReady, { compare: shallow });
     const dialogOpen = useSelector(confirmationDialogStore, (s) => s.isOpen);
     const opened = useRef<string | null>(null);
 

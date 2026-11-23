@@ -1,5 +1,5 @@
 import { type AppSettings, notificationEventsSchema, notificationSettingsSchema, optionalUrl } from '@kobralink/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { BellRing } from 'lucide-react';
 import { useState } from 'react';
@@ -29,6 +29,9 @@ const EVENT_LABELS: [keyof AppSettings['notifications']['events'], () => string]
     ['printerOnline', m.notif_ev_printer_online],
     ['dryingDone', m.notif_ev_drying_done],
     ['queueNext', m.notif_ev_queue_next],
+    ['scheduledPrint', m.notif_ev_scheduled_print],
+    ['maintenanceDue', m.notif_ev_maintenance_due],
+    ['automation', m.notif_ev_automation],
     ['alerts', m.notif_ev_alerts],
     ['printFailure', m.notif_ev_print_failure],
 ];
@@ -52,8 +55,13 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
     const form = useForm({
         defaultValues: settings.notifications,
         validators: { onSubmit: schema },
-        onSubmit: ({ value }) => save.mutateAsync({ notifications: value }).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync({ notifications: value })
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     const text = (
         name: 'webhookUrl' | 'discordUrl' | 'telegramToken' | 'telegramChatId' | 'ntfyUrl',
         label: string,
@@ -82,6 +90,8 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
             title={m.notif_title()}
             description={m.notif_hint()}
             onSubmit={() => void form.handleSubmit()}
+            changed={changed}
+            onDiscard={() => form.reset()}
             submitting={save.isPending}
             extra={
                 <Button

@@ -199,6 +199,8 @@ jobs:
 
           Image tags: \`${IMAGE}:${V}\`, \`${IMAGE}:latest\` (linux/amd64, linux/arm64). See \`infra/README.md\` for updates, backups and reverse proxy.
           EOF
+          NOTES=".github/release-notes/${VERSION}.md"
+          if [ -f "$NOTES" ]; then { cat "$NOTES"; echo; cat body.md; } > body.tmp && mv body.tmp body.md; fi
 
       - uses: softprops/action-gh-release@v2
         with:

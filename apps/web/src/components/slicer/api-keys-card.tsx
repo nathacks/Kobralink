@@ -182,13 +182,13 @@ export function ApiKeysCard() {
                                         key={k.id}
                                         className="flex flex-wrap items-center gap-3 rounded-2xl bg-secondary/50 px-4 py-3"
                                     >
-                                        <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                                        <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary-strong">
                                             <KeyRound className="size-5" />
                                         </span>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-baseline gap-x-3">
                                                 <span className="font-medium">{k.name ?? '—'}</span>
-                                                <span className="text-xs text-primary">
+                                                <span className="text-xs text-primary-strong">
                                                     {printerName(printerIdOf(k.metadata))}
                                                 </span>
                                                 <code className="font-mono text-xs text-muted-foreground">
@@ -251,7 +251,7 @@ export function ApiKeysCard() {
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground">{m.slicer_keys_created_key()}</p>
                             <div className="flex items-center gap-2">
-                                <code className="block min-w-0 flex-1 break-all rounded-2xl bg-secondary/50 px-4 py-3 font-mono text-sm text-primary">
+                                <code className="block min-w-0 flex-1 break-all rounded-2xl bg-secondary/50 px-4 py-3 font-mono text-sm text-primary-strong">
                                     {created?.key}
                                 </code>
                                 {created && <CopyKeyButton value={created.key} />}

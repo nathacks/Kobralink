@@ -10,6 +10,8 @@ export interface FetchedCredentials {
     model: string;
 }
 
+export const CTRL_LIMIT_REACHED = 19002;
+
 function md5(s: string): string {
     return createHash('md5').update(s).digest('hex');
 }
@@ -65,6 +67,12 @@ export async function fetchPrinterCredentials(
     const sign = generateSignature(token, ts, nonce);
     const params = new URLSearchParams({ ts: String(ts), nonce, sign, did: 'random' });
     const ctrl = await fetchJson(`${base}/ctrl?${params}`, { method: 'POST' }, timeoutMs);
+    const code = Number(ctrl?.code);
+    if (code === CTRL_LIMIT_REACHED)
+        throw new KobraProtocolError('ctrl_limit', { code }, 'Printer connection limit reached');
+    if (Number.isFinite(code) && code !== 200) {
+        throw new KobraProtocolError('ctrl_refused', { code }, `/ctrl refused with code ${code}`);
+    }
     const encrypted = ctrl?.data?.info;
     const ctrlToken = ctrl?.data?.token;
     if (typeof encrypted !== 'string' || typeof ctrlToken !== 'string') {

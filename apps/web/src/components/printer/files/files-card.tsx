@@ -3,10 +3,14 @@ import { Loader2, Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { GcodePreview } from '@/components/printer/files/gcode-preview';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
+import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useFileActions } from '@/hooks/use-file-actions';
 import { useFileDrop } from '@/hooks/use-file-drop';
+import { parseFilename } from '@/lib/filename';
+import { formatMoney } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { filesQuery, historyQuery } from '@/lib/queries';
+import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { FileTile } from './file-tile';
 import { HistoryList } from './history-list';
@@ -25,7 +29,7 @@ const TABS: { id: Tab; label: () => string }[] = [
     { id: 'timelapses', label: m.files_tab_timelapses },
 ];
 
-export function FilesCard({ printerId }: { printerId: string }) {
+export function FilesCard({ printerId, className }: { printerId: string; className?: string }) {
     const files = useQuery(filesQuery(printerId));
     const jobs = useQuery(historyQuery(printerId));
 
@@ -38,6 +42,11 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     const actions = useFileActions(printerId);
+    const cost = useCostEstimate(printerId);
+    const estimatedCost = (f: Parameters<typeof cost.estimate>[0]) => {
+        const e = cost.estimate(f);
+        return e ? formatMoney(e.total, cost.currency) : null;
+    };
     const dragging = useFileDrop(sectionRef, tab === 'files' || tab === 'web', actions.uploadMany);
 
     const pick = () => inputRef.current?.click();
@@ -48,7 +57,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
     const webCount = files.data?.filter((f) => f.webUnverified).length ?? 0;
 
     const renderContent = () => {
-        if (tab === 'history') return <HistoryList jobs={jobs.data ?? []} />;
+        if (tab === 'history') return <HistoryList printerId={printerId} jobs={jobs.data ?? []} />;
         if (tab === 'timelapses') return <TimelapseList printerId={printerId} />;
         if (tab === 'printer') {
             return (
@@ -89,19 +98,20 @@ export function FilesCard({ printerId }: { printerId: string }) {
             );
         }
         return (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
                 {list.map((f, i) => (
                     <FileTile
                         key={f.id}
                         file={f}
                         printerId={printerId}
                         highlight={i === 0 && f.lastJob?.status === 'printing'}
+                        estimatedCost={estimatedCost(f)}
                         canPrint={actions.canPrint}
                         onPrint={() => actions.requestPrint(f)}
                         onQueue={() => actions.enqueue(f)}
                         onPreview={() =>
                             openDialog({
-                                title: f.filename,
+                                title: parseFilename(f.filename).name,
                                 props: { className: 'rounded-3xl sm:max-w-4xl' },
                                 content: <GcodePreview printerId={printerId} file={f} />,
                             })
@@ -113,7 +123,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     type="button"
                     onClick={pick}
                     disabled={actions.isUploading}
-                    className="flex min-h-44 flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-50"
+                    className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-50"
                 >
                     <Plus className="size-6" />
                     {actions.isUploading ? m.files_uploading() : m.files_add_gcode()}
@@ -125,12 +135,15 @@ export function FilesCard({ printerId }: { printerId: string }) {
     return (
         <section
             ref={sectionRef}
-            className="relative flex flex-col overflow-hidden rounded-3xl bg-card p-6 px-0 text-card-foreground"
+            className={cn(
+                'relative flex min-w-0 flex-col overflow-hidden rounded-3xl bg-card py-5 text-card-foreground sm:py-6',
+                className,
+            )}
         >
             {dragging && <DropOverlay />}
             <div className={'mx-6'}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-lg font-medium">{m.files_title()}</h2>
+                    <h2 className="text-lg font-medium leading-tight">{m.files_title()}</h2>
                     <span className="text-sm text-muted-foreground">
                         {files.data ? m.files_stored({ count: files.data.length }) : ''}
                     </span>
@@ -157,7 +170,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     </label>
                 )}
                 {actions.isUploading && (
-                    <div className="mt-3 flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-xs font-medium text-primary">
+                    <div className="mt-3 flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-xs font-medium text-primary-strong">
                         <Loader2 className="size-4 animate-spin" />
                         <span>
                             {actions.uploadingCount > 1
@@ -178,7 +191,7 @@ export function FilesCard({ printerId }: { printerId: string }) {
                     e.target.value = '';
                 }}
             />
-            <ScrollAreaWithShadow bottomShadow className="h-full" viewportClassName="pt-5">
+            <ScrollAreaWithShadow bottomShadow viewportClassName="max-h-[44rem] pt-5">
                 <div className={'px-6'}>{renderContent()}</div>
             </ScrollAreaWithShadow>
         </section>

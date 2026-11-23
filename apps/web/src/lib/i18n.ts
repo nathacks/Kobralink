@@ -3,6 +3,7 @@ import 'dayjs/locale/de';
 import 'dayjs/locale/es';
 import 'dayjs/locale/fr';
 import 'dayjs/locale/it';
+import 'dayjs/locale/pt-br';
 import 'dayjs/locale/zh-cn';
 import { useSyncExternalStore } from 'react';
 import { z } from 'zod';
@@ -46,6 +47,7 @@ export const LOCALE_LABEL: Record<Locale, () => string> = {
     es: m.locale_es,
     it: m.locale_it,
     'zh-cn': m.locale_zh_cn,
+    'pt-br': m.locale_pt_br,
 };
 
 const INTL_LOCALE: Record<Locale, string> = {
@@ -55,6 +57,7 @@ const INTL_LOCALE: Record<Locale, string> = {
     es: 'es-ES',
     it: 'it-IT',
     'zh-cn': 'zh-CN',
+    'pt-br': 'pt-BR',
 };
 
 export function intlLocale(): string {

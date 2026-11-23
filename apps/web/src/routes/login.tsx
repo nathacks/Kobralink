@@ -1,6 +1,6 @@
 import { type LoginFormValues, loginFormSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -18,6 +18,8 @@ const searchSchema = z.object({ redirect: z.string().optional() });
 export const Route = createFileRoute('/login')({
     validateSearch: searchSchema,
     beforeLoad: async ({ context, search }) => {
+        const status = await context.queryClient.fetchQuery(setupQuery);
+        if (status.needsSetup) throw redirect({ to: '/setup' });
         const session = await context.queryClient.query({ ...sessionQuery, staleTime: 'static' });
         if (session) throw redirect({ to: search.redirect ?? '/printers' });
     },
@@ -28,14 +30,10 @@ function LoginPage() {
     const { redirect: target } = Route.useSearch();
     const navigate = useNavigate();
     const qc = useQueryClient();
-    const setup = useQuery(setupQuery);
-    const needsSetup = setup.data?.needsSetup ?? false;
 
     const submit = useMutation({
-        mutationFn: async ({ name, email, password }: LoginFormValues) => {
-            const res = needsSetup
-                ? await authClient.signUp.email({ email, password, name: name || email.split('@')[0] })
-                : await authClient.signIn.email({ email, password });
+        mutationFn: async ({ email, password }: LoginFormValues) => {
+            const res = await authClient.signIn.email({ email, password });
             if (res.error) throw new Error(res.error.message ?? m.login_failed());
         },
         onSuccess: async () => {
@@ -56,10 +54,8 @@ function LoginPage() {
         <div className="flex min-h-svh items-center justify-center p-6 pt-(--inset-top)">
             <div className="w-full max-w-sm rounded-3xl bg-card p-8 text-card-foreground">
                 <img src="/logo-mark.svg" alt="Kobralink" className="mb-6 size-16" />
-                <h1 className="text-2xl font-semibold">{needsSetup ? m.login_welcome() : m.login_welcome_back()}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    {needsSetup ? m.login_setup_hint() : m.login_hint()}
-                </p>
+                <h1 className="text-2xl font-semibold">{m.login_welcome_back()}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">{m.login_hint()}</p>
                 <form
                     className="mt-6 grid gap-4"
                     noValidate
@@ -68,26 +64,6 @@ function LoginPage() {
                         void form.handleSubmit();
                     }}
                 >
-                    {needsSetup && (
-                        <form.Field name="name">
-                            {(field) => (
-                                <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>{m.login_name()}</Label>
-                                    <Input
-                                        id={field.name}
-                                        name={field.name}
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                        aria-invalid={fieldInvalid(field.state.meta)}
-                                        autoComplete="name"
-                                        className="rounded-full px-4"
-                                    />
-                                    <FieldError meta={field.state.meta} />
-                                </div>
-                            )}
-                        </form.Field>
-                    )}
                     <form.Field name="email">
                         {(field) => (
                             <div className="grid gap-2">
@@ -119,7 +95,7 @@ function LoginPage() {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                     aria-invalid={fieldInvalid(field.state.meta)}
-                                    autoComplete={needsSetup ? 'new-password' : 'current-password'}
+                                    autoComplete="current-password"
                                     className="rounded-full px-4"
                                 />
                                 <FieldError meta={field.state.meta} />
@@ -128,13 +104,8 @@ function LoginPage() {
                     </form.Field>
                     <form.Subscribe selector={(s) => s.isSubmitting}>
                         {(isSubmitting) => (
-                            <Button
-                                type="submit"
-                                size="lg"
-                                className="mt-2 rounded-full"
-                                disabled={isSubmitting || setup.isLoading}
-                            >
-                                {needsSetup ? m.login_create_account() : m.login_sign_in()}
+                            <Button type="submit" size="lg" className="mt-2 rounded-full" disabled={isSubmitting}>
+                                {m.login_sign_in()}
                             </Button>
                         )}
                     </form.Subscribe>

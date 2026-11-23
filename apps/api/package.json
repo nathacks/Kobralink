@@ -6,6 +6,7 @@
     "scripts": {
         "build": "bunx prisma generate && bunx nest build",
         "dev": "bunx prisma generate && bun --watch src/main.ts",
+        "fake-printer": "bun dev/fake-printer.ts",
         "start": "bun dist/main.js",
         "start:node": "node dist/main.js",
         "check-types": "bunx prisma generate && bunx tsc --noEmit -p tsconfig.json",

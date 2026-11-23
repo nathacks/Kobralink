@@ -5,6 +5,8 @@ import type { PrinterBridge } from '../bridge/printer-bridge';
 import { SettingsService } from '../settings/settings.service';
 
 const PUBLISH_THROTTLE_MS = 2000;
+export const CAMERA_PUBLISH_MS = 5000;
+export const CAMERA_MAX_AGE_MS = 10_000;
 
 interface Attached {
     bridge: PrinterBridge;
@@ -12,6 +14,8 @@ interface Attached {
     pending: PrinterLiveState | null;
     off: () => void;
     announced: boolean;
+    cameraTimer: NodeJS.Timeout | null;
+    cameraSentAt: number;
     thumbnail: string;
 }
 
@@ -30,6 +34,10 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleDestroy(): Promise<void> {
+        for (const a of this.attached.values()) {
+            if (a.timer) clearTimeout(a.timer);
+            if (a.cameraTimer) clearInterval(a.cameraTimer);
+        }
         await this.disconnect();
     }
 
@@ -62,9 +70,11 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
                 client.publish(`${cfg.topicPrefix}/status`, 'online', { retain: true });
                 for (const a of this.attached.values()) {
                     a.announced = false;
+                    a.cameraSentAt = 0;
                     a.thumbnail = '';
                     this.announce(a.bridge);
                     this.publishState(a.bridge, a.bridge.snapshot());
+                    this.publishCamera(a);
                 }
                 client.subscribe(`${cfg.topicPrefix}/+/cmd/#`);
             });
@@ -89,6 +99,8 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             pending: null,
             off: () => undefined,
             announced: false,
+            cameraTimer: null,
+            cameraSentAt: 0,
             thumbnail: '',
         };
         const onState = (state: PrinterLiveState) => {
@@ -102,10 +114,12 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         };
         bridge.on('state', onState);
         entry.off = () => bridge.off('state', onState);
+        entry.cameraTimer = setInterval(() => this.publishCamera(entry), CAMERA_PUBLISH_MS);
         this.attached.set(bridge.id, entry);
         if (this.connected) {
             this.announce(bridge);
             this.publishState(bridge, bridge.snapshot());
+            this.publishCamera(entry);
         }
     }
 
@@ -114,6 +128,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         if (!a) return;
         a.off();
         if (a.timer) clearTimeout(a.timer);
+        if (a.cameraTimer) clearInterval(a.cameraTimer);
         this.attached.delete(printerId);
         if (this.client && this.cfg) {
             this.client.publish(`${this.cfg.topicPrefix}/${printerId}/availability`, 'offline', { retain: true });
@@ -135,7 +150,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             identifiers: [`kobralink_${id}`],
             name: bridge.config.name,
             manufacturer: 'Anycubic',
-            model: 'Kobra X',
+            model: bridge.modelName,
             sw_version: bridge.snapshot().firmwareVersion,
         };
         const availability = [{ topic: `${cfg.topicPrefix}/status` }, { topic: this.topic(id, 'availability') }];
@@ -327,15 +342,22 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             errorCode: s.errorCode,
         };
         client.publish(this.topic(bridge.id, 'state'), JSON.stringify(payload), { retain: true });
-        const jpeg = bridge.camera.latestJpeg;
-        if (jpeg && s.printState === 'printing' && Date.now() - bridge.camera.latestJpegAt < 10_000) {
-            client.publish(this.topic(bridge.id, 'camera'), jpeg.toString('base64'));
-        }
         const entry = this.attached.get(bridge.id);
         if (entry && s.thumbnail && s.thumbnail !== entry.thumbnail) {
             entry.thumbnail = s.thumbnail;
             client.publish(this.topic(bridge.id, 'thumbnail'), s.thumbnail, { retain: true });
         }
+    }
+
+    private publishCamera(entry: Attached): void {
+        const client = this.client;
+        if (!client?.connected) return;
+        const { latestJpeg, latestJpegAt } = entry.bridge.camera;
+        if (!latestJpeg || latestJpegAt === entry.cameraSentAt) return;
+        if (Date.now() - latestJpegAt >= CAMERA_MAX_AGE_MS) return;
+        this.announce(entry.bridge);
+        entry.cameraSentAt = latestJpegAt;
+        client.publish(this.topic(entry.bridge.id, 'camera'), latestJpeg.toString('base64'), { retain: true });
     }
 
     private onCommand(topic: string, payload: string): void {

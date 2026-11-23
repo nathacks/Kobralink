@@ -15,7 +15,7 @@ export const setLightSchema = z.object({
 export const setSpeedSchema = z.object({ mode: z.number().int().min(1).max(3) });
 
 export const moveAxisSchema = z.object({
-    axis: z.number().int().min(1).max(4),
+    axis: z.number().int().min(1).max(5),
     moveType: z.number().int().min(0).max(2),
     distance: z.number().min(0).max(100).default(0),
 });

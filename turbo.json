@@ -7,7 +7,13 @@
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
         "DATABASE_URL",
-        "KOBRALINK_URL"
+        "KOBRALINK_URL",
+        "KOBRALINK_API_URL"
+    ],
+    "globalPassThroughEnv": [
+        "PRISMA_SCHEMA_ENGINE_BINARY",
+        "PRISMA_QUERY_ENGINE_LIBRARY",
+        "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING"
     ],
     "tasks": {
         "build": {

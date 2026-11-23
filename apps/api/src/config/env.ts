@@ -77,7 +77,7 @@ export function loadEnv(): KobralinkEnv {
         certsDir: process.env.KOBRALINK_CERTS_DIR ?? path.join(root, 'certs'),
         assetsDir: path.join(root, 'assets'),
         migrationsDir: path.join(root, 'prisma', 'migrations'),
-        extraOrigins: (process.env.KOBRALINK_EXTRA_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173')
+        extraOrigins: (process.env.KOBRALINK_EXTRA_ORIGINS ?? 'http://localhost:5454,http://127.0.0.1:5454')
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),

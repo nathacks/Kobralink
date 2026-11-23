@@ -8,6 +8,13 @@ export interface UploadResult {
     [k: string]: unknown;
 }
 
+export const UPLOAD_OK_CODES: ReadonlySet<number> = new Set([0, 200]);
+
+export function uploadAccepted(result: UploadResult): boolean {
+    if (result.code === undefined || result.code === null) return true;
+    return UPLOAD_OK_CODES.has(Number(result.code));
+}
+
 export function uploadGcode(
     host: string,
     uploadUrl: string,
@@ -76,8 +83,10 @@ export function uploadGcode(
                 res.on('data', (c: Buffer) => chunks.push(c));
                 res.on('end', () => {
                     const text = Buffer.concat(chunks).toString('utf8');
+                    let parsed: UploadResult;
                     try {
-                        resolve(JSON.parse(text));
+                        parsed = JSON.parse(text);
+                        if (parsed === null || typeof parsed !== 'object') throw new Error('not an object');
                     } catch {
                         const snippet = text.slice(0, 200);
                         reject(
@@ -87,7 +96,21 @@ export function uploadGcode(
                                 `Upload: unexpected response: ${snippet}`,
                             ),
                         );
+                        return;
                     }
+                    if (!uploadAccepted(parsed)) {
+                        const code = Number(parsed.code);
+                        const msg = typeof parsed.message === 'string' ? parsed.message : '';
+                        reject(
+                            new KobraProtocolError(
+                                'upload_refused',
+                                { code, msg },
+                                `Upload refused by the printer: code ${code}${msg ? ` ${msg}` : ''}`,
+                            ),
+                        );
+                        return;
+                    }
+                    resolve(parsed);
                 });
                 res.on('error', reject);
             },

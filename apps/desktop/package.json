@@ -6,7 +6,7 @@
     "description": "Kobralink desktop (macOS) — embeds the local bridge API.",
     "main": "./out/main/index.js",
     "scripts": {
-        "dev": "bunx electron-vite dev",
+        "dev": "bun --env-file=.env run electron-vite dev",
         "build": "bunx electron-vite build",
         "start": "bunx electron-vite preview",
         "check-types": "bunx tsc --noEmit -p tsconfig.json",

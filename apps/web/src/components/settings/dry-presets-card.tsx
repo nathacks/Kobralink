@@ -1,5 +1,5 @@
 import { type AppSettings, aceDryPresetSchema, DEFAULT_DRY_PRESETS } from '@kobralink/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { Plus, X } from 'lucide-react';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
@@ -14,13 +14,20 @@ export function DryPresetsCard({ settings }: { settings: AppSettings }) {
     const form = useForm({
         defaultValues: { presets: settings.aceDryPresets },
         validators: { onSubmit: z.object({ presets: z.array(aceDryPresetSchema).max(20) }) },
-        onSubmit: ({ value }) => save.mutateAsync({ aceDryPresets: value.presets }).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync({ aceDryPresets: value.presets })
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     return (
         <SettingsCard
             title={m.dry_presets_title()}
             description={m.dry_presets_hint()}
             onSubmit={() => void form.handleSubmit()}
+            changed={changed}
+            onDiscard={() => form.reset()}
             submitting={save.isPending}
             extra={
                 <Button

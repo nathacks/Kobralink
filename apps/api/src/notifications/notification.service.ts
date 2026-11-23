@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import type { KobralinkEvent, KobralinkEventType, NotificationSettings, PrinterLiveState } from '@kobralink/shared';
+import {
+    eventLinkPath,
+    type KobralinkEvent,
+    type KobralinkEventType,
+    type NotificationSettings,
+    type PrinterLiveState,
+} from '@kobralink/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
-import { m, runWithLocale } from '../i18n/locale';
+import { m, printerErrorText, runWithLocale } from '../i18n/locale';
+import { maintenanceTaskName } from '../maintenance/preset-names';
 import { SettingsService } from '../settings/settings.service';
 
 const HISTORY_MAX = 200;
@@ -24,6 +31,10 @@ const EVENT_FLAG: Record<KobralinkEventType, keyof NotificationSettings['events'
     alert_spool_low: 'alerts',
     alert_print_failure: 'printFailure',
     queue_next: 'queueNext',
+    queue_filament: 'queueNext',
+    scheduled_print: 'scheduledPrint',
+    maintenance_due: 'maintenanceDue',
+    automation: 'automation',
 };
 
 @Injectable()
@@ -94,9 +105,20 @@ export class NotificationService extends EventEmitter<{
     }
 
     build(printerId: string, printerName: string, type: KobralinkEventType, data: EventData): KobralinkEvent {
-        const locale = this.settings.get().locale;
+        const { locale, publicUrl } = this.settings.get();
         const { title, body } = runWithLocale(locale, () => describe(type, printerName, data));
-        return { id: randomUUID(), type, printerId, printerName, title, body, ts: Date.now(), data };
+        const url = eventUrl(publicUrl, type, printerId);
+        return {
+            id: randomUUID(),
+            type,
+            printerId,
+            printerName,
+            title,
+            body,
+            ts: Date.now(),
+            data,
+            ...(url ? { url } : {}),
+        };
     }
 
     async test(): Promise<{ delivered: string[]; failed: { channel: string; error: string }[] }> {
@@ -170,7 +192,8 @@ export class NotificationService extends EventEmitter<{
             embeds: [
                 {
                     title: event.title,
-                    description: event.body,
+                    description: event.url ? `${event.body}\n\n[${this.openLabel()}](${event.url})` : event.body,
+                    ...(event.url ? { url: event.url } : {}),
                     color,
                     footer: { text: event.printerName },
                     timestamp: new Date(event.ts).toISOString(),
@@ -182,9 +205,13 @@ export class NotificationService extends EventEmitter<{
     private sendTelegram(token: string, chatId: string, event: KobralinkEvent): Promise<void> {
         return this.post(`https://api.telegram.org/bot${token}/sendMessage`, {
             chat_id: chatId,
-            text: `*${escapeMd(event.title)}*\n${escapeMd(event.body)}`,
+            text: `*${escapeMd(event.title)}*\n${escapeMd(event.body)}${event.url ? `\n[${escapeMd(this.openLabel())}](${escapeUrl(event.url)})` : ''}`,
             parse_mode: 'MarkdownV2',
         });
+    }
+
+    private openLabel(): string {
+        return runWithLocale(this.settings.get().locale, () => m.notify_open_link());
     }
 
     private sendNtfy(url: string, event: KobralinkEvent): Promise<void> {
@@ -194,15 +221,24 @@ export class NotificationService extends EventEmitter<{
               ? 'white_check_mark'
               : 'printer';
         return this.post(url, event.body, {
-            Title: event.title,
+            Title: headerValue(event.title),
             Tags: tags,
             Priority: event.type.startsWith('alert') ? '4' : '3',
+            ...(event.url ? { Click: event.url, Actions: headerValue(`view, ${this.openLabel()}, ${event.url}`) } : {}),
         });
     }
 }
 
 function escapeMd(s: string): string {
     return s.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, (c) => `\\${c}`);
+}
+
+export function headerValue(s: string): string {
+    return /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s, 'utf8').toString('base64')}?=`;
+}
+
+function escapeUrl(s: string): string {
+    return s.replace(/[)\\]/g, (c) => `\\${c}`);
 }
 
 function describe(type: KobralinkEventType, printer: string, d: EventData): { title: string; body: string } {
@@ -220,7 +256,10 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
         case 'print_paused':
             return {
                 title: m.notify_print_paused_title({ printer }),
-                body: m.notify_print_paused_body({ code: String(d.code ?? ''), msg: String(d.msg ?? '') }),
+                body: m.notify_print_paused_body({
+                    code: String(d.code ?? ''),
+                    msg: printerErrorText(Number(d.code), String(d.msg ?? '')),
+                }),
             };
         case 'printer_offline':
             return { title: m.notify_printer_offline_title({ printer }), body: m.notify_printer_offline_body() };
@@ -248,6 +287,34 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
                 title: m.notify_alert_spool_title({ printer }),
                 body: m.notify_alert_spool_body({ spool: String(d.spool ?? ''), grams: String(d.grams ?? '') }),
             };
+        case 'queue_next':
+            return {
+                title: m.notify_queue_next_title({ printer }),
+                body: d.bedClear
+                    ? m.notify_queue_next_body_bed_clear({ filename })
+                    : m.notify_queue_next_body({ filename }),
+            };
+        case 'queue_filament':
+            return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_filament_body({ filename }) };
+        case 'scheduled_print': {
+            const result = String(d.result ?? 'started');
+            const body =
+                result === 'queued'
+                    ? m.notify_scheduled_print_queued({ filename })
+                    : result === 'failed'
+                      ? m.notify_scheduled_print_failed({ filename, error: String(d.error ?? '') })
+                      : m.notify_scheduled_print_started({ filename });
+            return { title: m.notify_scheduled_print_title({ printer }), body };
+        }
+        case 'maintenance_due':
+            return {
+                title: m.notify_maintenance_due_title({ printer }),
+                body: m.notify_maintenance_due_body({
+                    task: maintenanceTaskName({ name: String(d.task ?? ''), presetKey: String(d.presetKey ?? '') }),
+                    hours: String(d.hours ?? 0),
+                    jobs: String(d.jobs ?? 0),
+                }),
+            };
         case 'alert_print_failure': {
             const action = String(d.action ?? 'notify');
             const body =
@@ -258,9 +325,17 @@ function describe(type: KobralinkEventType, printer: string, d: EventData): { ti
                       : m.notify_alert_failure_body({ score: String(d.score ?? ''), filename });
             return { title: m.notify_alert_failure_title({ printer }), body };
         }
-        case 'queue_next':
-            return { title: m.notify_queue_next_title({ printer }), body: m.notify_queue_next_body({ filename }) };
+        case 'automation':
+            return {
+                title: m.notify_automation_title({ printer, rule: String(d.rule ?? '') }),
+                body: String(d.message ?? ''),
+            };
     }
+}
+
+export function eventUrl(publicUrl: string, type: KobralinkEventType, printerId: string): string | undefined {
+    if (!publicUrl) return undefined;
+    return `${publicUrl.replace(/\/+$/, '')}${eventLinkPath(type, printerId)}`;
 }
 
 function fmtDuration(sec: number): string {

@@ -14,6 +14,7 @@ import {
 import { GcodeService } from '../gcode/gcode.service';
 import { MacroService } from '../macros/macro.service';
 import { QueueService } from '../queue/queue.service';
+import { speedFactor } from './speed';
 
 export const PRINTER_BRIDGE = Symbol('PRINTER_BRIDGE');
 
@@ -98,10 +99,10 @@ export class MoonrakerService {
                     cpu_count: 4,
                     bits: '64bit',
                     processor: 'armv7l',
-                    cpu_desc: 'Anycubic Kobra X Bridge',
+                    cpu_desc: `Anycubic ${this.bridge.modelName} Bridge`,
                     serial_number: '',
                     hardware_desc: '',
-                    model: 'Kobra X Bridge',
+                    model: `${this.bridge.modelName} Bridge`,
                     total_memory: 524288,
                     memory_units: 'kB',
                 },
@@ -162,7 +163,6 @@ export class MoonrakerService {
 
     printerObjects(): Record<string, unknown> {
         const s = this.bridge.snapshot();
-        const speedFactor = { 1: 0.5, 2: 1.0, 3: 1.3, 4: 1.5 }[s.printSpeedMode] ?? 1.0;
         return {
             extruder: { temperature: s.nozzleTemp, target: s.nozzleTarget, power: 0 },
             heater_bed: { temperature: s.bedTemp, target: s.bedTarget, power: 0 },
@@ -195,7 +195,7 @@ export class MoonrakerService {
             },
             webhooks: { state: 'ready', state_message: 'Printer is ready' },
             gcode_move: {
-                speed_factor: speedFactor,
+                speed_factor: speedFactor(s.printSpeedMode),
                 extrude_factor: 1.0,
                 speed: 0,
                 gcode_position: [0, 0, s.zMm, 0],
@@ -426,7 +426,7 @@ export class MoonrakerService {
     }
 
     async jobQueueStatus() {
-        const items = await this.queue.list(this.bridge.id);
+        const items = await this.queue.listFor(this.bridge.id);
         return {
             queued_jobs: items.map((i) => ({
                 filename: i.filename,

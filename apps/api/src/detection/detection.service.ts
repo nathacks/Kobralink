@@ -37,6 +37,7 @@ interface Watch {
     warned: boolean;
     acted: boolean;
     triggeredAt: number;
+    litByUs: boolean;
 }
 
 @Injectable()
@@ -84,6 +85,7 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
             warned: false,
             acted: false,
             triggeredAt: 0,
+            litByUs: false,
         };
         const onJob = (phase: 'start' | 'end') => {
             watch.prediction.reset();
@@ -91,7 +93,10 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
             watch.warned = false;
             watch.acted = false;
             watch.triggeredAt = 0;
-            if (phase === 'end') this.stopWatching(watch);
+            if (phase === 'end') {
+                this.stopWatching(watch);
+                this.restoreLight(watch);
+            }
         };
         bridge.on('job', onJob);
         watch.detach = () => bridge.off('job', onJob);
@@ -103,6 +108,7 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
         if (!watch) return;
         watch.detach();
         this.stopWatching(watch);
+        this.restoreLight(watch);
         this.watches.delete(printerId);
     }
 
@@ -249,7 +255,10 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
     }
 
     private async unload(): Promise<void> {
-        for (const w of this.watches.values()) this.stopWatching(w);
+        for (const w of this.watches.values()) {
+            this.stopWatching(w);
+            this.restoreLight(w);
+        }
         const model = this.model;
         this.model = null;
         await model?.release();
@@ -260,13 +269,36 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
         watch.unsubscribe = null;
     }
 
+    private lightForDetection(w: Watch, cfg: FailureDetectionSettings): void {
+        if (!cfg.light || w.litByUs || w.bridge.snapshot().lightOn) return;
+        try {
+            w.bridge.setLight(true);
+            w.litByUs = true;
+            this.log.log(`Camera light turned on for failure detection on ${w.bridge.config.name}`);
+        } catch (e) {
+            this.log.warn(`Camera light for detection: ${(e as Error).message}`);
+        }
+    }
+
+    private restoreLight(w: Watch): void {
+        if (!w.litByUs) return;
+        w.litByUs = false;
+        if (!w.bridge.snapshot().lightOn) return;
+        try {
+            w.bridge.setLight(false);
+            this.log.log(`Camera light turned off after failure detection on ${w.bridge.config.name}`);
+        } catch (e) {
+            this.log.warn(`Camera light after detection: ${(e as Error).message}`);
+        }
+    }
+
     private async tick(): Promise<void> {
         const cfg = this.settings.get().failureDetection;
         if (!cfg.enabled) return;
         const now = Date.now();
         for (const w of this.watches.values()) {
             const printing = w.bridge.snapshot().printState === 'printing';
-            const wanted = printing && w.bridge.settings.failureDetection && !w.acted;
+            const wanted = printing && w.bridge.failureDetectionForJob && !w.acted;
             if (!wanted) {
                 if (w.unsubscribe) this.stopWatching(w);
                 continue;
@@ -287,6 +319,7 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
                 await w.bridge.client.startCamera().catch((e) => this.log.warn(`Camera start: ${String(e)}`));
             }
             w.unsubscribe = w.bridge.camera.subscribe(() => undefined);
+            this.lightForDetection(w, cfg);
         }
         const frame = await w.bridge.camera.waitForFrame(FRAME_TIMEOUT_MS);
         w.lastAt = Date.now();

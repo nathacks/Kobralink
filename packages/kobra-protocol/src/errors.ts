@@ -2,8 +2,11 @@ export type KobraProtocolErrorCode =
     | 'http_status'
     | 'info_invalid'
     | 'ctrl_invalid'
+    | 'ctrl_limit'
+    | 'ctrl_refused'
     | 'upload_no_token'
     | 'upload_unexpected'
+    | 'upload_refused'
     | 'upload_timeout'
     | 'mqtt_closed_handshake';
 

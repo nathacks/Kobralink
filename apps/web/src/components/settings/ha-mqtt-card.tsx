@@ -1,5 +1,5 @@
 import { type AppSettings, haMqttSettingsSchema } from '@kobralink/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -12,8 +12,13 @@ export function HaMqttCard({ settings }: { settings: AppSettings }) {
     const form = useForm({
         defaultValues: settings.haMqtt,
         validators: { onSubmit: haMqttSettingsSchema.required() },
-        onSubmit: ({ value }) => save.mutateAsync({ haMqtt: value }).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync({ haMqtt: value })
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     const text = (
         name: 'url' | 'username' | 'password' | 'discoveryPrefix' | 'topicPrefix',
         label: string,
@@ -43,6 +48,8 @@ export function HaMqttCard({ settings }: { settings: AppSettings }) {
             title="Home Assistant (MQTT)"
             description={m.ha_hint()}
             onSubmit={() => void form.handleSubmit()}
+            changed={changed}
+            onDiscard={() => form.reset()}
             submitting={save.isPending}
         >
             <form.Field name="enabled">

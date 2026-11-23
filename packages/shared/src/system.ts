@@ -4,6 +4,7 @@ export interface SystemInfoDto {
     platform: string;
     dataDir: string;
     uptimeSec: number;
+    timeZone: string;
     packaged: 'docker' | 'electron' | 'source';
     lanIps: string[];
     update: { checked: boolean; available: boolean; latest: string; url: string } | null;

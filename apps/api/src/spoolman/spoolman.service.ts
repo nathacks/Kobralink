@@ -1,22 +1,33 @@
-import type { SpoolmanSpool, SpoolmanStatus } from '@kobralink/shared';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { type SpoolmanPricing, type SpoolmanSpool, type SpoolmanStatus, spoolmanPricing } from '@kobralink/shared';
+import { Injectable, Logger, type OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import type { FilamentUsageSink } from '../bridge/printer-bridge';
 import { m } from '../i18n/locale';
+import { NotificationService } from '../notifications/notification.service';
+import { PrintersService } from '../printers/printers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 
+const CACHE_MS = 60_000;
+const FLUSH_MS = 60_000;
+
 @Injectable()
-export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
+export class SpoolmanService implements OnModuleInit, OnModuleDestroy, FilamentUsageSink {
     readonly name = 'spoolman';
     private readonly log = new Logger(SpoolmanService.name);
     private reachable = false;
     private lastCheck = 0;
     private readonly maps = new Map<string, Map<number, number>>();
     private initialized = false;
+    private cache: { at: number; spools: SpoolmanSpool[] } | null = null;
+    private readonly lowAlerted = new Set<number>();
+    private flushing: Promise<number> | null = null;
+    private timer: ReturnType<typeof setInterval> | null = null;
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly settings: SettingsService,
+        private readonly printers: PrintersService,
+        private readonly notifications: NotificationService,
     ) {}
 
     async onModuleInit(): Promise<void> {
@@ -26,18 +37,25 @@ export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
         for (const r of rows) this.printerMap(r.printerId).set(r.slotIndex, r.spoolId);
         this.settings.on('change', () => {
             this.lastCheck = 0;
+            this.cache = null;
             void this.checkHealth();
         });
         void this.checkHealth();
+        this.timer = setInterval(() => void this.flushPending(), FLUSH_MS);
+        this.timer.unref?.();
+    }
+
+    onModuleDestroy(): void {
+        if (this.timer) clearInterval(this.timer);
     }
 
     private printerMap(printerId: string): Map<number, number> {
-        let m = this.maps.get(printerId);
-        if (!m) {
-            m = new Map();
-            this.maps.set(printerId, m);
+        let map = this.maps.get(printerId);
+        if (!map) {
+            map = new Map();
+            this.maps.set(printerId, map);
         }
-        return m;
+        return map;
     }
 
     get serverUrl(): string {
@@ -77,14 +95,16 @@ export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
         const now = Date.now();
         if (!force && now - this.lastCheck < 30_000) return this.reachable;
         this.lastCheck = now;
+        const was = this.reachable;
         try {
             await this.req('GET', '/api/v1/health');
-            if (!this.reachable) this.log.log(`Spoolman reachable: ${this.serverUrl}`);
+            if (!was) this.log.log(`Spoolman reachable: ${this.serverUrl}`);
             this.reachable = true;
         } catch (e) {
-            if (this.reachable) this.log.warn(`Spoolman unreachable: ${(e as Error).message}`);
+            if (was) this.log.warn(`Spoolman unreachable: ${(e as Error).message}`);
             this.reachable = false;
         }
+        if (!was && this.reachable) void this.flushPending();
         return this.reachable;
     }
 
@@ -92,11 +112,87 @@ export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
         if (!this.configured) throw new Error(m.api_spoolman_not_configured());
         const spools = await this.req<SpoolmanSpool[]>('GET', '/api/v1/spool?allow_archived=false');
         this.reachable = true;
+        this.cache = { at: Date.now(), spools };
         return spools;
     }
 
-    async useFilament(spoolId: string | number, lengthMm: number): Promise<void> {
-        await this.req('PUT', `/api/v1/spool/${spoolId}/use`, { use_length: Math.round(lengthMm * 100) / 100 });
+    async spools(): Promise<SpoolmanSpool[] | null> {
+        if (!this.configured) return null;
+        try {
+            return this.cache && Date.now() - this.cache.at < CACHE_MS ? this.cache.spools : await this.listSpools();
+        } catch {
+            return null;
+        }
+    }
+
+    async describe(spoolId: string | number): Promise<SpoolmanPricing | null> {
+        const spool = (await this.spools())?.find((s) => s.id === Number(spoolId));
+        return spool ? spoolmanPricing(spool) : null;
+    }
+
+    async useFilament(spoolId: string | number, lengthMm: number, printerId = ''): Promise<void> {
+        const id = Number(spoolId);
+        try {
+            const spool = await this.put(id, lengthMm);
+            await this.checkLow(printerId, spool);
+        } catch (e) {
+            await this.prisma.client.spoolmanPendingUse.create({ data: { spoolId: id, lengthMm, printerId } });
+            this.log.warn(
+                `Spoolman unreachable, ${lengthMm.toFixed(1)} mm for spool ${id} kept to retry: ${(e as Error).message}`,
+            );
+        }
+    }
+
+    private put(spoolId: number, lengthMm: number): Promise<SpoolmanSpool> {
+        return this.req<SpoolmanSpool>('PUT', `/api/v1/spool/${spoolId}/use`, {
+            use_length: Math.round(lengthMm * 100) / 100,
+        });
+    }
+
+    async flushPending(): Promise<number> {
+        if (this.flushing) return this.flushing;
+        this.flushing = (async () => {
+            if (!this.configured) return 0;
+            const rows = await this.prisma.client.spoolmanPendingUse.findMany({ orderBy: { createdAt: 'asc' } });
+            let sent = 0;
+            for (const row of rows) {
+                try {
+                    const spool = await this.put(row.spoolId, row.lengthMm);
+                    await this.prisma.client.spoolmanPendingUse.delete({ where: { id: row.id } });
+                    sent += 1;
+                    await this.checkLow(row.printerId, spool);
+                } catch {
+                    break;
+                }
+            }
+            if (sent) this.log.log(`Spoolman: ${sent} delayed usage report(s) sent`);
+            return sent;
+        })().finally(() => {
+            this.flushing = null;
+        });
+        return this.flushing;
+    }
+
+    async pendingCount(): Promise<number> {
+        return this.prisma.client.spoolmanPendingUse.count();
+    }
+
+    private async checkLow(printerId: string, spool: SpoolmanSpool | undefined): Promise<void> {
+        if (!printerId || !spool || spool.remaining_weight === undefined) return;
+        const printer = await this.printers.findOne(printerId).catch(() => null);
+        if (!printer) return;
+        const threshold = PrintersService.parseSettings(printer.settings).alerts.spoolLowG;
+        if (threshold <= 0) return;
+        if (spool.remaining_weight > threshold) {
+            this.lowAlerted.delete(spool.id);
+            return;
+        }
+        if (this.lowAlerted.has(spool.id)) return;
+        this.lowAlerted.add(spool.id);
+        this.notifications.emitCustom(printerId, printer.name, 'alert_spool_low', {
+            spool: spool.filament?.name ?? `#${spool.id}`,
+            grams: Math.round(spool.remaining_weight),
+        });
     }
 
     status(printerId: string): SpoolmanStatus {
@@ -123,9 +219,9 @@ export class SpoolmanService implements OnModuleInit, FilamentUsageSink {
                 this.prisma.client.spoolAssignment.create({ data: { printerId, slotIndex, spoolId } }),
             ),
         ]);
-        const m = this.printerMap(printerId);
-        m.clear();
-        for (const [k, v] of entries) m.set(k, v);
+        const map = this.printerMap(printerId);
+        map.clear();
+        for (const [k, v] of entries) map.set(k, v);
         return Object.fromEntries(entries.map(([k, v]) => [String(k), v]));
     }
 

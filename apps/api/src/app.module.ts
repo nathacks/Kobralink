@@ -4,6 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { createAuth } from './auth/auth';
 import { SetupController } from './auth/setup.controller';
+import { AutomationModule } from './automations/automation.module';
 import { BridgeModule } from './bridge/bridge.module';
 import { WriteGuard } from './common/write.guard';
 import { loadEnv } from './config/env';
@@ -13,10 +14,13 @@ import { DryScheduleModule } from './dry/dry-schedule.module';
 import { FilamentModule } from './filament/filament.module';
 import { GcodeModule } from './gcode/gcode.module';
 import { HaMqttModule } from './ha/ha-mqtt.module';
+import { HomeAssistantModule } from './home-assistant/home-assistant.module';
 import { MacroModule } from './macros/macro.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
+import { ScheduledPrintModule } from './schedule/scheduled-print.module';
 import { SettingsModule } from './settings/settings.module';
 import { SpoolmanModule } from './spoolman/spoolman.module';
 import { LocalSpoolModule } from './spools/local-spool.module';
@@ -39,13 +43,17 @@ const env = loadEnv();
         TimelapseModule,
         DetectionModule,
         QueueModule,
+        MaintenanceModule,
         MacroModule,
         HaMqttModule,
+        HomeAssistantModule,
         FilamentModule,
         BridgeModule,
         CoreModule,
         StatsModule,
         DryScheduleModule,
+        ScheduledPrintModule,
+        AutomationModule,
         UsersModule,
         SystemModule,
         ...(env.webDir

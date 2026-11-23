@@ -1,30 +1,46 @@
-import type { QueueItemDto } from '@kobralink/shared';
+import type { ScheduledPrintDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, ListOrdered, Play, Trash2, X } from 'lucide-react';
+import { CalendarClock, ListOrdered, Play, Trash2, Wrench, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmptyState, IconButton, Panel } from '@/components/printer/panel';
+import { AutoStartCountdown } from '@/components/queue/auto-start-countdown';
+import { BedClearBanner } from '@/components/queue/bed-clear-banner';
+import { moveInOrder, QueueItemRow } from '@/components/queue/queue-item-row';
+import { queueModeText } from '@/components/queue/queue-mode';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useLiveState, usePrinter } from '@/hooks/use-printers';
+import { useLiveState, usePrinter, usePrinters } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
-import { formatDuration } from '@/lib/format';
+import { formatDate, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { queueQuery } from '@/lib/queries';
+import { allQueueQuery, queueQuery, queueStatusQuery, scheduleQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
-export function QueueCard({ printerId }: { printerId: string }) {
+export function QueueCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const printer = usePrinter(printerId);
+    const printers = usePrinters();
     const qc = useQueryClient();
     const queue = useQuery(queueQuery(printerId));
+    const all = useQuery(allQueueQuery);
+    const status = useQuery(queueStatusQuery(printerId));
+    const schedule = useQuery(scheduleQuery(printerId));
     const items = queue.data ?? [];
+    const scheduled = schedule.data ?? [];
     const idle = state.connected && state.printState !== 'printing' && state.printState !== 'paused';
+    const maintenance = Boolean(status.data?.maintenance);
     const invalidate = () => {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+        void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue-status'] });
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'files'] });
+        void qc.invalidateQueries({ queryKey: ['queue'] });
     };
     const onError = (e: Error) => toast.error(e.message);
+    const removeScheduled = useMutation({
+        mutationFn: (id: string) => api.schedule.remove(printerId, id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] }),
+        onError,
+    });
     const start = useMutation({
         mutationFn: () => api.queue.start(printerId),
         onSuccess: (item) => {
@@ -33,40 +49,50 @@ export function QueueCard({ printerId }: { printerId: string }) {
         },
         onError,
     });
-    const remove = useMutation({
-        mutationFn: (id: string) => api.queue.remove(printerId, id),
+    const remove = useMutation({ mutationFn: (id: string) => api.queue.remove(id), onSuccess: invalidate, onError });
+    const clear = useMutation({ mutationFn: () => api.queue.clear(printerId), onSuccess: invalidate, onError });
+    const reorder = useMutation({
+        mutationFn: (ids: string[]) => api.queue.reorder(ids),
         onSuccess: invalidate,
         onError,
     });
-    const clear = useMutation({ mutationFn: () => api.queue.clear(printerId), onSuccess: invalidate, onError });
-    const reorder = useMutation({
-        mutationFn: (ids: string[]) => api.queue.reorder(printerId, ids),
-        onSuccess: (next) => qc.setQueryData(queueQuery(printerId).queryKey, next),
+    const toggleMaintenance = useMutation({
+        mutationFn: () => api.queue.maintenance(printerId, !maintenance),
+        onSuccess: (next) => {
+            qc.setQueryData(queueStatusQuery(printerId).queryKey, next);
+            invalidate();
+            void qc.invalidateQueries({ queryKey: ['printers'] });
+        },
         onError,
     });
     const move = (index: number, dir: -1 | 1) => {
-        const ids = items.map((i) => i.id);
-        const target = index + dir;
-        if (target < 0 || target >= ids.length) return;
-        [ids[index], ids[target]] = [ids[target], ids[index]];
-        reorder.mutate(ids);
+        const neighbour = items[index + dir];
+        if (!neighbour) return;
+        const order = (all.data ?? items).map((i) => i.id);
+        reorder.mutate(moveInOrder(order, items[index].id, neighbour.id));
     };
     const total = items.reduce((a, i) => a + i.estPrintTimeSec, 0);
 
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.queue_title()}</CardTitle>
-                <CardAction className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Panel
+            className={className}
+            title={m.queue_title()}
+            action={
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {items.length > 0 && (
-                        <span>{m.queue_total({ n: items.length, duration: formatDuration(total) })}</span>
+                        <span>{m.queue_total({ n: items.length, duration: formatDuration(total, { units: 2 }) })}</span>
                     )}
-                    {items.length > 0 && (
-                        <button
-                            type="button"
+                    <IconButton
+                        title={m.queue_maintenance()}
+                        aria-pressed={maintenance}
+                        className={cn(maintenance && 'bg-primary text-primary-foreground')}
+                        onClick={() => toggleMaintenance.mutate()}
+                    >
+                        <Wrench />
+                    </IconButton>
+                    {items.some((i) => i.printerId === printerId) && (
+                        <IconButton
                             title={m.queue_clear()}
-                            aria-label={m.queue_clear()}
-                            className="flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5"
                             onClick={() =>
                                 alertConfirmationDialogStore.actions.openAlertDialog({
                                     title: m.queue_clear_title(),
@@ -77,24 +103,40 @@ export function QueueCard({ printerId }: { printerId: string }) {
                             }
                         >
                             <Trash2 />
-                        </button>
+                        </IconButton>
                     )}
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-                {items.length === 0 ? (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
-                        <ListOrdered className="size-6" />
-                        {m.queue_empty()}
+                </div>
+            }
+        >
+            <div className="flex flex-col gap-3">
+                {maintenance && (
+                    <div role="status" className="rounded-2xl bg-secondary px-4 py-3 text-sm">
+                        <div className="font-medium">{m.queue_maintenance()}</div>
+                        <div className="text-xs text-muted-foreground">{m.queue_maintenance_hint()}</div>
                     </div>
+                )}
+                {status.data?.awaitingBedClear && idle && <BedClearBanner printerId={printerId} />}
+                {status.data?.autoStartAt && (
+                    <AutoStartCountdown printerId={printerId} startsAt={status.data.autoStartAt} />
+                )}
+                {scheduled.length > 0 && (
+                    <ul className="space-y-1">
+                        {scheduled.map((s) => (
+                            <ScheduledRow key={s.id} item={s} onRemove={() => removeScheduled.mutate(s.id)} />
+                        ))}
+                    </ul>
+                )}
+                {items.length === 0 ? (
+                    <EmptyState icon={<ListOrdered />}>{m.queue_empty()}</EmptyState>
                 ) : (
                     <>
-                        <ScrollArea className="min-h-0 flex-1">
+                        <div className="max-h-80 overflow-y-auto">
                             <ul className="space-y-2">
                                 {items.map((item, i) => (
-                                    <QueueRow
+                                    <QueueItemRow
                                         key={item.id}
                                         item={item}
+                                        printers={printers}
                                         first={i === 0}
                                         last={i === items.length - 1}
                                         onUp={() => move(i, -1)}
@@ -103,13 +145,13 @@ export function QueueCard({ printerId }: { printerId: string }) {
                                     />
                                 ))}
                             </ul>
-                        </ScrollArea>
+                        </div>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                            <span>{printer?.settings.queueAutoStart ? m.queue_auto_on() : m.queue_auto_off()}</span>
+                            <span>{printer ? queueModeText(printer.settings) : null}</span>
                             <Button
                                 size="sm"
                                 className="rounded-full"
-                                disabled={!idle || start.isPending}
+                                disabled={!idle || maintenance || start.isPending}
                                 onClick={() => start.mutate()}
                             >
                                 <Play className="size-3.5" /> {m.queue_start_next()}
@@ -117,67 +159,26 @@ export function QueueCard({ printerId }: { printerId: string }) {
                         </div>
                     </>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </Panel>
     );
 }
 
-function QueueRow({
-    item,
-    first,
-    last,
-    onUp,
-    onDown,
-    onRemove,
-}: {
-    item: QueueItemDto;
-    first: boolean;
-    last: boolean;
-    onUp: () => void;
-    onDown: () => void;
-    onRemove: () => void;
-}) {
+export function ScheduledRow({ item, onRemove }: { item: ScheduledPrintDto; onRemove: () => void }) {
     return (
-        <li className={cn('flex items-center gap-3 rounded-2xl p-2 pr-3', first ? 'bg-primary/15' : 'bg-secondary/60')}>
-            <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-background/50">
-                {item.thumbnail ? (
-                    <img src={`data:image/png;base64,${item.thumbnail}`} alt="" className="size-full object-contain" />
-                ) : (
-                    <span className="text-[10px] text-muted-foreground">GCode</span>
-                )}
-            </div>
-            <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium" title={item.filename}>
-                    {item.filename}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                    {formatDuration(item.estPrintTimeSec)}
-                    {item.excludedObjects.length ? ` · ${m.queue_excluded({ n: item.excludedObjects.length })}` : ''}
-                </div>
-            </div>
-            <div className="flex gap-1">
-                <Small onClick={onUp} disabled={first} title={m.queue_move_up()}>
-                    <ArrowUp />
-                </Small>
-                <Small onClick={onDown} disabled={last} title={m.queue_move_down()}>
-                    <ArrowDown />
-                </Small>
-                <Small onClick={onRemove} title={m.common_delete()}>
-                    <X />
-                </Small>
-            </div>
+        <li className="flex items-center gap-2 rounded-full bg-background/60 px-3 py-1.5 text-xs">
+            <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate" title={item.filename}>
+                {m.schedule_item({ date: formatDate(item.startAt), name: item.filename })}
+            </span>
+            <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full p-0.5 hover:bg-background"
+                aria-label={m.common_delete()}
+            >
+                <X className="size-3.5" />
+            </button>
         </li>
-    );
-}
-
-function Small({ title, ...props }: React.ComponentProps<'button'> & { title: string }) {
-    return (
-        <button
-            type="button"
-            title={title}
-            aria-label={title}
-            {...props}
-            className="flex size-7 items-center justify-center rounded-full bg-background/50 hover:bg-background disabled:opacity-30 [&_svg]:size-3.5"
-        />
     );
 }

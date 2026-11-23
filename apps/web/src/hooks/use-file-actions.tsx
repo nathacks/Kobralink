@@ -1,10 +1,12 @@
-import type { GcodeFileDto, StartPrintInput } from '@kobralink/shared';
+import type { AddQueueItemInput, GcodeFileDto, SchedulePrintInput, StartPrintInput } from '@kobralink/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
+import { parseFilename } from '@/lib/filename';
+import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -26,10 +28,11 @@ export function useFileActions(printerId: string) {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
     };
     const enqueue = useMutation({
-        mutationFn: (input: { fileId: string; excludedObjects?: string[] }) => api.queue.add(printerId, input),
+        mutationFn: (input: AddQueueItemInput) => api.queue.add(input),
         onSuccess: (item) => {
             toast.success(m.queue_added({ name: item.filename }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
+            void qc.invalidateQueries({ queryKey: ['queue'] });
         },
         onError: (e) => toast.error(e.message),
     });
@@ -38,6 +41,14 @@ export function useFileActions(printerId: string) {
         onSuccess: (f) => {
             toast.success(m.files_print_started({ name: f.filename }));
             invalidate();
+        },
+        onError: (e) => toast.error(e.message),
+    });
+    const schedule = useMutation({
+        mutationFn: (input: SchedulePrintInput) => api.schedule.create(printerId, input),
+        onSuccess: (item) => {
+            toast.success(m.schedule_added({ name: item.filename, date: formatDate(item.startAt) }));
+            void qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] });
         },
         onError: (e) => toast.error(e.message),
     });
@@ -54,7 +65,8 @@ export function useFileActions(printerId: string) {
 
     const openPrintDialog = (f: GcodeFileDto, withQueue: boolean) =>
         openDialog({
-            title: m.files_print_title({ name: f.filename }),
+            title: m.files_print_title({ name: parseFilename(f.filename).name }),
+            props: { className: 'sm:max-w-5xl' },
             description: m.print_ready_hint(),
             content: (
                 <PrintReadyForm
@@ -64,11 +76,11 @@ export function useFileActions(printerId: string) {
                         if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
                         return print.mutateAsync({ fileId: f.id, ...r });
                     }}
-                    onQueue={
-                        withQueue
-                            ? (r) => enqueue.mutate({ fileId: f.id, excludedObjects: r.excludedObjects })
-                            : undefined
-                    }
+                    onQueue={withQueue ? (r, target) => enqueue.mutate({ fileId: f.id, ...r, ...target }) : undefined}
+                    onSchedule={async (r, startAt) => {
+                        if (f.webUnverified) await api.files.verify(printerId, f.id).catch(() => undefined);
+                        return schedule.mutateAsync({ fileId: f.id, startAt, ...r });
+                    }}
                 />
             ),
         });
@@ -139,7 +151,7 @@ export function useFileActions(printerId: string) {
         uploadingCount,
         requestPrint,
         requestDelete,
-        enqueue: (f: GcodeFileDto) => enqueue.mutate({ fileId: f.id }),
+        enqueue: (f: GcodeFileDto) => enqueue.mutate({ fileId: f.id, printerId }),
         uploadMany,
     };
 }

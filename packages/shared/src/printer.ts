@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { ENERGY_SENSOR_PATTERN, PLUG_SWITCH_PATTERN } from './home-assistant';
+import { patchSchema } from './patch';
 
 export const alertSettingsSchema = z.object({
     nozzleMaxC: z.number().int().min(0).max(350).default(300),
@@ -8,12 +10,37 @@ export const alertSettingsSchema = z.object({
 });
 export type AlertSettings = z.infer<typeof alertSettingsSchema>;
 
+const nullableNumber = (max: number) => z.number().min(0).max(max).nullable().default(null);
+
+export const PRINTER_TAG_MAX = 20;
+
+export const printerTagSchema = z
+    .string()
+    .trim()
+    .min(1)
+    .max(32)
+    .transform((v) => v.toLowerCase());
+
+export const printerProfileSchema = z.object({
+    location: z.string().trim().max(64).default(''),
+    tags: z
+        .array(printerTagSchema)
+        .max(PRINTER_TAG_MAX)
+        .transform((tags) => [...new Set(tags)])
+        .default([]),
+    nozzleMm: z.number().min(0.1).max(2).nullable().default(null),
+    powerW: nullableNumber(5000),
+});
+export type PrinterProfile = z.infer<typeof printerProfileSchema>;
+
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),
     vibrationCompensation: z.boolean().default(false),
+    flowCalibration: z.boolean().default(true),
 
     defaultAmsSlot: z.union([z.literal('auto'), z.number().int().min(0).max(15)]).default('auto'),
     pollIntervalSec: z.number().int().min(1).max(60).default(3),
+    cameraAlwaysOn: z.boolean().default(true),
     cameraOnPrint: z.boolean().default(false),
     deletePrinterFileAfterPrint: z.boolean().default(false),
     visibleVendors: z.array(z.string().trim().min(1)).default([]),
@@ -25,8 +52,14 @@ export const printerSettingsSchema = z.object({
     timelapseEnabled: z.boolean().default(false),
     timelapseFps: z.number().int().min(5).max(60).default(15),
     queueAutoStart: z.boolean().default(false),
+    queueBedClearConfirm: z.boolean().default(true),
+    queueAutoStartDelaySec: z.number().int().min(0).max(3600).default(15),
     failureDetection: z.boolean().default(true),
+    lightTrigger: z.boolean().default(false),
+    energySensor: z.union([z.literal(''), z.string().trim().regex(ENERGY_SENSOR_PATTERN)]).default(''),
+    plugSwitch: z.union([z.literal(''), z.string().trim().regex(PLUG_SWITCH_PATTERN)]).default(''),
     alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
+    profile: printerProfileSchema.default(printerProfileSchema.parse({})),
 });
 
 export const powerActionSchema = z.object({ action: z.enum(['on', 'off']) });
@@ -45,6 +78,8 @@ export const printerSchema = z.object({
     model: z.string(),
     httpPort: z.number().int(),
     settings: printerSettingsSchema,
+    maintenance: z.boolean().default(false),
+    awaitingBedClear: z.boolean().default(false),
     createdAt: z.string(),
 });
 export type Printer = z.infer<typeof printerSchema>;
@@ -68,7 +103,7 @@ export const updatePrinterSchema = z.object({
     name: z.string().trim().min(1).max(64).optional(),
     ip: ipv4.optional(),
     httpPort: z.number().int().min(1024).max(65535).optional(),
-    settings: printerSettingsSchema.partial().optional(),
+    settings: patchSchema(printerSettingsSchema).optional(),
 });
 export type UpdatePrinterInput = z.infer<typeof updatePrinterSchema>;
 

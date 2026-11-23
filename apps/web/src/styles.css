@@ -14,6 +14,7 @@
     --popover-foreground: oklch(0.2 0.01 250);
     --primary: oklch(0.596 0.145 163.225);
     --primary-foreground: oklch(0.99 0.01 163);
+    --primary-strong: oklch(0.596 0.145 163.225);
     --secondary: oklch(0.93 0.004 250);
     --secondary-foreground: oklch(0.25 0.01 250);
     --muted: oklch(0.93 0.004 250);
@@ -48,6 +49,7 @@
     --popover-foreground: oklch(0.97 0.003 260);
     --primary: oklch(0.765 0.177 163.223);
     --primary-foreground: oklch(0.2 0.02 163);
+    --primary-strong: oklch(0.765 0.177 163.223);
     --secondary: oklch(0.31 0.005 260);
     --secondary-foreground: oklch(0.97 0.003 260);
     --muted: oklch(0.31 0.005 260);
@@ -89,6 +91,7 @@
     --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-primary-strong: var(--primary-strong);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
@@ -124,7 +127,13 @@
     }
 
     body {
-        @apply bg-background text-foreground antialiased;
+        @apply text-foreground antialiased;
+        background:
+            radial-gradient(60rem 40rem at 65% -10%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
+            radial-gradient(50rem 35rem at 100% 100%, color-mix(in oklch, oklch(0.7 0.12 200) 10%, transparent), transparent 70%),
+            var(--background);
+        background-attachment: fixed;
+        min-height: 100svh;
     }
 }
 
@@ -156,7 +165,8 @@ html.desktop-mac .app-dragbar {
     height: var(--inset-top);
     z-index: 100;
     pointer-events: none;
-    background: linear-gradient(to bottom, var(--background) 60%, transparent);
+    backdrop-filter: blur(12px);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent);
     -webkit-app-region: drag;
 }
 
@@ -172,49 +182,6 @@ html.desktop textarea,
 html.desktop [role='button'],
 html.desktop [role='dialog'] {
     -webkit-app-region: no-drag;
-}
-
-.react-grid-layout,
-.react-grid-item {
-    transition: none;
-}
-
-.dashboard-editing .react-grid-item {
-    outline: 2px dashed color-mix(in oklab, var(--primary) 50%, transparent);
-    outline-offset: -2px;
-    border-radius: 1.5rem;
-}
-
-.dashboard-editing .react-grid-item > .react-resizable-handle {
-    width: 28px;
-    height: 28px;
-    bottom: 6px;
-    right: 6px;
-    background: none;
-}
-
-.dashboard-editing .react-grid-item > .react-resizable-handle::after {
-    width: 12px;
-    height: 12px;
-    right: 6px;
-    bottom: 6px;
-    border-right: 3px solid var(--primary);
-    border-bottom: 3px solid var(--primary);
-    border-radius: 0 0 4px 0;
-}
-
-.react-grid-item.react-grid-placeholder {
-    background: color-mix(in oklab, var(--primary) 25%, transparent);
-    border-radius: 1.5rem;
-    opacity: 1;
-}
-
-.react-grid-item > * {
-    overflow: hidden;
-}
-
-.dashboard-editing .react-grid-item:not(.react-draggable-dragging):not(.resizing) {
-    transition: transform 200ms ease, width 200ms ease, height 200ms ease;
 }
 
 @property --scroll-fade-t {
@@ -247,6 +214,27 @@ html.desktop [role='dialog'] {
 }
 
 @theme inline {
+    --animate-filament-draw: filament-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) both;
+    --animate-filament-flow: filament-flow 1.6s linear infinite;
+    @keyframes filament-draw {
+        from {
+            stroke-dashoffset: 1;
+        }
+    }
+    @keyframes filament-flow {
+        from {
+            stroke-dashoffset: var(--comet);
+            opacity: 0;
+        }
+        12%,
+        88% {
+            opacity: 1;
+        }
+        to {
+            stroke-dashoffset: -1;
+            opacity: 0;
+        }
+    }
     @keyframes scroll-fade-reveal-t {
         from {
             --scroll-fade-t: 0px;

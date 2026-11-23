@@ -3,6 +3,8 @@ export interface GcodeFilamentInfo {
     colorHex: string;
     material: string;
     isUsed: boolean;
+    usedMm: number | null;
+    usedG: number | null;
 }
 
 export interface GcodeMetadata {
@@ -12,6 +14,7 @@ export interface GcodeMetadata {
     thumbnailB64: string;
     filaments: GcodeFilamentInfo[];
     objects: string[];
+    target: GcodeTarget;
 }
 
 function headAndTail(data: Buffer, head: number, tail: number): string {
@@ -23,8 +26,8 @@ function headAndTail(data: Buffer, head: number, tail: number): string {
 export function parseEstimatedTime(data: Buffer): number {
     const text = headAndTail(data, 16384, 65536);
     const m =
-        /;\s*total estimated time:\s*(.*)/.exec(text) ??
-        /;\s*estimated printing time \(normal mode\)\s*=\s*(.*)/.exec(text);
+        /;[ \t]*total estimated time:[ \t]*(.*)/.exec(text) ??
+        /;[ \t]*estimated printing time \(normal mode\)[ \t]*=[ \t]*(.*)/.exec(text);
     if (!m) return 0;
     let secs = 0;
     for (const part of m[1].matchAll(/(\d+)\s*([hms])/g)) {
@@ -44,10 +47,10 @@ export function parseLayerHeights(data: Buffer): { layerHeight: number; firstLay
         const v = Number.parseFloat(m[1]);
         return Number.isFinite(v) ? v : 0;
     };
-    const layerHeight = grab(/;\s*layer_height\s*=\s*([0-9.]+)/);
+    const layerHeight = grab(/;[ \t]*layer_height[ \t]*=[ \t]*([0-9.]+)/);
     const firstLayerHeight =
-        grab(/;\s*initial_layer_print_height\s*=\s*([0-9.]+)/) ||
-        grab(/;\s*first_layer_height\s*=\s*([0-9.]+)/) ||
+        grab(/;[ \t]*initial_layer_print_height[ \t]*=[ \t]*([0-9.]+)/) ||
+        grab(/;[ \t]*first_layer_height[ \t]*=[ \t]*([0-9.]+)/) ||
         layerHeight;
     return { layerHeight, firstLayerHeight };
 }
@@ -82,6 +85,10 @@ export function extractFilamentInfo(data: Buffer): GcodeFilamentInfo[] {
     let materials: string[] = [];
     let paintCountHint = 0;
     let toolOrder: number[] = [];
+    let usedMm: number[] = [];
+    let usedG: number[] = [];
+    let densities: number[] = [];
+    let diameters: number[] = [];
 
     for (const line of header.split('\n')) {
         if (/^\s*;\s*filament_colour\s*=/.test(line)) {
@@ -91,9 +98,15 @@ export function extractFilamentInfo(data: Buffer): GcodeFilamentInfo[] {
         } else if (/^\s*;\s*filament_type\s*=/.test(line)) {
             materials = splitList(line.split('=').slice(1).join('='), /[;,]/);
             paintCountHint = Math.max(paintCountHint, materials.length);
-        } else if (/^\s*;\s*filament_density\s*:/.test(line) || /^\s*;\s*filament_diameter\s*:/.test(line)) {
-            const parts = splitList(line.split(':').slice(1).join(':'), /[;,]/);
+        } else if (/^\s*;\s*filament used \[mm\]\s*=/.test(line)) {
+            usedMm = numberList(line.split('=').slice(1).join('='));
+        } else if (/^\s*;\s*filament used \[g\]\s*=/.test(line)) {
+            usedG = numberList(line.split('=').slice(1).join('='));
+        } else if (/^\s*;\s*filament_(density|diameter)\s*[:=]/.test(line)) {
+            const parts = numberList(line.replace(/^[^:=]*[:=]/, ''));
             paintCountHint = Math.max(paintCountHint, parts.length);
+            if (/filament_density/.test(line)) densities = parts;
+            else diameters = parts;
         } else if (/^\s*;\s*filament\s*:/.test(line)) {
             toolOrder = splitList(line.split(':').slice(1).join(':'), ',')
                 .map((p) => Number.parseInt(p, 10))
@@ -121,6 +134,7 @@ export function extractFilamentInfo(data: Buffer): GcodeFilamentInfo[] {
             colorHex: `#${hex.toUpperCase()}`,
             material: materials[i] || 'PLA',
             isUsed: usedFromBody.size ? usedFromBody.has(i) : usedFromHeader.size ? usedFromHeader.has(i) : true,
+            ...usage(i, usedMm, usedG, densities, diameters),
         });
     }
     return out;
@@ -135,6 +149,7 @@ export function parseGcodeMetadata(data: Buffer): GcodeMetadata {
         thumbnailB64: extractThumbnail(data),
         filaments: extractFilamentInfo(data),
         objects: extractObjectNames(data),
+        target: extractPrintTarget(data),
     };
 }
 
@@ -146,6 +161,26 @@ export function extractObjectNames(data: Buffer): string[] {
     return [...names];
 }
 
+function numberList(raw: string): number[] {
+    return splitList(raw, /[;,]/).map((s) => Number.parseFloat(s));
+}
+
+function usage(
+    i: number,
+    mm: number[],
+    g: number[],
+    densities: number[],
+    diameters: number[],
+): { usedMm: number | null; usedG: number | null } {
+    const usedMm = Number.isFinite(mm[i]) ? mm[i] : null;
+    if (g.length === mm.length && Number.isFinite(g[i])) return { usedMm, usedG: g[i] };
+    const density = densities[i] ?? densities[0];
+    const diameter = diameters[i] ?? diameters[0];
+    if (usedMm === null || !(density > 0) || !(diameter > 0)) return { usedMm, usedG: null };
+    const grams = (usedMm * Math.PI * (diameter / 2) ** 2 * density) / 1000;
+    return { usedMm, usedG: Math.round(grams * 100) / 100 };
+}
+
 function splitList(raw: string, sep: string | RegExp): string[] {
     return raw
         .split(sep)
@@ -155,4 +190,45 @@ function splitList(raw: string, sep: string | RegExp): string[] {
 
 function stripHash(s: string): string {
     return s.replace(/^#/, '');
+}
+
+export interface GcodeTarget {
+    printerModel: string;
+    nozzleMm: number | null;
+    bedX: number | null;
+    bedY: number | null;
+    extentX: number | null;
+    extentY: number | null;
+    maxZ: number | null;
+}
+
+export function extractPrintTarget(data: Buffer): GcodeTarget {
+    const text = headAndTail(data, 262144, 262144);
+    const value = (re: RegExp) => re.exec(text)?.[1]?.trim() ?? '';
+    const firstNumber = (raw: string) => {
+        const n = Number.parseFloat(raw.split(/[;,]/)[0] ?? '');
+        return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const area = value(/^[ \t]*;[ \t]*printable_area[ \t]*=[ \t]*(.+)$/m)
+        .split(',')
+        .map((p) => p.split('x').map(Number))
+        .filter((p) => p.length === 2 && p.every(Number.isFinite));
+    const objects = headAndTail(data, 2 * 1024 * 1024, 256 * 1024);
+    let extentX = 0;
+    let extentY = 0;
+    for (const m of objects.matchAll(/^EXCLUDE_OBJECT_DEFINE\b.*?POLYGON=(\[.*\])/gm)) {
+        for (const p of m[1].matchAll(/\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]/g)) {
+            extentX = Math.max(extentX, Number(p[1]));
+            extentY = Math.max(extentY, Number(p[2]));
+        }
+    }
+    return {
+        printerModel: value(/^[ \t]*;[ \t]*printer_model[ \t]*=[ \t]*(.+)$/m),
+        nozzleMm: firstNumber(value(/^[ \t]*;[ \t]*nozzle_diameter[ \t]*=[ \t]*(.+)$/m)),
+        bedX: area.length ? Math.max(...area.map((p) => p[0])) : null,
+        bedY: area.length ? Math.max(...area.map((p) => p[1])) : null,
+        extentX: extentX > 0 ? Math.round(extentX * 10) / 10 : null,
+        extentY: extentY > 0 ? Math.round(extentY * 10) / 10 : null,
+        maxZ: firstNumber(value(/^[ \t]*;[ \t]*max_z_height[ \t]*[:=][ \t]*(.+)$/m)),
+    };
 }

@@ -202,7 +202,7 @@ export class MoonrakerController {
         if (all) await this.moon.queue.clear(this.moon.bridge.id);
         else {
             const ids = body?.job_ids ?? (query.job_ids ? query.job_ids.split(',') : []);
-            for (const id of ids) await this.moon.queue.remove(this.moon.bridge.id, id);
+            for (const id of ids) await this.moon.queue.remove(id);
         }
         return { result: await this.moon.jobQueueStatus() };
     }

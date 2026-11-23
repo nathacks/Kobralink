@@ -1,5 +1,5 @@
 import { type AppSettings, type FailureDetectionAction, failureDetectionSettingsSchema } from '@kobralink/shared';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, ScanEye, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,8 +48,13 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
     const form = useForm({
         defaultValues: settings.failureDetection,
         validators: { onSubmit: failureDetectionSettingsSchema.required() },
-        onSubmit: ({ value }) => save.mutateAsync({ failureDetection: value }).catch(() => undefined),
+        onSubmit: ({ value, formApi }) =>
+            save
+                .mutateAsync({ failureDetection: value })
+                .then(() => formApi.reset(value))
+                .catch(() => undefined),
     });
+    const changed = useStore(form.store, (s) => !s.isDefaultValue);
     const d = status.data;
     const model = d?.model;
     const ready = model?.state === 'ready';
@@ -136,6 +141,8 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
             <SettingsCard
                 title={m.settings_general()}
                 onSubmit={() => void form.handleSubmit()}
+                changed={changed}
+                onDiscard={() => form.reset()}
                 submitting={save.isPending}
             >
                 <form.Field name="enabled">
@@ -167,6 +174,13 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </SwitchRow>
+                    )}
+                </form.Field>
+                <form.Field name="light">
+                    {(field) => (
+                        <SwitchRow label={m.detection_light()} hint={m.detection_light_hint()}>
+                            <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
                         </SwitchRow>
                     )}
                 </form.Field>

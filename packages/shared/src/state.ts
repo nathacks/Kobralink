@@ -1,24 +1,42 @@
+import type { PrinterFeatures } from './features';
+
 export type KlipperPrintState = 'standby' | 'printing' | 'paused' | 'complete' | 'error';
+
+export const PREPARING_KOBRA_STATES = [
+    'preheating',
+    'auto_leveling',
+    'vibrating',
+    'flow_calibrating',
+    'checking',
+    'updated',
+    'init',
+    'drying',
+    'downloading',
+    'slicing',
+    'waiting',
+    'hotbed_heating',
+    'hotbed_cooling_off',
+    'nozzle_heating',
+    'nozzle_cooling',
+    'nozzle_cooling_off',
+    'nozzle_purging',
+    'nozzle_wiping',
+    'frequency_sweeping',
+    'z_offset_calibrating',
+    'filament_cutting',
+    'extfilbox_filament_feeding',
+    'extfilbox_filament_unfeeding',
+    'ace_filament_feeding',
+    'ace_filament_unfeeding',
+] as const;
+
+export type PreparingKobraState = (typeof PREPARING_KOBRA_STATES)[number];
 
 export type KobraState =
     | 'free'
     | 'busy'
     | 'printing'
-    | 'preheating'
-    | 'auto_leveling'
-    | 'checking'
-    | 'hotbed_heating'
-    | 'nozzle_heating'
-    | 'nozzle_cooling'
-    | 'nozzle_cooling_off'
-    | 'hotbed_cooling_off'
-    | 'nozzle_purging'
-    | 'nozzle_wiping'
-    | 'frequency_sweeping'
-    | 'z_offset_calibrating'
-    | 'extfilbox_filament_feeding'
-    | 'updated'
-    | 'init'
+    | PreparingKobraState
     | 'pausing'
     | 'paused'
     | 'pause'
@@ -63,7 +81,42 @@ export interface AmsSlot {
     rfid?: number;
     sku?: string;
     activity: string;
+    remainingPct?: number;
+    source?: AceSlotSource;
+    colors?: [number, number, number][];
 }
+
+export type AceSlotSource = 'rfid' | 'manual' | 'unknown';
+
+export const ACE_SLOT_SOURCES: Record<number, AceSlotSource> = { 0: 'rfid', 1: 'manual', 2: 'unknown' };
+
+export type AceSlotStatus =
+    | 'feeding'
+    | 'unloading'
+    | 'shifting'
+    | 'no_spool'
+    | 'ready'
+    | 'shift_error'
+    | 'preloading'
+    | 'reading_rfid';
+
+const ACE_SLOT_STATUSES: Record<number, AceSlotStatus> = {
+    1: 'feeding',
+    2: 'unloading',
+    3: 'shifting',
+    4: 'no_spool',
+    5: 'ready',
+    6: 'shift_error',
+    7: 'preloading',
+    8: 'reading_rfid',
+};
+
+export function aceSlotStatus(status: number): AceSlotStatus | null {
+    return ACE_SLOT_STATUSES[status] ?? null;
+}
+
+export const ACE_DRYING_ON = 1;
+export const ACE_DRYING_FAULT = 2;
 
 export interface AceDrying {
     status: number;
@@ -117,6 +170,7 @@ export interface PrinterLiveState {
     filamentMode: FilamentMode;
     amsSlots: AmsSlot[];
     amsLoadedSlot: number;
+    externalSpoolOnly: boolean;
     aceUnits: AceUnit[];
     aceDrying: AceDrying;
     skippedObjects: string[];
@@ -124,6 +178,7 @@ export interface PrinterLiveState {
     manualOffline: boolean;
     storageTotalMb: number;
     storageUsedMb: number;
+    features: PrinterFeatures | null;
     updatedAt: number;
 }
 
@@ -138,21 +193,7 @@ export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {
     free: 'standby',
     busy: 'printing',
     printing: 'printing',
-    preheating: 'printing',
-    auto_leveling: 'printing',
-    checking: 'printing',
-    updated: 'printing',
-    init: 'printing',
-    hotbed_heating: 'printing',
-    nozzle_heating: 'printing',
-    nozzle_cooling: 'printing',
-    nozzle_cooling_off: 'printing',
-    hotbed_cooling_off: 'printing',
-    nozzle_purging: 'printing',
-    nozzle_wiping: 'printing',
-    frequency_sweeping: 'printing',
-    z_offset_calibrating: 'printing',
-    extfilbox_filament_feeding: 'printing',
+    ...Object.fromEntries(PREPARING_KOBRA_STATES.map((s) => [s, 'printing' as const])),
     pausing: 'paused',
     paused: 'paused',
     pause: 'paused',
@@ -173,38 +214,19 @@ export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
     return slot.boxId === -1;
 }
 
-export const PRE_PRINT_STATES = new Set([
-    'preheating',
-    'auto_leveling',
-    'checking',
-    'updated',
-    'init',
-    'hotbed_heating',
-    'nozzle_heating',
-    'nozzle_cooling',
-    'nozzle_cooling_off',
-    'hotbed_cooling_off',
-    'nozzle_purging',
-    'nozzle_wiping',
-    'frequency_sweeping',
-    'z_offset_calibrating',
-    'extfilbox_filament_feeding',
-]);
-export const ACTIVE_PRINT_STATES = new Set([
+export const PRE_PRINT_STATES: ReadonlySet<string> = new Set(PREPARING_KOBRA_STATES);
+export const ACTIVE_PRINT_STATES: ReadonlySet<string> = new Set([
     'printing',
-    'preheating',
-    'auto_leveling',
-    'checking',
-    'init',
-    'hotbed_heating',
-    'nozzle_heating',
-    'nozzle_cooling',
-    'nozzle_cooling_off',
-    'hotbed_cooling_off',
-    'nozzle_purging',
-    'nozzle_wiping',
-    'frequency_sweeping',
-    'z_offset_calibrating',
-    'extfilbox_filament_feeding',
+    ...PREPARING_KOBRA_STATES.filter((s) => s !== 'updated'),
 ]);
+
+export function isPreparing(kobraState: string, currLayer = 0): boolean {
+    return PRE_PRINT_STATES.has(kobraState) && !(currLayer > 0);
+}
+
+export function isCalibrating(
+    state: Pick<PrinterLiveState, 'printState' | 'kobraState'> & Partial<Pick<PrinterLiveState, 'currLayer'>>,
+): boolean {
+    return state.printState === 'printing' && isPreparing(state.kobraState, state.currLayer);
+}
 export const TERMINAL_PRINT_STATES = new Set(['finished', 'stoped', 'canceled']);

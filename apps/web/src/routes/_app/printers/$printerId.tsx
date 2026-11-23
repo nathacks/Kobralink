@@ -3,18 +3,17 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { RefreshCw, Settings, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
-import type { WidgetId } from '@/components/dashboard/layout-store';
-import { ActivityCard } from '@/components/printer/activity-card';
 import { AmsCard } from '@/components/printer/ams/ams-card';
-import { AxesCard } from '@/components/printer/axes-card';
 import { CameraCard } from '@/components/printer/camera-card';
 import { ControlsCard } from '@/components/printer/controls-card';
 import { FilesCard } from '@/components/printer/files/files-card';
 import { MacrosCard } from '@/components/printer/macros-card';
+import { MaintenanceCard } from '@/components/printer/maintenance-card';
 import { PrintCard } from '@/components/printer/print-card';
 import { QueueCard } from '@/components/printer/queue-card';
+import { StatusBadge } from '@/components/printer/status-badge';
 import { TemperatureCard } from '@/components/printer/temperature-card';
+import { GettingStarted } from '@/components/printers/getting-started';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrinter } from '@/hooks/use-printers';
@@ -62,39 +61,31 @@ function PrinterDashboard() {
 
     if (!printer) return <Skeleton className="h-40 rounded-3xl" />;
 
-    const widgets: Record<WidgetId, () => React.ReactNode> = {
-        activity: () => <ActivityCard printerId={printerId} />,
-        print: () => <PrintCard printerId={printerId} />,
-        camera: () => <CameraCard printerId={printerId} />,
-        ams: () => <AmsCard printerId={printerId} />,
-        controls: () => <ControlsCard printerId={printerId} />,
-        files: () => <FilesCard printerId={printerId} />,
-        axes: () => <AxesCard printerId={printerId} />,
-        temperature: () => <TemperatureCard printerId={printerId} />,
-        queue: () => <QueueCard printerId={printerId} />,
-        macros: () => <MacrosCard printerId={printerId} />,
-    };
-
+    const firmware = live && live.firmwareVersion !== 'unknown' ? live.firmwareVersion : null;
     const header = (
-        <>
-            <h2 className="text-xl font-medium">{printer.name}</h2>
-            <span className="text-sm text-muted-foreground">
-                {m.dashboard_moonraker({ ip: printer.ip, port: printer.httpPort })}
-            </span>
-            <Link
-                to="/printers/$printerId/settings"
-                params={{ printerId }}
-                className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm hover:bg-accent"
-            >
-                <Settings className="size-4" /> {m.common_settings()}
-            </Link>
-        </>
+        <header className="flex flex-wrap items-center gap-x-4 gap-y-3 px-1">
+            <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="truncate text-2xl font-medium">{printer.name}</h2>
+                    {live && <StatusBadge state={live} />}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {m.dashboard_moonraker({ ip: printer.ip, port: printer.httpPort })}
+                    {firmware && ` · ${m.activity_firmware()} ${firmware}`}
+                </p>
+            </div>
+            <Button asChild variant="secondary" className="h-9 rounded-full">
+                <Link to="/printers/$printerId/settings" params={{ printerId }} aria-label={m.common_settings()}>
+                    <Settings /> <span className="hidden sm:inline">{m.common_settings()}</span>
+                </Link>
+            </Button>
+        </header>
     );
 
     if (!live) {
         return (
             <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3 px-2">{header}</div>
+                {header}
                 <Skeleton className="h-96 rounded-3xl" />
             </div>
         );
@@ -104,7 +95,7 @@ function PrinterDashboard() {
         const reconnecting = reconnect.isPending || reconnectCooldown;
         return (
             <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3 px-2">{header}</div>
+                {header}
                 <div className="flex min-h-[60svh] flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-destructive/40 p-10 text-center">
                     <div className="flex size-16 items-center justify-center rounded-full bg-destructive/15 text-destructive">
                         <WifiOff className="size-8" />
@@ -138,9 +129,27 @@ function PrinterDashboard() {
                     {m.role_viewer_hint()}
                 </div>
             )}
-            <fieldset disabled={!canOperate} className="contents">
-                <DashboardGrid printerId={printerId} header={header} render={(id) => widgets[id]()} />
+            {header}
+            <fieldset
+                disabled={!canOperate}
+                className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]"
+                data-testid="printer-dashboard"
+            >
+                <div className="grid min-w-0 gap-4">
+                    <CameraCard printerId={printerId} />
+                    <TemperatureCard printerId={printerId} />
+                    <QueueCard printerId={printerId} />
+                    <FilesCard printerId={printerId} />
+                </div>
+                <aside className="order-first grid min-w-0 gap-4 lg:order-none">
+                    <PrintCard printerId={printerId} />
+                    <ControlsCard printerId={printerId} />
+                    <AmsCard printerId={printerId} />
+                    <MacrosCard printerId={printerId} />
+                    <MaintenanceCard printerId={printerId} />
+                </aside>
             </fieldset>
+            <GettingStarted />
         </div>
     );
 }

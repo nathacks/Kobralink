@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { type AppSettings, appSettingsSchema, type UpdateAppSettingsInput } from '@kobralink/shared';
+import { type AppSettings, appSettingsSchema, mergePatch, type UpdateAppSettingsInput } from '@kobralink/shared';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -32,7 +32,7 @@ export class SettingsService extends EventEmitter<{ change: [AppSettings] }> imp
     }
 
     async update(patch: UpdateAppSettingsInput): Promise<AppSettings> {
-        const next = appSettingsSchema.parse({ ...this.current, ...patch });
+        const next = appSettingsSchema.parse(mergePatch(this.current, patch));
         await this.prisma.client.$transaction(
             (Object.keys(patch) as (keyof AppSettings)[]).map((key) =>
                 this.prisma.client.appSetting.upsert({

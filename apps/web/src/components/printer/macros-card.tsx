@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Plus, Settings2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmptyState, Panel } from '@/components/printer/panel';
 import { MacrosEditor, openMacroForm } from '@/components/settings/macros-editor';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePinnedPrinter } from '@/hooks/use-pinned-printer';
 import { useLiveState } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
@@ -13,10 +13,9 @@ import { macrosQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { MACRO_ICON } from './macro-icon';
 
-const manageClass =
-    'flex size-8 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-3.5';
+const manageClass = 'flex size-9 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-4';
 
-export function MacrosCard({ printerId }: { printerId: string }) {
+export function MacrosCard({ printerId, className }: { printerId: string; className?: string }) {
     const state = useLiveState(printerId);
     const pinned = usePinnedPrinter();
     const qc = useQueryClient();
@@ -36,49 +35,47 @@ export function MacrosCard({ printerId }: { printerId: string }) {
             content: <MacrosEditor embedded />,
         });
     return (
-        <Card className="rounded-3xl border-0 shadow-none">
-            <CardHeader>
-                <CardTitle className="text-lg font-medium">{m.macros_title()}</CardTitle>
-                <CardAction>
-                    {pinned ? (
-                        <button
-                            type="button"
-                            title={m.macros_manage()}
-                            aria-label={m.macros_manage()}
-                            className={manageClass}
-                            onClick={openManager}
-                        >
-                            <Settings2 />
-                        </button>
-                    ) : (
-                        <Link
-                            to="/settings"
-                            search={{ tab: 'macros' }}
-                            title={m.macros_manage()}
-                            aria-label={m.macros_manage()}
-                            className={manageClass}
-                        >
-                            <Settings2 />
-                        </Link>
-                    )}
-                </CardAction>
-            </CardHeader>
-            <CardContent>
+        <Panel
+            className={className}
+            title={m.macros_title()}
+            action={
+                pinned ? (
+                    <button
+                        type="button"
+                        title={m.macros_manage()}
+                        aria-label={m.macros_manage()}
+                        className={manageClass}
+                        onClick={openManager}
+                    >
+                        <Settings2 />
+                    </button>
+                ) : (
+                    <Link
+                        to="/settings/macros"
+                        title={m.macros_manage()}
+                        aria-label={m.macros_manage()}
+                        className={manageClass}
+                    >
+                        <Settings2 />
+                    </Link>
+                )
+            }
+        >
+            <div>
                 {list.length === 0 ? (
                     pinned ? (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                            <p className="text-sm text-muted-foreground">{m.macros_empty_pinned()}</p>
+                        <div className="flex flex-col gap-3">
+                            <EmptyState icon={<Zap />}>{m.macros_empty_pinned()}</EmptyState>
                             <Button
                                 type="button"
-                                size="sm"
-                                className="rounded-full"
+                                className="h-9 self-start rounded-full"
                                 onClick={() => openMacroForm(undefined, invalidate)}
                             >
                                 <Plus /> {m.macros_add()}
                             </Button>
                         </div>
                     ) : (
-                        <p className="py-4 text-center text-sm text-muted-foreground">{m.macros_empty()}</p>
+                        <EmptyState icon={<Zap />}>{m.macros_empty()}</EmptyState>
                     )
                 ) : (
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2">
@@ -90,7 +87,7 @@ export function MacrosCard({ printerId }: { printerId: string }) {
                                     type="button"
                                     disabled={!state.connected || run.isPending}
                                     onClick={() => run.mutate(macro.id)}
-                                    className="flex flex-col items-center gap-2 rounded-2xl bg-secondary px-3 py-4 text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                                    className="flex flex-col items-center gap-2 rounded-2xl bg-secondary/60 px-3 py-4 text-sm font-medium transition-colors enabled:hover:bg-primary enabled:hover:text-primary-foreground disabled:opacity-50"
                                 >
                                     <Icon className="size-5" />
                                     <span className="w-full truncate text-center">{macro.name}</span>
@@ -99,7 +96,7 @@ export function MacrosCard({ printerId }: { printerId: string }) {
                         })}
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </Panel>
     );
 }

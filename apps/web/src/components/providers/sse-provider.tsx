@@ -1,8 +1,15 @@
-import type { KobralinkEvent, PrinterLiveState, SseChannel, SseParams } from '@kobralink/shared';
+import {
+    eventLinkPath,
+    type KobralinkEvent,
+    type PrinterLiveState,
+    type SseChannel,
+    type SseParams,
+} from '@kobralink/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { m } from '@/lib/i18n';
+import { printerErrorText } from '@/lib/labels';
 import { appSettingsQuery, printerQuery } from '@/lib/queries';
 import { type SseHandler, type SseMultiplexer, type SseStatus, sseMultiplexer } from '@/lib/sse-multiplexer';
 import { printersStore } from '@/stores/printers';
@@ -50,7 +57,7 @@ interface RefusedPayload {
     msg: string;
 }
 
-function GlobalSubscriptions() {
+function GlobalSubscriptions({ onOpen }: { onOpen?: (path: string) => void }) {
     const qc = useQueryClient();
     const settings = useQuery(appSettingsQuery);
     const browser = settings.data?.notifications.browser ?? true;
@@ -76,13 +83,31 @@ function GlobalSubscriptions() {
 
     useSse<KobralinkEvent>('printers', 'notification', (event) => {
         qc.setQueryData<KobralinkEvent[]>(['notifications'], (old) => [...(old ?? []), event].slice(-200));
-        if (event.type === 'queue_next' || event.type === 'print_finished') {
+        if (
+            event.type === 'queue_next' ||
+            event.type === 'queue_filament' ||
+            event.type === 'print_finished' ||
+            event.type === 'print_cancelled' ||
+            event.type === 'scheduled_print'
+        ) {
+            void qc.invalidateQueries({ queryKey: ['queue'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'queue-status'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'schedule'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'history'] });
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
             void qc.invalidateQueries({ queryKey: ['timelapses'] });
         }
+        if (event.type === 'maintenance_due') {
+            void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
+        }
         const alert = event.type.startsWith('alert') || event.type === 'print_paused';
-        (alert ? toast.warning : toast.info)(event.title, { description: event.body, duration: 8000 });
+        const path = eventLinkPath(event.type, event.printerId);
+        (alert ? toast.warning : toast.info)(event.title, {
+            description: event.body,
+            duration: 8000,
+            ...(onOpen ? { action: { label: m.notify_open_link(), onClick: () => onOpen(path) } } : {}),
+        });
         if (
             browserRef.current &&
             'Notification' in window &&
@@ -90,7 +115,12 @@ function GlobalSubscriptions() {
             document.hidden
         ) {
             try {
-                new Notification(event.title, { body: event.body, tag: event.id });
+                const shown = new Notification(event.title, { body: event.body, tag: event.id });
+                shown.onclick = () => {
+                    window.focus();
+                    onOpen?.(path);
+                    shown.close();
+                };
             } catch {}
         }
     });
@@ -100,11 +130,18 @@ function GlobalSubscriptions() {
     });
 
     useSse<RefusedPayload>('printers', 'refused', (r) => {
-        toast.error(m.toast_command_refused({ command: `${r.topic}/${r.action}`, code: r.code, msg: r.msg }), {
-            id: `refused:${r.printerId}:${r.topic}:${r.action}`,
-            description: r.printerName,
-            duration: 8000,
-        });
+        toast.error(
+            m.toast_command_refused({
+                command: `${r.topic}/${r.action}`,
+                code: r.code,
+                msg: printerErrorText(r.code, r.msg),
+            }),
+            {
+                id: `refused:${r.printerId}:${r.topic}:${r.action}`,
+                description: r.printerName,
+                duration: 8000,
+            },
+        );
     });
 
     useEffect(() => {
@@ -135,11 +172,19 @@ function GlobalSubscriptions() {
     return null;
 }
 
-export function SseProvider({ children, client = sseMultiplexer }: { children: ReactNode; client?: SseMultiplexer }) {
+export function SseProvider({
+    children,
+    client = sseMultiplexer,
+    onOpen,
+}: {
+    children: ReactNode;
+    client?: SseMultiplexer;
+    onOpen?: (path: string) => void;
+}) {
     useEffect(() => () => client.disconnect(), [client]);
     return (
         <SseContext.Provider value={client}>
-            <GlobalSubscriptions />
+            <GlobalSubscriptions onOpen={onOpen} />
             {children}
         </SseContext.Provider>
     );
