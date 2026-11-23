@@ -1,6 +1,6 @@
 {
     "name": "@farolprint/api",
-    "version": "0.22.0",
+    "version": "0.23.0",
     "private": true,
     "license": "GPL-3.0-only",
     "scripts": {

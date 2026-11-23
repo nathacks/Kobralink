@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.23.0](https://github.com/riccardoalv/farolprint/compare/v0.22.0...v0.23.0) (2026-11-23)
+
+
+### Features
+
+* **print:** offer the calibration options the printer reports ([#61](https://github.com/riccardoalv/farolprint/issues/61)) ([b389280](https://github.com/riccardoalv/farolprint/commit/b3892809e6a05319dff7bafa856b4a2b0c1ef035))
+
+
+### Bug Fixes
+
+* **ci:** run the web paraglide compile after the i18n package's ([#60](https://github.com/riccardoalv/farolprint/issues/60)) ([8ef51a8](https://github.com/riccardoalv/farolprint/commit/8ef51a828adf1507f67f68a8c9eb286dcec222da))
+
 ## [0.22.0](https://github.com/riccardoalv/farolprint/compare/v0.21.0...v0.22.0) (2026-11-23)
 
 
