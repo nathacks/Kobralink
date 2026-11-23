@@ -177,6 +177,13 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
                         </SwitchRow>
                     )}
                 </form.Field>
+                <form.Field name="light">
+                    {(field) => (
+                        <SwitchRow label={m.detection_light()} hint={m.detection_light_hint()}>
+                            <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                        </SwitchRow>
+                    )}
+                </form.Field>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <form.Field name="sensitivity">
                         {(field) => (

@@ -857,6 +857,8 @@
     "detection_action_pause": "Notify and pause",
     "detection_action_cancel": "Notify and cancel the print",
     "detection_action_hint": "Pausing/cancelling requires a higher confidence than a plain notification.",
+    "detection_light": "Turn on the camera light",
+    "detection_light_hint": "While detection watches a print, the camera light is turned on, as in Anycubic's app. FarolPrint turns it off at the end if it turned it on.",
     "detection_sensitivity": "Sensitivity",
     "detection_sensitivity_hint": "Higher = earlier alerts but more false positives. 1 = Obico default.",
     "detection_interval": "Analysis interval (s)",

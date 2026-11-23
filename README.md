@@ -38,7 +38,7 @@ by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker cli
 - **Filament**: Spoolman as the source of truth (prices, low-spool alerts, retried usage reports), or a simple local
   inventory; the print dialog warns when a spool is short
 - **Camera** (MJPEG at native quality, shared with Moonraker clients) and **timelapses** per job
-- **AI failure detection** (optional, Obico model) with notify / pause / cancel
+- **AI failure detection** (optional, Obico model) with notify / pause / cancel, lighting the camera while it watches
 - **Automations**: rules on print end, failure, cleared bed, low filament or a time of day that run macros, switch
   the light or the smart plug, load or unload filament and notify
 - **Notifications**: webhook, Discord, Telegram, ntfy, each linking to the right screen · **Home Assistant** MQTT

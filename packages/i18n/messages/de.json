@@ -857,6 +857,8 @@
     "detection_action_pause": "Benachrichtigen und pausieren",
     "detection_action_cancel": "Benachrichtigen und Druck abbrechen",
     "detection_action_hint": "Pausieren/Abbrechen erfordert eine höhere Konfidenz als eine einfache Benachrichtigung.",
+    "detection_light": "Kameralicht einschalten",
+    "detection_light_hint": "Während die Erkennung einen Druck überwacht, wird das Kameralicht eingeschaltet, wie in der Anycubic-App. FarolPrint schaltet es am Ende aus, wenn es es eingeschaltet hat.",
     "detection_sensitivity": "Empfindlichkeit",
     "detection_sensitivity_hint": "Höher = frühere Alarme, aber mehr Fehlalarme. 1 = Obico-Standard.",
     "detection_interval": "Analyseintervall (s)",

@@ -124,7 +124,9 @@ printer's LAN protocol (what FarolPrint uses, what Anycubic's own client does di
 - AI failure detection: `apps/api/src/detection/` (Obico YOLOv2 ONNX model, ~200 MB, downloaded on demand to
   `dataDir/models/failure-detection.onnx`, `onnxruntime-node` inference on CPU, `jpeg-js` decoding, Obico's EWM
   algorithm in `prediction.ts`). Global opt-in (`settings.failureDetection`) + a switch per printer; one frame every
-  `intervalSec` while printing, `alert_print_failure` event, `notify|pause|cancel` action.
+  `intervalSec` while printing, `alert_print_failure` event, `notify|pause|cancel` action. With
+  `failureDetection.light` (on by default) it turns the camera light on while it watches and off at the end of the
+  print if it turned it on.
 - Filament without an ACE: when `multiColorBox` reports no box, `LiveState.externalSpoolOnly` is set, usage from
   `print/report` (`supplies_usage`) is attributed to slot 0, and the filament card shows an external spool slot.
   Changing the mapped spool reports pending usage to the previous spool first.

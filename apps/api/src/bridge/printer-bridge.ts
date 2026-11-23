@@ -14,6 +14,7 @@ import {
     type KobraSkipData,
     type PrintStartPayload,
     readLight,
+    redactPrinterUrl,
     uploadGcode,
 } from '@farolprint/kobra-protocol';
 import {
@@ -444,7 +445,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     continue;
                 }
                 if (ACTIVE_PRINT_STATES.has(this.s.kobraState) || this.s.printState === 'paused') {
+                    const asked = Date.now();
                     const pr = await this.client.queryPrint();
+                    this.logPrintQuery(pr ? Date.now() - asked : null);
                     if (pr) this.onPrint(pr);
                 }
                 const box = await this.client.queryMultiColorBox();
@@ -600,6 +603,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private onPrint(p: KobraMessage<KobraPrintData>): void {
         const d = p.data ?? {};
         const kobraState = p.state ?? '';
+        if (kobraState === 'updated') this.logUpdated(d);
         if (d.supplies_usage !== undefined) {
             this.suppliesUsageMm = Number(d.supplies_usage) || 0;
             if (this.s.externalSpoolOnly) this.spoolmanAttribute(0, new Map());
@@ -895,7 +899,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             const keys = Object.keys(d.urls).sort().join(',');
             if (keys !== this.knownUrlKeys) {
                 this.knownUrlKeys = keys;
-                this.log.log(`URLs announced by the printer: ${JSON.stringify(d.urls)}`);
+                const shown = Object.fromEntries(
+                    Object.entries(d.urls).map(([k, v]) => [k, typeof v === 'string' ? redactPrinterUrl(v) : v]),
+                );
+                this.log.log(`URLs announced by the printer: ${JSON.stringify(shown)}`);
             }
         }
         if (d.urls?.fileUploadurl) this.uploadUrl = d.urls.fileUploadurl;
@@ -904,6 +911,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.camera.setUrl(d.urls.rtspUrl);
         }
         if (d.fan_speed_pct !== undefined) this.s.fanSpeed = Number(d.fan_speed_pct);
+        this.logExtraFans(d);
         const features = readFeatures(d.features);
         if (features && d.features) {
             this.s.features = features;
@@ -974,6 +982,34 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (raw === undefined || raw === null || !Number.isFinite(pct)) return;
         this.s.fanSpeed = pct;
         this.publish();
+    }
+
+    private logExtraFans(d: KobraInfoData): void {
+        const fans = Object.fromEntries(
+            ['aux_fan_speed_pct', 'box_fan_level'].filter((k) => d[k] !== undefined).map((k) => [k, d[k]]),
+        );
+        const text = JSON.stringify(fans);
+        if (text === '{}' || text === this.loggedFans) return;
+        this.loggedFans = text;
+        this.log.log(`Extra fans reported by the printer: ${text}`);
+    }
+
+    private logPrintQuery(ms: number | null): void {
+        const key = this.s.filename;
+        if (!key || key === this.printQueryLoggedFor) return;
+        this.printQueryLoggedFor = key;
+        this.log.log(
+            ms === null
+                ? 'print/query while printing: no print report within 3 s'
+                : `print/query while printing: a print report came back after ${ms} ms`,
+        );
+    }
+
+    private logUpdated(d: KobraPrintData): void {
+        const text = JSON.stringify({ settings: d.settings ?? null, keys: Object.keys(d).sort() });
+        if (text === this.loggedUpdated) return;
+        this.loggedUpdated = text;
+        this.log.log(`Print settings acknowledged by the printer (updated): ${text}`);
     }
 
     private logFeatures(features: Record<string, unknown>): void {
@@ -1076,6 +1112,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private knownUrlKeys = '';
     private loggedFeatures = '';
+    private loggedFans = '';
+    private loggedUpdated = '';
+    private printQueryLoggedFor = '';
     private paused = false;
 
     private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();

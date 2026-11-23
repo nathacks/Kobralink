@@ -857,6 +857,8 @@
     "detection_action_pause": "Notifica e metti in pausa",
     "detection_action_cancel": "Notifica e annulla la stampa",
     "detection_action_hint": "Pausa/annullamento richiedono una confidenza più alta di una semplice notifica.",
+    "detection_light": "Accendi la luce della fotocamera",
+    "detection_light_hint": "Mentre il rilevamento controlla una stampa, la luce della fotocamera viene accesa, come nell'app di Anycubic. FarolPrint la spegne alla fine se l'ha accesa.",
     "detection_sensitivity": "Sensibilità",
     "detection_sensitivity_hint": "Più alta = allarmi più precoci ma più falsi positivi. 1 = predefinito Obico.",
     "detection_interval": "Intervallo di analisi (s)",

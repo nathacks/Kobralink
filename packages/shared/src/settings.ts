@@ -45,6 +45,7 @@ export const failureDetectionSettingsSchema = z.object({
     action: z.enum(['notify', 'pause', 'cancel']).default('notify'),
     sensitivity: z.number().min(0.5).max(2).default(1),
     intervalSec: z.number().int().min(5).max(60).default(10),
+    light: z.boolean().default(true),
 });
 export type FailureDetectionSettings = z.infer<typeof failureDetectionSettingsSchema>;
 export type FailureDetectionAction = FailureDetectionSettings['action'];

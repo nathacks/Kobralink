@@ -1,5 +1,6 @@
 import { type ChildProcessByStdio, spawn } from 'node:child_process';
 import type { Readable } from 'node:stream';
+import { redactPrinterUrl } from '@farolprint/kobra-protocol';
 import type { Logger } from '@nestjs/common';
 import type { Response } from 'express';
 import { m } from '../i18n/locale';
@@ -227,7 +228,7 @@ export class CameraCache {
             return;
         }
         this.proc = proc;
-        this.log.log(`ffmpeg started (${url.replace(/\?.*$/, '')})`);
+        this.log.log(`ffmpeg started (${redactPrinterUrl(url.replace(/\?.*$/, ''))})`);
 
         let buf: Buffer = Buffer.alloc(0);
         let stderr = '';
@@ -279,7 +280,8 @@ export class CameraCache {
         for (const s of this.subscribers) s(frame);
     }
 
-    private onExit(code: number | null, detail: string): void {
+    private onExit(code: number | null, raw: string): void {
+        const detail = redactPrinterUrl(raw);
         for (const w of this.waiters) w(null);
         this.waiters.clear();
         this.failCount += 1;

@@ -857,6 +857,8 @@
     "detection_action_pause": "Notificar e pausar",
     "detection_action_cancel": "Notificar e cancelar a impressão",
     "detection_action_hint": "Pausar/cancelar exige uma confiança maior que uma simples notificação.",
+    "detection_light": "Acender a luz da câmera",
+    "detection_light_hint": "Enquanto a detecção acompanha uma impressão, a luz da câmera fica acesa, como no app da Anycubic. O FarolPrint a apaga no fim se foi ele que acendeu.",
     "detection_sensitivity": "Sensibilidade",
     "detection_sensitivity_hint": "Maior = alertas mais cedo, mas mais falsos positivos. 1 = padrão do Obico.",
     "detection_interval": "Intervalo de análise (s)",

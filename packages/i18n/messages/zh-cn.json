@@ -857,6 +857,8 @@
     "detection_action_pause": "通知并暂停",
     "detection_action_cancel": "通知并取消打印",
     "detection_action_hint": "暂停/取消需要比仅通知更高的置信度。",
+    "detection_light": "打开摄像头灯",
+    "detection_light_hint": "检测监视打印时会打开摄像头灯，与 Anycubic 应用一致。如果灯是 FarolPrint 打开的，打印结束时会将其关闭。",
     "detection_sensitivity": "灵敏度",
     "detection_sensitivity_hint": "越高 = 警报越早但误报越多。1 = Obico 默认值。",
     "detection_interval": "分析间隔（秒）",

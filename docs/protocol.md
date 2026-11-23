@@ -129,8 +129,9 @@ shows (`supportsPrintOption` in `packages/shared/src/features.ts`).
 | `skip/report` | skipped objects |
 | `buried/report` | storage size, file size, layers and estimate of the running file |
 
-Ignored today: `aux_fan_speed_pct` in `info`, `status/report`, `video/report`, `axis/report` (beyond refusals), `peripherie`,
-`ota`, `event`, `extfilbox`, `aiSettings`, `calibration`, `properties`.
+Logged, not used yet: `aux_fan_speed_pct` and `box_fan_level` in `info` (when they change), the `updated` print report,
+and whether `print/query` brings a report back while printing. Ignored today: `status/report`, `video/report`,
+`axis/report` (beyond refusals), `peripherie`, `ota`, `event`, `extfilbox`, `aiSettings`, `calibration`, `properties`.
 
 ### ACE slot and feed values ✔
 
@@ -215,19 +216,20 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 13 | Error codes shown raw, in the printer's language | fixed: 43 common codes translated, the printer message otherwise |
 | 14–16 | ACE slot statuses, slot `weight`/`edit_status`/`color_group`, drying fault 2 counted as drying | roadmap (ACE) |
 | 17 | Files in printer subfolders (such as `/test_model/`) not listed | fixed: the root lists no folder on the Kobra 4, so the test models are listed apart; printing one sends `filepath` `/test_model/<name>`, to confirm with a print ❓ |
-| 18 | `updated` snapshot fields (`print_speed_pct`, `z_comp`) ignored | roadmap |
+| 18 | `updated` snapshot fields (`print_speed_pct`, `z_comp`) ignored | logged; used once a print shows them ❓ |
 | 19 | Flow calibration option | fixed: on by default, switch in the print dialog |
 | 20 | Options shown only when `info.features` reports them | fixed: leveling, vibration compensation and flow calibration |
 | 21 | Dry in the ACE before printing (`dry_mode: 2`) | roadmap (ACE) |
 | 22 | The printer's own timelapse (needs a USB drive) | roadmap |
 | 23 | The printer's own AI detection | not planned: FarolPrint runs its own, and LAN cannot change the printer's settings |
 | 24 | Endless spool (backup slots in `ams_box_mapping`) | roadmap (ACE) |
-| 25 | Aux and chamber fans | checked: the Kobra 4 reports `aux_fan_speed_pct` and no chamber fan; controls in the roadmap |
-| 26–35 | Axis position, rename, USB drive, peripherals, OTA progress, other light types, slice parameters, Kobra X spool rack, `event` reports, camera light for detection | roadmap |
+| 25 | Aux and chamber fans | checked: the Kobra 4 reports `aux_fan_speed_pct` (0 when idle) and no chamber fan; changes are logged; the official client shows the controls for the S1 only, during a print, through `print/update` |
+| 26–34 | Axis position, rename, USB drive, peripherals, OTA progress, other light types, slice parameters, Kobra X spool rack, `event` reports | roadmap |
+| 35 | Camera light during failure detection | fixed: on while FarolPrint's detection watches, a setting on by default |
 | 36 | The official client connects with the per-printer `devicecrt`/`devicepk` from `/ctrl`, not the bundled Slicer certificate | checked: the Kobra 4 accepts it, the Slicer one and none; the broker checks the password |
 | 37 | The official client publishes everything on the `web` topic; FarolPrint mostly uses `slicer` | not planned: it works |
 | 38 | The official client restarts the camera with stop, ~1 s, start | checked: not needed on the Kobra 4, whose LAN stream does not depend on start and stop |
-| 39 | `print/query` answer timing unclear | idle: no answer on the Kobra 4; while printing: to check ❓ |
+| 39 | `print/query` answer timing unclear | idle: no answer on the Kobra 4; while printing: logged once per print, to read after the next print ❓ |
 | 40 | Nozzle and bed temperatures sent as two `print/update` | not planned: cosmetic |
 | 41 | Speed mode 4 (`speed_factor` 1.5) in the Moonraker mapping has no source | fixed: removed; any mode other than 1–3 reports 1.0 |
 | 42 | `print_time` in seconds on the S1 Max (not a supported model); Kobra X `ams_index` with an ACE unverified | to test: needs a Kobra X with an ACE ❓ |

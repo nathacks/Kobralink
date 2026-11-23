@@ -394,6 +394,20 @@ describe('editing the new settings', () => {
     });
 });
 
+describe('camera light during failure detection', () => {
+    beforeAll(() => installI18n());
+
+    it('is on by default and saves the choice to turn it off', async () => {
+        await renderWithProviders(<DetectionCard settings={stored} />);
+        const light = switchAfter(m.detection_light());
+        expect(light.getAttribute('aria-checked')).toBe('true');
+        await userEvent.click(light);
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+        expect(mocks.save.mock.calls[0][0]).toEqual({ failureDetection: { ...stored.failureDetection, light: false } });
+    });
+});
+
 describe('FarolPrint address', () => {
     beforeAll(() => installI18n());
 

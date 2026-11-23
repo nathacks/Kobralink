@@ -346,6 +346,18 @@ Bambu tools so people migrating from them find things where they expect. The pha
 - **`/ctrl` refusals are explained.** Code 19002 is the printer's connection limit, as in the official client: adding
   the printer says so and suggests disconnecting another LAN client. Any other code is shown instead of "invalid
   answer".
+- **The camera light is on while detection watches** (maintainer's decision, November 2026, following the official
+  client, which lights the camera during its own detection and has a "low light" error, 11810). A setting in the
+  failure detection card, on by default, turns the light on when detection starts watching a print and off when the
+  print ends, only if FarolPrint turned it on and it is still on. A light already on is left alone, a pause keeps it
+  on, and a failure that pauses or cancels the print leaves it on so the camera shows what happened.
+- **Printer tokens stay out of the logs.** The upload token (`gcode_upload?s=`) and the camera token (`/live/<token>`)
+  are masked in the bridge and camera log lines and in the camera error shown in the dashboard, since logs get pasted
+  into issues.
+- **Facts for the next print are logged first** (the same approach as `info.features`): whether `print/query` brings a
+  print report back while printing, what an `updated` report carries (`print_speed_pct`, `z_comp`) and the extra fans
+  (`aux_fan_speed_pct`, `box_fan_level`) when they change. Nothing uses them until a print on the maintainer's Kobra 4
+  shows what they hold.
 - **No speed mode 4.** The Moonraker speed factor mapped a mode 4 to 1.5, which no source documents; an unknown mode
   now reports 1.0, like a missing one.
 - **Common printer errors are explained in the interface language** (maintainer's request). 43 pause and failure codes

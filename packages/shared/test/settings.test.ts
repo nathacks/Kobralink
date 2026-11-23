@@ -35,6 +35,18 @@ describe('updateAppSettingsSchema', () => {
     });
 });
 
+describe('failureDetection.light', () => {
+    it('turns the camera light on during detection by default, settings saved before it included', () => {
+        expect(appSettingsSchema.parse({}).failureDetection.light).toBe(true);
+        const saved = appSettingsSchema.parse({ failureDetection: { enabled: true, action: 'pause' } });
+        expect(saved.failureDetection).toMatchObject({ enabled: true, action: 'pause', light: true });
+    });
+
+    it('keeps the light off when the user turned it off', () => {
+        expect(appSettingsSchema.parse({ failureDetection: { light: false } }).failureDetection.light).toBe(false);
+    });
+});
+
 describe('publicUrl', () => {
     it('is empty until the address of FarolPrint is set', () => {
         expect(appSettingsSchema.parse({}).publicUrl).toBe('');
