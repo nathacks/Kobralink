@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.1](https://github.com/riccardoalv/farolprint/compare/v0.25.0...v0.25.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **bridge:** keep FarolPrint running when a printer drops its connection ([#69](https://github.com/riccardoalv/farolprint/issues/69)) ([875229e](https://github.com/riccardoalv/farolprint/commit/875229ef58b81be86d5c80bbae9d240ceb45555d))
+
 ## [0.25.0](https://github.com/riccardoalv/farolprint/compare/v0.24.0...v0.25.0) (2026-11-23)
 
 
