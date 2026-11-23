@@ -91,6 +91,17 @@ describe('light trigger', () => {
         h.tap(1);
         expect(h.triggers()).toBe(0);
     });
+
+    it('logs the action and data of the message counted as a switch', () => {
+        const h = bridge();
+        const lines: string[] = [];
+        (h.b as unknown as { log: { log: (m: string) => void } }).log.log = (m: string) => {
+            lines.push(m);
+        };
+        at(0);
+        h.tap(1);
+        expect(lines).toContain('Light switched on the printer screen (1/3): action=control data={"status":1}');
+    });
 });
 
 describe('setLight', () => {

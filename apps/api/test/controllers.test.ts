@@ -1,5 +1,12 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { cancelPrintSchema, schedulePrintSchema, startPrintSchema, updatePrintJobSchema } from '@farolprint/shared';
+import {
+    cancelPrintSchema,
+    deletePrinterFilesSchema,
+    printPrinterFileSchema,
+    schedulePrintSchema,
+    startPrintSchema,
+    updatePrintJobSchema,
+} from '@farolprint/shared';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { AutomationController } from '../src/automations/automation.controller';
 import type { AutomationService } from '../src/automations/automation.service';
@@ -283,6 +290,48 @@ describe('CoreController print', () => {
         const ctrl = new CoreController(registry, gcode, {} as StatsService);
         await ctrl.print('p1', new ZodPipe(startPrintSchema).transform({ fileId: 'f1' }));
         expect(printStoredFile.mock.calls[0][1].flowCalibration).toBeUndefined();
+    });
+});
+
+describe('CoreController printer files', () => {
+    const ctrlWith = (bridge: Record<string, unknown>) =>
+        new CoreController({ get: () => bridge } as unknown as BridgeRegistry, {} as GcodeService, {} as StatsService);
+
+    it('returns the printer files with the test models', async () => {
+        const list = { files: [], testModels: [], truncated: false };
+        const ctrl = ctrlWith({ listPrinterFiles: async () => list });
+        expect(await ctrl.printerFiles('p1')).toEqual(list);
+    });
+
+    it('prints a test model by its path', async () => {
+        const printPrinterFile = mock(async (_path: string, _size: number, _leveling?: boolean) => undefined);
+        const ctrl = ctrlWith({ printPrinterFile });
+        const body = new ZodPipe(printPrinterFileSchema).transform({
+            filename: 'test_model/Shark.gcode',
+            sizeBytes: 10,
+        });
+        await ctrl.printPrinterFile('p1', body);
+        expect(printPrinterFile.mock.calls[0]).toEqual(['test_model/Shark.gcode', 10, undefined]);
+        expect(() => new ZodPipe(printPrinterFileSchema).transform({ filename: 'other/x.gcode' })).toThrow(
+            BadRequestException,
+        );
+    });
+
+    it('asks for a test model thumbnail and refuses any other folder', async () => {
+        const printerFileThumbnail = mock(async (path: string) => `thumb:${path}`);
+        const ctrl = ctrlWith({ printerFileThumbnail });
+        expect(await ctrl.printerFileThumbnail('p1', 'test_model/Shark.gcode')).toEqual({
+            thumbnail: 'thumb:test_model/Shark.gcode',
+        });
+        await expect(ctrl.printerFileThumbnail('p1', 'other/x.gcode')).rejects.toThrow(BadRequestException);
+        await expect(ctrl.printerFileThumbnail('p1', '')).rejects.toThrow(BadRequestException);
+        expect(printerFileThumbnail.mock.calls).toEqual([['test_model/Shark.gcode']]);
+    });
+
+    it('deletes root files only', () => {
+        const pipe = new ZodPipe(deletePrinterFilesSchema);
+        expect(pipe.transform({ filenames: ['part.gcode'] })).toEqual({ filenames: ['part.gcode'] });
+        expect(() => pipe.transform({ filenames: ['test_model/Shark.gcode'] })).toThrow(BadRequestException);
     });
 });
 

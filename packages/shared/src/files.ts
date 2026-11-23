@@ -112,17 +112,48 @@ export interface SkipStateDto {
 }
 export type StartPrintInput = z.input<typeof startPrintSchema>;
 
+export const TEST_MODEL_FOLDER = 'test_model';
+export const PRINTER_FILE_LIST_LIMIT = 256;
+
 export interface PrinterFileDto {
     filename: string;
     sizeBytes: number;
     timestamp: number;
+    folder: string | null;
 }
 
-export const deletePrinterFilesSchema = z.object({ filenames: z.array(z.string().min(1)).min(1).max(200) });
+export interface PrinterFileListDto {
+    files: PrinterFileDto[];
+    testModels: PrinterFileDto[];
+    truncated: boolean;
+}
+
+export function printerFilePath(file: Pick<PrinterFileDto, 'filename' | 'folder'>): string {
+    return file.folder ? `${file.folder}/${file.filename}` : file.filename;
+}
+
+export function splitPrinterFilePath(path: string): { folder: string | null; filename: string } | null {
+    const parts = path.replace(/^\/+/, '').split('/');
+    if (parts.length === 1 && parts[0]) return { folder: null, filename: parts[0] };
+    if (parts.length === 2 && parts[0] === TEST_MODEL_FOLDER && parts[1]) {
+        return { folder: TEST_MODEL_FOLDER, filename: parts[1] };
+    }
+    return null;
+}
+
+const rootPrinterFile = z
+    .string()
+    .min(1)
+    .refine((name) => !name.includes('/'));
+
+export const deletePrinterFilesSchema = z.object({ filenames: z.array(rootPrinterFile).min(1).max(200) });
 export type DeletePrinterFilesInput = z.infer<typeof deletePrinterFilesSchema>;
 
 export const printPrinterFileSchema = z.object({
-    filename: z.string().min(1),
+    filename: z
+        .string()
+        .min(1)
+        .refine((path) => splitPrinterFilePath(path) !== null),
     sizeBytes: z.number().int().min(0).default(0),
     autoLeveling: z.boolean().optional(),
 });

@@ -74,9 +74,9 @@ printer's LAN protocol (what FarolPrint uses, what Anycubic's own client does di
   `@farolprint/shared`), poll loop, commands. `BridgeRegistry` creates them from the `printer` table.
 - Each printer has **its own Nest application** for Moonraker on `httpPort` (`moonraker.host.ts` →
   `MoonrakerAppModule.forPrinter`). No auth on it, on purpose. `moonraker.service.ts` maps `LiveState` to Klipper
-  objects (`gcode_move.speed_factor` = mapping 1→0.5/2→1.0/3→1.3/4→1.5, `motion_report.live_velocity` always 0).
-  `execGcodeScript` only interprets a small subset (PAUSE/RESUME/CANCEL, M104/M140, SET_HEATER_TEMPERATURE, a
-  FarolPrint macro name); everything else returns `ok` with no effect.
+  objects (`gcode_move.speed_factor` = mapping 1→0.5/2→1.0/3→1.3 in `speed.ts`, 1.0 for any other mode,
+  `motion_report.live_velocity` always 0). `execGcodeScript` only interprets a small subset (PAUSE/RESUME/CANCEL,
+  M104/M140, SET_HEATER_TEMPERATURE, a FarolPrint macro name); everything else returns `ok` with no effect.
 - The main API (:7100): `/api/auth/*` (Better Auth), `/api/v1/*` (protected), serves `apps/web/dist`. One Nest module
   per domain (`printers`, `core` = control, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
   `detection`, `notifications`, `ha` = Home Assistant MQTT discovery, `stats`, `system`, `users`, `settings`,

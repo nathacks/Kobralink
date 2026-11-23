@@ -26,6 +26,7 @@ import {
     setSpeedSchema,
     setTemperatureSchema,
     skipObjectsSchema,
+    splitPrinterFilePath,
     startPrintSchema,
     type UpdatePrintJobInput,
     updatePrintJobSchema,
@@ -307,7 +308,7 @@ export class CoreController {
 
     @Get('printer-files/thumbnail')
     async printerFileThumbnail(@Param('id') id: string, @Query('filename') filename: string) {
-        if (!filename) throw new BadRequestException(m.api_filename_required());
+        if (!filename || !splitPrinterFilePath(filename)) throw new BadRequestException(m.api_filename_required());
         const thumbnail = await this.run(() => this.bridge(id).printerFileThumbnail(filename));
         return { thumbnail };
     }

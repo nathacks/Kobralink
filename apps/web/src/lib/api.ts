@@ -35,7 +35,7 @@ import type {
     PowerState,
     Printer,
     PrinterDetectionDto,
-    PrinterFileDto,
+    PrinterFileListDto,
     PrinterLiveState,
     PrinterSample,
     PrintJobDto,
@@ -168,7 +168,7 @@ export const api = {
     },
 
     printerFiles: {
-        list: (id: string) => request<PrinterFileDto[]>(`/api/v1/printers/${id}/printer-files`),
+        list: (id: string) => request<PrinterFileListDto>(`/api/v1/printers/${id}/printer-files`),
         remove: (id: string, filenames: string[]) =>
             request<void>(`/api/v1/printers/${id}/printer-files/delete`, json({ filenames })),
         print: (id: string, input: PrintPrinterFileInput) =>

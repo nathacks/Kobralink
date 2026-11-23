@@ -45,6 +45,26 @@ describe('upload refusals', () => {
     });
 });
 
+describe('/ctrl refusals', () => {
+    const ctrl = (code: 'ctrl_limit' | 'ctrl_refused', status: number) =>
+        protocolErrorMessage(new KobraProtocolError(code, { code: status }));
+
+    it('explain the connection limit', () => {
+        expect(inEnglish(() => ctrl('ctrl_limit', 19002))).toBe(
+            'The printer has reached its LAN connection limit (code 19002). Disconnect another LAN client, such as Anycubic Slicer Next, then try again.',
+        );
+        expect(runWithLocale('pt-br', () => ctrl('ctrl_limit', 19002))).toStartWith(
+            'A impressora atingiu o limite de conexões LAN (código 19002)',
+        );
+    });
+
+    it('show the code of any other refusal', () => {
+        expect(inEnglish(() => ctrl('ctrl_refused', 19001))).toBe(
+            'The printer refused the credentials request (code 19001)',
+        );
+    });
+});
+
 describe('printer error codes', () => {
     it('explain a known code in the request language', () => {
         expect(inEnglish(() => printerErrorText(10402, 'Insufficient supplies'))).toBe('Out of filament');

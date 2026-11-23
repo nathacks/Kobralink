@@ -1,4 +1,4 @@
-import type { PrinterFileDto } from '@farolprint/shared';
+import { PRINTER_FILE_LIST_LIMIT, type PrinterFileDto, printerFilePath } from '@farolprint/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Box, Check, Eye, HardDrive, ImageOff, Loader2, MoreVertical, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -50,12 +50,14 @@ export function PrinterFilesGrid({
         },
         onError: (e) => toast.error(e.message),
     });
-    const all = files.data ?? [];
-    const filtered = all.filter((f) => f.filename.toLowerCase().includes(search.toLowerCase()));
+    const all = files.data?.files ?? [];
+    const matches = (f: PrinterFileDto) => f.filename.toLowerCase().includes(search.toLowerCase());
+    const filtered = all.filter(matches);
     const list = filtered.slice(0, visible);
+    const testModels = (files.data?.testModels ?? []).filter(matches);
     const print = useMutation({
         mutationFn: (f: PrinterFileDto) =>
-            api.printerFiles.print(printerId, { filename: f.filename, sizeBytes: f.sizeBytes }),
+            api.printerFiles.print(printerId, { filename: printerFilePath(f), sizeBytes: f.sizeBytes }),
         onSuccess: (_, f) => toast.success(m.files_print_started({ name: f.filename })),
         onError: (e) => toast.error(e.message),
     });
@@ -65,6 +67,19 @@ export function PrinterFilesGrid({
         setVisible(PAGE);
     }
     const toggle = (n: string) => setSelected((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
+    const preview = (f: PrinterFileDto) =>
+        openDialog({
+            title: parseFilename(f.filename).name,
+            props: { className: 'rounded-3xl sm:max-w-xl' },
+            content: <PrinterFilePreview printerId={printerId} file={f} />,
+        });
+    const confirmPrint = (f: PrinterFileDto) =>
+        openAlertDialog({
+            title: m.pfiles_print_title({ name: f.filename }),
+            description: m.pfiles_print_hint(),
+            actionLabel: m.common_print(),
+            onAction: () => print.mutateAsync(f),
+        });
     const confirmDelete = (names: string[]) =>
         openAlertDialog({
             title:
@@ -96,6 +111,7 @@ export function PrinterFilesGrid({
                         ? m.pfiles_results({ count: filtered.length, total: all.length })
                         : m.pfiles_count({ count: all.length })}
                 </span>
+                {files.data?.truncated && <span>{m.pfiles_truncated({ count: PRINTER_FILE_LIST_LIMIT })}</span>}
                 <Button
                     size="sm"
                     variant="ghost"
@@ -134,22 +150,9 @@ export function PrinterFilesGrid({
                             selected={selected.includes(f.filename)}
                             onToggle={() => toggle(f.filename)}
                             onDelete={() => confirmDelete([f.filename])}
-                            onPreview={() =>
-                                openDialog({
-                                    title: parseFilename(f.filename).name,
-                                    props: { className: 'rounded-3xl sm:max-w-xl' },
-                                    content: <PrinterFilePreview printerId={printerId} file={f} />,
-                                })
-                            }
+                            onPreview={() => preview(f)}
                             canPrint={canPrint && !print.isPending}
-                            onPrint={() =>
-                                openAlertDialog({
-                                    title: m.pfiles_print_title({ name: f.filename }),
-                                    description: m.pfiles_print_hint(),
-                                    actionLabel: m.common_print(),
-                                    onAction: () => print.mutateAsync(f),
-                                })
-                            }
+                            onPrint={() => confirmPrint(f)}
                         />
                     ))}
                 </div>
@@ -164,6 +167,29 @@ export function PrinterFilesGrid({
                         {m.pfiles_show_more({ count: filtered.length - visible })}
                     </Button>
                 </div>
+            )}
+            {testModels.length > 0 && (
+                <section aria-labelledby="printer-test-models" className="space-y-3 pt-3">
+                    <div>
+                        <h3 id="printer-test-models" className="text-sm font-medium">
+                            {m.pfiles_test_models()}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">{m.pfiles_test_models_hint()}</p>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-3">
+                        {testModels.map((f) => (
+                            <PrinterFileTile
+                                key={printerFilePath(f)}
+                                printerId={printerId}
+                                file={f}
+                                selected={false}
+                                onPreview={() => preview(f)}
+                                canPrint={canPrint && !print.isPending}
+                                onPrint={() => confirmPrint(f)}
+                            />
+                        ))}
+                    </div>
+                </section>
             )}
         </div>
     );
@@ -219,13 +245,13 @@ function PrinterFileTile({
     printerId: string;
     file: PrinterFileDto;
     selected: boolean;
-    onToggle: () => void;
-    onDelete: () => void;
+    onToggle?: () => void;
+    onDelete?: () => void;
     onPreview: () => void;
     canPrint: boolean;
     onPrint: () => void;
 }) {
-    const thumb = useQuery(printerFileThumbQuery(printerId, file.filename));
+    const thumb = useQuery(printerFileThumbQuery(printerId, printerFilePath(file)));
     const { name, plate } = parseFilename(file.filename);
     return (
         <article
@@ -256,21 +282,23 @@ function PrinterFileTile({
                         </span>
                     )}
                 </button>
-                <button
-                    type="button"
-                    onClick={onToggle}
-                    aria-pressed={selected}
-                    aria-label={selected ? m.pfiles_deselect() : m.pfiles_select()}
-                    title={selected ? m.pfiles_deselect() : m.pfiles_select()}
-                    className={cn(
-                        'absolute left-2.5 top-2.5 flex size-7 items-center justify-center rounded-full border backdrop-blur-sm transition-colors',
-                        selected
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-foreground/30 bg-background/60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100',
-                    )}
-                >
-                    {selected && <Check className="size-4" />}
-                </button>
+                {onToggle && (
+                    <button
+                        type="button"
+                        onClick={onToggle}
+                        aria-pressed={selected}
+                        aria-label={selected ? m.pfiles_deselect() : m.pfiles_select()}
+                        title={selected ? m.pfiles_deselect() : m.pfiles_select()}
+                        className={cn(
+                            'absolute left-2.5 top-2.5 flex size-7 items-center justify-center rounded-full border backdrop-blur-sm transition-colors',
+                            selected
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-foreground/30 bg-background/60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100',
+                        )}
+                    >
+                        {selected && <Check className="size-4" />}
+                    </button>
+                )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
@@ -286,15 +314,19 @@ function PrinterFileTile({
                             <Eye />
                             <span>{m.files_preview()}</span>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={onDelete}
-                            className="rounded-xl cursor-pointer"
-                        >
-                            <Trash2 />
-                            <span>{m.common_delete()}</span>
-                        </DropdownMenuItem>
+                        {onDelete && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={onDelete}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    <Trash2 />
+                                    <span>{m.common_delete()}</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -329,7 +361,7 @@ function PrinterFileTile({
 }
 
 function PrinterFilePreview({ printerId, file }: { printerId: string; file: PrinterFileDto }) {
-    const thumb = useQuery(printerFileThumbQuery(printerId, file.filename));
+    const thumb = useQuery(printerFileThumbQuery(printerId, printerFilePath(file)));
     return (
         <div className="grid gap-3 py-2">
             <div className="flex aspect-square max-h-[55svh] w-full items-center justify-center overflow-hidden rounded-2xl bg-secondary">

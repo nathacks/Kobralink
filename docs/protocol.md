@@ -31,7 +31,8 @@ public sources below. The decisions taken from it are in [decisions.md](decision
   credentials encrypted with AES-128-CBC) and `POST /gcode_upload?s=<token>` (multipart). An accepted upload answers
   `{"code":200,"data":{"gcode":"<name>"},"message":"success"}` ✔. Refusals carry codes 19001–19011 🟡 (inferred from
   the firmware): 19007 name or type refused, 19008/19009 not saved, 19010 no space, 19011 3MF refused. `/ctrl` answers
-  19002 when the connection limit is reached ✔.
+  19002 when the connection limit is reached ✔; FarolPrint says so when a printer is added or its credentials are
+  refreshed, and shows the code of any other refusal.
 - **Camera on 18088**: HTTP-FLV H.264, `/live/<token>` on the Kobra X and Kobra 4, announced as `urls.rtspUrl` in
   `info`. One consumer at a time, so FarolPrint fans it out through one ffmpeg.
 - **MQTT over TLS on 9883** (3.1.1). Requests go to `anycubic/anycubicCloud/v1/{slicer|web}/printer/<modeId>/<deviceId>/<type>`,
@@ -65,7 +66,9 @@ public sources below. The decisions taken from it are in [decisions.md](decision
 | `video/startCapture`, `video/stopCapture` | — | camera; on the Kobra 4 they drive the cloud push and the LAN stream flows anyway ✔ |
 | `multiColorBox/setInfo`, `feedFilament`, `setAutoFeed`, `setDry` | `{multi_color_box:[…]}` | ACE slot edit, load / unload, auto refill, drying |
 | `skip/query_obj`, `skip/start` | `{objects_skip_parts}` | object skip; `start` gets the parts already skipped plus the new ones ✔ |
-| `file/listLocal`, `file/deleteBatch`, `file/fileDetails` | — | printer storage, thumbnails, objects |
+| `file/listLocal` | `{page_num, page_size, path}` | printer storage: `/` and `/test_model`, the printer's own sample files ✔ |
+| `file/deleteBatch` | `{root: "local", files: [{path: "/", filename}]}` | deleting root files (test models are never deleted) |
+| `file/fileDetails` | `{root: "local", filename}` | thumbnails and objects; a test model is asked for as `test_model/<name>` ✔ |
 
 ### `print/start`
 
@@ -183,6 +186,7 @@ under a minute each time so a probe could hold the single MQTT session.
 | `info` fields | `aux_fan_speed_pct`, `fan_speed_pct`, `features`, `ip`, `last_project`, `model`, `print_speed_mode`, `printerName`, `project`, `state`, `temp`, `urls`, `version` |
 | `print/query` while idle | no `print/report` within 12 s on the `slicer` or the `web` topic, only the acknowledgement; while printing: not checked yet ❓ |
 | `light/query` | answered on both topics within 60 ms, with one lamp: the camera light (type 3) |
+| File list | `listLocal` on `/` returns at most 256 files, newest first, and ignores `page_num` and `page_size` (pages 1 to 4, sizes 100 and 1000, all gave the same 256); the root lists no folder, while `/test_model` (also `test_model`, `/test_model/`) lists 13 sample files; `fileDetails` answers for `test_model/<name>` and `/test_model/<name>` |
 | Camera | the HTTP-FLV stream on 18088 keeps flowing (about 40 KB/s) whatever `video/startCapture` and `stopCapture` do; they answer `initSuccess`, `joinSuccess`, `pushStarted` and `pushStopped`, the cloud push. A start while running, a stop and start at once, and stop, 1 s, start all work. Requests to 18088 do not turn the light on |
 
 ## Not available over LAN
@@ -210,7 +214,7 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 12 | `info.features` not read | fixed: logged and kept; the Kobra 4 values are above ✔ |
 | 13 | Error codes shown raw, in the printer's language | fixed: 43 common codes translated, the printer message otherwise |
 | 14–16 | ACE slot statuses, slot `weight`/`edit_status`/`color_group`, drying fault 2 counted as drying | roadmap (ACE) |
-| 17 | Files in printer subfolders (such as `/test_model/`) not listed | roadmap |
+| 17 | Files in printer subfolders (such as `/test_model/`) not listed | fixed: the root lists no folder on the Kobra 4, so the test models are listed apart; printing one sends `filepath` `/test_model/<name>`, to confirm with a print ❓ |
 | 18 | `updated` snapshot fields (`print_speed_pct`, `z_comp`) ignored | roadmap |
 | 19 | Flow calibration option | fixed: on by default, switch in the print dialog |
 | 20 | Options shown only when `info.features` reports them | fixed: leveling, vibration compensation and flow calibration |
@@ -225,6 +229,7 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 38 | The official client restarts the camera with stop, ~1 s, start | checked: not needed on the Kobra 4, whose LAN stream does not depend on start and stop |
 | 39 | `print/query` answer timing unclear | idle: no answer on the Kobra 4; while printing: to check ❓ |
 | 40 | Nozzle and bed temperatures sent as two `print/update` | not planned: cosmetic |
-| 41 | Speed mode 4 (`speed_factor` 1.5) in the Moonraker mapping has no source | roadmap |
+| 41 | Speed mode 4 (`speed_factor` 1.5) in the Moonraker mapping has no source | fixed: removed; any mode other than 1–3 reports 1.0 |
 | 42 | `print_time` in seconds on the S1 Max (not a supported model); Kobra X `ams_index` with an ACE unverified | to test: needs a Kobra X with an ACE ❓ |
-| 43 | `/ctrl` 19002 shown as an invalid answer; any request to 18088 lights the Kobra X camera light, which "camera always on" keeps lit | roadmap (Kobra X; the Kobra 4 light stays off) |
+| 43 | `/ctrl` 19002 shown as an invalid answer; any request to 18088 lights the Kobra X camera light, which "camera always on" keeps lit | 19002 fixed: explained as the connection limit; the Kobra X light: roadmap (the Kobra 4 light stays off) |
+| 44 | The file list holds at most 256 files (Kobra 4), newest first, with no paging | shown: the list says when it reached 256 |

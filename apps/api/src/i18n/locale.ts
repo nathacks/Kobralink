@@ -113,6 +113,10 @@ export function protocolErrorMessage(e: unknown): string {
             return m.api_credentials_invalid_info();
         case 'ctrl_invalid':
             return m.api_credentials_invalid_ctrl();
+        case 'ctrl_limit':
+            return m.api_credentials_ctrl_limit();
+        case 'ctrl_refused':
+            return m.api_credentials_ctrl_refused({ code: p.code ?? '?' });
         case 'upload_no_token':
             return m.api_upload_no_token({ url: p.url ?? '' });
         case 'upload_unexpected':

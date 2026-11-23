@@ -435,8 +435,8 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         return this.request<KobraSkipData>('skip', 'start', { objects_skip_parts: names }, 5000);
     }
 
-    listLocalFiles() {
-        this.send('file', 'listLocal', { page_num: 1, page_size: 1000, path: '/' });
+    listLocalFiles(path = '/') {
+        this.send('file', 'listLocal', { page_num: 1, page_size: 1000, path });
     }
 
     deleteLocalFiles(filenames: string[]) {

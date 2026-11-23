@@ -4,6 +4,7 @@ import net from 'node:net';
 import {
     type KobraFanData,
     type KobraFileData,
+    type KobraFileRecord,
     type KobraInfoData,
     type KobraLightData,
     type KobraMessage,
@@ -26,7 +27,9 @@ import {
     type FilamentMode,
     isPreparing,
     KOBRA_TO_KLIPPER_STATE,
+    PRINTER_FILE_LIST_LIMIT,
     type PrinterFileDto,
+    type PrinterFileListDto,
     type PrinterLiveState,
     type PrinterSample,
     type PrinterSettings,
@@ -35,8 +38,10 @@ import {
     type SpoolmanPricing,
     type SpoolUsageEntry,
     slotUsableForPrint,
+    splitPrinterFilePath,
     supportsPrintOption,
     TERMINAL_PRINT_STATES,
+    TEST_MODEL_FOLDER,
 } from '@farolprint/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
@@ -955,7 +960,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private onLight(p: KobraMessage<KobraLightData>): void {
-        if (p.action !== 'query') this.countLightTap(Date.now());
+        if (p.action !== 'query') this.countLightTap(Date.now(), p);
         const light = readLight(p.data);
         if (!light) return;
         this.s.lightOn = light.on;
@@ -980,10 +985,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.log.log(`Features reported by the printer: ${text}`);
     }
 
-    private countLightTap(now: number): void {
+    private countLightTap(now: number, p: KobraMessage<KobraLightData>): void {
         if (now - this.lastOwnLightAt < LIGHT_OWN_COMMAND_MS) return;
         this.lightTaps = [...this.lightTaps.filter((t) => now - t <= LIGHT_TRIGGER_WINDOW_MS), now];
-        this.log.log(`Light switched on the printer screen (${this.lightTaps.length}/${LIGHT_TRIGGER_TAPS})`);
+        this.log.log(
+            `Light switched on the printer screen (${this.lightTaps.length}/${LIGHT_TRIGGER_TAPS}): action=${p.action} data=${JSON.stringify(p.data)}`,
+        );
         if (this.lightTaps.length < LIGHT_TRIGGER_TAPS) return;
         this.lightTaps = [];
         this.log.log('Light switched three times on the printer: bed clear trigger');
@@ -1095,13 +1102,20 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         });
     }
 
-    async listPrinterFiles(): Promise<PrinterFileDto[]> {
+    async listPrinterFiles(): Promise<PrinterFileListDto> {
         const res = await this.waitFileAction('listLocal', () => this.client.listLocalFiles(), 15000);
         if (res?.code !== 200) throw new BridgeRequestError(m.api_printer_no_file_list());
-        return (res.data?.records ?? [])
-            .filter((r) => !r.is_dir)
-            .map((r) => ({ filename: r.filename, sizeBytes: Number(r.size ?? 0), timestamp: Number(r.timestamp ?? 0) }))
-            .sort((a, b) => b.timestamp - a.timestamp);
+        const records = res.data?.records ?? [];
+        const models = await this.waitFileAction(
+            'listLocal',
+            () => this.client.listLocalFiles(`/${TEST_MODEL_FOLDER}`),
+            15000,
+        );
+        return {
+            files: printerFiles(records, null),
+            testModels: models?.code === 200 ? printerFiles(models.data?.records ?? [], TEST_MODEL_FOLDER) : [],
+            truncated: records.length >= PRINTER_FILE_LIST_LIMIT,
+        };
     }
 
     async deletePrinterFiles(filenames: string[]): Promise<void> {
@@ -1577,8 +1591,11 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         return all;
     }
 
-    async printPrinterFile(filename: string, sizeBytes: number, autoLeveling?: boolean): Promise<void> {
+    async printPrinterFile(path: string, sizeBytes: number, autoLeveling?: boolean): Promise<void> {
         this.ensureConnected();
+        const target = splitPrinterFilePath(path);
+        if (!target) throw new BridgeRequestError(m.api_file_not_found());
+        const filename = target.folder ? `/${target.folder}/${target.filename}` : target.filename;
         this.s.fileReady = '';
         this.s.skippedObjects = [];
         this.s.skipTs = Date.now();
@@ -1586,9 +1603,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const payload: PrintStartPayload = {
             taskid: '-1',
             url: '',
-            filename,
+            filename: target.filename,
             md5: '',
-            filepath: `/${filename}`,
+            filepath: target.folder ? filename : `/${filename}`,
             filetype: 1,
             project_type: 1,
             filesize: sizeBytes,
@@ -1596,7 +1613,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             task_settings: this.taskSettings([], { autoLeveling }),
         };
         this.s.slicerTimeSec = 0;
-        this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
+        this.s.thumbnail = this.printerThumbs.get(path.replace(/^\/+/, '')) ?? '';
         this.log.log(
             `print/start (printer file) → ${filename}  ams=${mapping.length} slots  task_settings=${JSON.stringify(payload.task_settings)}`,
         );
@@ -1708,6 +1725,18 @@ export interface StartPrintOptions {
 export class BridgeOfflineError extends Error {}
 
 export class BridgeRequestError extends Error {}
+
+function printerFiles(records: KobraFileRecord[], folder: string | null): PrinterFileDto[] {
+    return records
+        .filter((r) => !r.is_dir)
+        .map((r) => ({
+            filename: r.filename,
+            sizeBytes: Number(r.size ?? 0),
+            timestamp: Number(r.timestamp ?? 0),
+            folder,
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp);
+}
 
 function mqttConnectionError(e: unknown): ConnectionError {
     const msg = e instanceof Error ? e.message : String(e);

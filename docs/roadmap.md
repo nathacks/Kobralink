@@ -73,13 +73,15 @@ Follow-up of the protocol survey of November 2026; the numbers refer to the dive
 4. **Print options (done)**: flow calibration on by default with a switch in the print dialog, kept by the queue and
    scheduled prints (item 19); leveling, vibration compensation and flow calibration shown only when the printer
    reports them in `info.features` (item 20).
-5. **Later**: ACE details (slot statuses, remaining weight, RFID or manual, gradients, drying fault, dry before print,
-   endless spool), printer subfolders, the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own
-   timelapse on its USB drive, the auxiliary fan (`aux_fan_speed_pct`, reported by the Kobra 4, which has no chamber
-   fan), other light types, axis position, rename on the printer, USB drive, peripherals, firmware update progress,
-   slice parameters, the Kobra X spool rack and `event` reports, the camera light during failure detection, the Kobra X
-   camera light that any request to port 18088 turns on, speed mode 4, `/ctrl` code 19002 (items 14–18, 21, 22, 24–35,
-   41, 43).
+5. **Small fixes (done)**: the printer's test models listed apart and printable, the file list flagged when it
+   reaches the 256 files the Kobra 4 returns at most, `/ctrl` code 19002 explained, speed mode 4 removed (items 17,
+   41, 43, 44). Left: printing a test model, to confirm on the maintainer's printer.
+6. **Later**: ACE details (slot statuses, remaining weight, RFID or manual, gradients, drying fault, dry before print,
+   endless spool), the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own timelapse on its USB
+   drive, the auxiliary fan (`aux_fan_speed_pct`, reported by the Kobra 4, which has no chamber fan), other light
+   types, axis position, rename on the printer, USB drive, peripherals, firmware update progress, slice parameters, the
+   Kobra X spool rack and `event` reports, the camera light during failure detection, the Kobra X camera light that
+   any request to port 18088 turns on (items 14–16, 18, 21, 22, 24–35, 43).
 
 Not planned: the printer's own AI detection, the `web` topic for every command, and sending nozzle and bed temperatures
 in one `print/update` (items 23, 37 and 40; reasons in [decisions.md](decisions.md#printer-protocol)).

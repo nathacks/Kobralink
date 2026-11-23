@@ -330,12 +330,24 @@ Bambu tools so people migrating from them find things where they expect. The pha
   sends 0 for an option it does not report, whatever the dialog, the queue item or the setting says. Until a printer
   has reported its features (never connected yet, or a firmware without them) every option shows, as before: unknown
   is not unsupported. A flag missing from the features the printer did report counts as unsupported, since every
-  printer seen so far (S1, Kobra 4) lists all three. A hidden option keeps its stored setting, so it comes back if a firmware update adds it.
+  printer seen so far (S1, Kobra 4) lists all three. A hidden option keeps its stored setting, so it comes back if a
+  firmware update adds it.
 - **The bundled Slicer certificate stays** (maintainer's decision, November 2026). The Kobra 4 also accepts its own
   `devicecrt`/`devicepk` from `/ctrl`, which the official client uses, or no client certificate at all: its broker
   checks the username and password ([protocol.md](protocol.md#checks-on-the-kobra-4)). No other model has been
   checked, so FarolPrint keeps connecting with the bundled certificate; switching to the per-printer one is reconsidered
   once a Kobra X has been checked.
+- **The printer's test models are listed apart.** The Kobra 4 keeps its sample files in `/test_model`, which its root
+  listing does not show as a folder. The printer files tab lists them under "Test models", with a preview and print
+  but no selection or delete, and starts one with `filepath` `/test_model/<name>`. No other folder is listed, since
+  the printer reports none.
+- **The printer file list says when it is full.** The Kobra 4 returns at most 256 files, the newest first, and ignores
+  `page_num` and `page_size`, so FarolPrint cannot list the older ones; the tab says so when 256 files come back.
+- **`/ctrl` refusals are explained.** Code 19002 is the printer's connection limit, as in the official client: adding
+  the printer says so and suggests disconnecting another LAN client. Any other code is shown instead of "invalid
+  answer".
+- **No speed mode 4.** The Moonraker speed factor mapped a mode 4 to 1.5, which no source documents; an unknown mode
+  now reports 1.0, like a missing one.
 - **Common printer errors are explained in the interface language** (maintainer's request). 43 pause and failure codes
   (filament runout, clog, tangle, homing, heating, file out of range, missing G-code commands, user pause or stop…)
   map to texts adapted from Anycubic's own table; 11842, missing from that table, uses the text the Kobra 4 sends. The
