@@ -56,7 +56,10 @@ printer's LAN protocol (what FarolPrint uses, what Anycubic's own client does di
   duplicated in `APP_LOCALES` (`packages/shared/src/settings.ts`); adding a language = the `/add-locale` skill. The
   package compiles its own runtime and messages for the API; the web recompiles the same messages in
   `apps/web/src/paraglide`. Its `check-types` waits for its own `build` (`packages/i18n/turbo.json`): both compile
-  into `src/paraglide`, and running them in parallel made the build bundle a half-written runtime in CI.
+  into `src/paraglide`, and running them in parallel made the build bundle a half-written runtime in CI. Every
+  compile also writes its cache inside `project.inlang`, so the web `build`, `test` and `check-types` wait for the
+  package's compiles too (`apps/web/turbo.json`); in parallel the web compile read a half-written cache file
+  ("Unexpected end of JSON input").
 - The three packages build with tsdown, ESM + CJS output. Packages must be built before `dev`/`check-types`/`test` of
   the apps (turbo `^build`).
 - `infra/`: `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `docker-compose.prod.yml`,
