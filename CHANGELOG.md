@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/riccardoalv/farolprint/compare/v0.24.0...v0.25.0) (2026-11-23)
+
+
+### Features
+
+* **detection:** light the camera while detection watches a print ([#67](https://github.com/riccardoalv/farolprint/issues/67)) ([43eb244](https://github.com/riccardoalv/farolprint/commit/43eb24444f5ad8999e3949940adebfa3eb4dd492))
+
 ## [0.24.0](https://github.com/riccardoalv/farolprint/compare/v0.23.0...v0.24.0) (2026-11-23)
 
 
