@@ -1,4 +1,10 @@
-import { type ConnectionError, type FilamentMode, printerErrorMessageId } from '@farolprint/shared';
+import {
+    type AceSlotSource,
+    type AceSlotStatus,
+    type ConnectionError,
+    type FilamentMode,
+    printerErrorMessageId,
+} from '@farolprint/shared';
 import { m } from '@/lib/i18n';
 
 export const FILAMENT_MODE_LABEL: Record<FilamentMode, () => string> = {
@@ -12,6 +18,21 @@ export const AMS_ACTIVITY_LABEL: Record<string, () => string> = {
     feeding: m.ams_activity_feeding,
     retracting: m.ams_activity_retracting,
     loaded: m.ams_activity_loaded,
+};
+
+export const ACE_SLOT_STATUS_LABEL: Partial<Record<AceSlotStatus, () => string>> = {
+    feeding: m.ace_slot_status_feeding,
+    unloading: m.ace_slot_status_unloading,
+    shifting: m.ace_slot_status_shifting,
+    shift_error: m.ace_slot_status_shift_error,
+    preloading: m.ace_slot_status_preloading,
+    reading_rfid: m.ace_slot_status_reading_rfid,
+};
+
+export const ACE_SLOT_SOURCE_LABEL: Record<AceSlotSource, () => string> = {
+    rfid: m.ace_slot_source_rfid,
+    manual: m.ace_slot_source_manual,
+    unknown: m.ace_slot_source_unknown,
 };
 
 export const JOB_STATUS_LABEL: Record<string, () => string> = {

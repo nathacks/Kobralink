@@ -81,7 +81,42 @@ export interface AmsSlot {
     rfid?: number;
     sku?: string;
     activity: string;
+    remainingPct?: number;
+    source?: AceSlotSource;
+    colors?: [number, number, number][];
 }
+
+export type AceSlotSource = 'rfid' | 'manual' | 'unknown';
+
+export const ACE_SLOT_SOURCES: Record<number, AceSlotSource> = { 0: 'rfid', 1: 'manual', 2: 'unknown' };
+
+export type AceSlotStatus =
+    | 'feeding'
+    | 'unloading'
+    | 'shifting'
+    | 'no_spool'
+    | 'ready'
+    | 'shift_error'
+    | 'preloading'
+    | 'reading_rfid';
+
+const ACE_SLOT_STATUSES: Record<number, AceSlotStatus> = {
+    1: 'feeding',
+    2: 'unloading',
+    3: 'shifting',
+    4: 'no_spool',
+    5: 'ready',
+    6: 'shift_error',
+    7: 'preloading',
+    8: 'reading_rfid',
+};
+
+export function aceSlotStatus(status: number): AceSlotStatus | null {
+    return ACE_SLOT_STATUSES[status] ?? null;
+}
+
+export const ACE_DRYING_ON = 1;
+export const ACE_DRYING_FAULT = 2;
 
 export interface AceDrying {
     status: number;

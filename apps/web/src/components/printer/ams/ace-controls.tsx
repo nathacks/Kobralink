@@ -1,4 +1,4 @@
-import { type AceUnit, aceDryFormSchema } from '@farolprint/shared';
+import { ACE_DRYING_FAULT, ACE_DRYING_ON, type AceUnit, aceDryFormSchema } from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Droplets, Thermometer, X } from 'lucide-react';
@@ -38,8 +38,12 @@ export function AceControls({
         onSuccess: (_, v) => toast.success(v.action === 'start' ? m.ace_dry_started() : m.ace_dry_stopped()),
         onError,
     });
-    const drying = units.find((u) => u.drying.status !== 0)?.drying ?? units[0].drying;
-    const active = drying.status !== 0;
+    const drying =
+        units.find((u) => u.drying.status === ACE_DRYING_ON)?.drying ??
+        units.find((u) => u.drying.status === ACE_DRYING_FAULT)?.drying ??
+        units[0].drying;
+    const active = drying.status === ACE_DRYING_ON;
+    const fault = drying.status === ACE_DRYING_FAULT;
     const qc = useQueryClient();
     const settings = useQuery(appSettingsQuery);
     const presets = settings.data?.aceDryPresets ?? [];
@@ -105,6 +109,23 @@ export function AceControls({
                         )}
                     </div>
                 </div>
+                {fault && (
+                    <div className="flex items-center justify-between gap-3">
+                        <p role="alert" className="text-sm text-destructive">
+                            {m.ace_drying_fault()}
+                        </p>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="rounded-full"
+                            disabled={disabled || dry.isPending}
+                            onClick={() => dry.mutate({ action: 'stop' })}
+                        >
+                            {m.common_stop()}
+                        </Button>
+                    </div>
+                )}
                 {active ? (
                     <div className="flex items-center justify-between gap-3">
                         <div className="text-sm">

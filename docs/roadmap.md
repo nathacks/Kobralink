@@ -78,12 +78,13 @@ Follow-up of the protocol survey of November 2026; the numbers refer to the dive
    41, 43, 44). Left: printing a test model, to confirm on the maintainer's printer.
 6. **Detection light and print diagnostics (done)**: the camera light on while failure detection watches (item 35);
    the extra fans, the `updated` report and the `print/query` answer logged for the next print (items 18, 25, 39).
-7. **Later**: ACE details (slot statuses, remaining weight, RFID or manual, gradients, drying fault, dry before print,
-   endless spool), the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own timelapse on its USB
+7. **ACE details (done)**: slot statuses, the remaining percentage, RFID or manual, the colours of a multicolour spool
+   and the drying fault, from the official client's values (items 14–16).
+8. **Later**: dry before print and endless spool on the ACE, the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own timelapse on its USB
    drive, the auxiliary fan (`aux_fan_speed_pct`, reported by the Kobra 4, which has no chamber fan), other light
    types, axis position, rename on the printer, USB drive, peripherals, firmware update progress, slice parameters, the
-   Kobra X spool rack and `event` reports, the Kobra X camera light that any request to port 18088 turns on (items
-   14–16, 18, 21, 22, 24–34, 43).
+   Kobra X spool rack and `event` reports, the Kobra X camera light that any request to port 18088 turns on (items 18,
+   21, 22, 24–34, 43).
 
 Not planned: the printer's own AI detection, the `web` topic for every command, and sending nozzle and bed temperatures
 in one `print/update` (items 23, 37 and 40; reasons in [decisions.md](decisions.md#printer-protocol)).

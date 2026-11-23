@@ -18,6 +18,8 @@ import {
     uploadGcode,
 } from '@farolprint/kobra-protocol';
 import {
+    ACE_DRYING_FAULT,
+    ACE_DRYING_ON,
     ACTIVE_PRINT_STATES,
     type AceDrying,
     type AmsSlot,
@@ -956,10 +958,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             }
         }
         const ace = aggregateAceUnits(boxes, this.s.aceUnits);
-        const wasDrying = this.s.aceDrying.status !== 0 && this.s.aceDrying.remainTime <= 2;
+        const wasDrying = this.s.aceDrying.status === ACE_DRYING_ON && this.s.aceDrying.remainTime <= 2;
+        const wasFault = this.s.aceDrying.status === ACE_DRYING_FAULT;
         this.s.aceUnits = ace.units;
         this.s.aceDrying = ace.drying;
         if (wasDrying && ace.drying.status === 0) this.emitEvent('drying_done');
+        if (!wasFault && ace.drying.status === ACE_DRYING_FAULT) this.log.warn('The ACE reports a drying fault');
         if (slots.length) {
             this.s.amsSlots = slots;
             this.s.amsLoadedSlot = loaded;

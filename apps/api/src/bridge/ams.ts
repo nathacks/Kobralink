@@ -1,5 +1,8 @@
 import type { AmsBoxMappingEntry, KobraBoxSlot, KobraColorBox, KobraDryingStatus } from '@farolprint/kobra-protocol';
 import {
+    ACE_DRYING_FAULT,
+    ACE_DRYING_ON,
+    ACE_SLOT_SOURCES,
     type AceDrying,
     type AceUnit,
     type AmsSlot,
@@ -17,6 +20,27 @@ export function detectFilamentMode(boxes: KobraColorBox[]): FilamentMode {
     return 'toolhead';
 }
 
+function rgb(v: unknown): [number, number, number] | null {
+    if (!Array.isArray(v) || v.length < 3) return null;
+    const c = v.slice(0, 3).map(Number);
+    return c.every((n) => Number.isFinite(n) && n >= 0 && n <= 255) ? (c as [number, number, number]) : null;
+}
+
+function slotDetails(raw: KobraBoxSlot): Pick<AmsSlot, 'remainingPct' | 'source' | 'colors'> {
+    const details: Pick<AmsSlot, 'remainingPct' | 'source' | 'colors'> = {};
+    const weight = Number(raw.weight);
+    if (raw.weight !== undefined && raw.weight !== null && Number.isFinite(weight) && weight >= 0 && weight <= 100) {
+        details.remainingPct = Math.round(weight);
+    }
+    const source = ACE_SLOT_SOURCES[Number(raw.edit_status)];
+    if (raw.edit_status !== undefined && source) details.source = source;
+    const colors = Array.isArray(raw.color_group)
+        ? raw.color_group.map(rgb).filter((c): c is [number, number, number] => c !== null)
+        : [];
+    if (colors.length >= 2) details.colors = colors;
+    return details;
+}
+
 function toSlot(raw: KobraBoxSlot, globalIndex: number, boxId: number): AmsSlot {
     const c = Array.isArray(raw.color) && raw.color.length >= 3 ? raw.color : [255, 255, 255];
     return {
@@ -29,6 +53,7 @@ function toSlot(raw: KobraBoxSlot, globalIndex: number, boxId: number): AmsSlot 
         rfid: raw.rfid !== undefined ? Number(raw.rfid) : undefined,
         sku: raw.sku !== undefined ? String(raw.sku) : undefined,
         activity: '',
+        ...slotDetails(raw),
     };
 }
 
@@ -236,7 +261,8 @@ export function aggregateAceUnits(
         });
     }
     units.sort((a, b) => a.id - b.id);
-    const active = units.find((u) => u.drying.status !== 0);
+    const active =
+        units.find((u) => u.drying.status === ACE_DRYING_ON) ?? units.find((u) => u.drying.status === ACE_DRYING_FAULT);
     const primary = active ?? units[0];
     return { units, drying: primary ? primary.drying : EMPTY_DRYING };
 }

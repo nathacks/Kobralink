@@ -315,6 +315,12 @@ Bambu tools so people migrating from them find things where they expect. The pha
   new ones; FarolPrint did the same only on screen and sent the new parts alone to the printer.
 - **ACE feed status follows the official meaning**: 1 heating, 2 unloading, 3 loading; 10 and 11 are a finished load
   and unload, not work in progress. Filament usage is not charged while a slot heats, loads or unloads.
+- **ACE slot details follow the official client.** The values come from the comments in Anycubic's own client, since
+  no ACE is at hand to check them: a slot names its status (feeding, unloading, gear switch and its error,
+  preloading, reading RFID), shows the percentage left when no spool is mapped in Spoolman or FarolPrint, and its
+  dialog says whether the filament was read by RFID, set by hand or is unknown, with the colours of a multicolour
+  spool. A drying fault (`drying_status` 2) is no longer shown as drying: the ACE card says so and offers Stop, and the
+  "drying done" notification only follows a real drying. Dry before print waits for the slicer's payload.
 - **A refused upload stops the print.** The printer's answer to `/gcode_upload` is now checked: a code other than 200
   (or 0) is an error with the code and, for 19007–19010, the reason (name or type refused, not saved, no space).
   Before, any answer counted as a success and the print failed later with a confusing message.

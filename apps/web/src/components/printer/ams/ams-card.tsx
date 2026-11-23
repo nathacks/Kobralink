@@ -1,9 +1,10 @@
+import { aceSlotStatus } from '@farolprint/shared';
 import { Panel } from '@/components/printer/panel';
 import { useLiveState } from '@/hooks/use-printers';
 import { useExternalSpool } from '@/hooks/use-slot-spool';
 import { rgbCss } from '@/lib/color';
 import { m } from '@/lib/i18n';
-import { AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
+import { ACE_SLOT_STATUS_LABEL, AMS_ACTIVITY_LABEL, FILAMENT_MODE_LABEL } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { AceControls } from './ace-controls';
@@ -49,6 +50,9 @@ export function AmsCard({ printerId, className }: { printerId: string; className
                             const isLoaded = s.globalIndex === state.amsLoadedSlot;
                             const empty = s.status !== 5 && !s.type;
                             const activity = AMS_ACTIVITY_LABEL[s.activity]?.();
+                            const slotStatus = aceSlotStatus(s.status);
+                            const statusLabel =
+                                s.boxId >= 0 && slotStatus ? ACE_SLOT_STATUS_LABEL[slotStatus]?.() : undefined;
                             return (
                                 <button
                                     type="button"
@@ -72,6 +76,7 @@ export function AmsCard({ printerId, className }: { printerId: string; className
                                         slotKey={String(s.globalIndex)}
                                         color={rgbCss(s.color)}
                                         empty={empty}
+                                        remainingPct={s.remainingPct}
                                         className={cn(
                                             (s.activity === 'feeding' || s.activity === 'retracting') &&
                                                 'animate-pulse',
@@ -79,7 +84,11 @@ export function AmsCard({ printerId, className }: { printerId: string; className
                                     >
                                         <TileHeader
                                             title={
-                                                empty ? m.ams_empty() : activity && !isLoaded ? activity : s.type || '?'
+                                                empty
+                                                    ? m.ams_empty()
+                                                    : activity && !isLoaded
+                                                      ? activity
+                                                      : (statusLabel ?? (s.type || '?'))
                                             }
                                             badge={s.index + 1}
                                         />

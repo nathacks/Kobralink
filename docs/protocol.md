@@ -136,10 +136,14 @@ and whether `print/query` brings a report back while printing. Ignored today: `s
 ### ACE slot and feed values ✔
 
 - Slot `status`: 1 feeding, 2 unloading, 3 gear shift, 4 no spool, 5 ready, 6 shift error, 7 preloading, 8 reading
-  RFID. FarolPrint only tells 5 (ready) apart.
+  RFID. Only 5 (ready) can be printed from; the dashboard names 1, 2, 3, 6, 7 and 8 on the slot (4 shows as empty).
+- Slot `weight`: the percentage left (0–100); `edit_status`: 0 recognised by RFID, 1 set by hand, 2 unknown (to be
+  set); `color_group`: the colours of a multicolour spool, `[r, g, b, percent]` each, drawn by `icon_type` (0 solid,
+  1 horizontal gradient, 2 vertical gradient, 3 two-colour outline). FarolPrint shows the percentage on the slot when no
+  Spoolman or FarolPrint spool is mapped, and the source and the colours in the slot dialog.
 - `feed_status.type`: 1 load, 2 unload, 3 finish. `feed_status.current_status`: 1 heating, 2 unloading, 3 loading,
   10 load complete, 11 unload complete. FarolPrint shows 1/2/3 as activity and answers 10/11 with `type: 3`.
-- `drying_status.status`: 0 off, 1 on, 2 fault.
+- `drying_status.status`: 0 off, 1 on, 2 fault. A fault is shown as such (not as drying) and logged once.
 - Official drying presets: PLA and PLA+ 45 °C 4 h, PETG 50 °C 4 h, TPU 55 °C 4 h, ABS/ASA 55 °C 8 h, PA/PC 55 °C 12 h.
   An ACE Pro refuses more than 55 °C with code 11505 🟡.
 
@@ -214,15 +218,15 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 11 | `fan/report` ignored | fixed |
 | 12 | `info.features` not read | fixed: logged and kept; the Kobra 4 values are above ✔ |
 | 13 | Error codes shown raw, in the printer's language | fixed: 43 common codes translated, the printer message otherwise |
-| 14–16 | ACE slot statuses, slot `weight`/`edit_status`/`color_group`, drying fault 2 counted as drying | roadmap (ACE) |
+| 14–16 | ACE slot statuses, slot `weight`/`edit_status`/`color_group`, drying fault 2 counted as drying | fixed, from the official client's values (no ACE to check them on) |
 | 17 | Files in printer subfolders (such as `/test_model/`) not listed | fixed: the root lists no folder on the Kobra 4, so the test models are listed apart; printing one sends `filepath` `/test_model/<name>`, to confirm with a print ❓ |
 | 18 | `updated` snapshot fields (`print_speed_pct`, `z_comp`) ignored | logged; used once a print shows them ❓ |
 | 19 | Flow calibration option | fixed: on by default, switch in the print dialog |
 | 20 | Options shown only when `info.features` reports them | fixed: leveling, vibration compensation and flow calibration |
-| 21 | Dry in the ACE before printing (`dry_mode: 2`) | roadmap (ACE) |
+| 21 | Dry in the ACE before printing (`dry_mode: 2`) | roadmap: the official client only reacts to a dry-first start the slicer sends, whose payload is not public; needs a printer with an ACE |
 | 22 | The printer's own timelapse (needs a USB drive) | roadmap |
 | 23 | The printer's own AI detection | not planned: FarolPrint runs its own, and LAN cannot change the printer's settings |
-| 24 | Endless spool (backup slots in `ams_box_mapping`) | roadmap (ACE) |
+| 24 | Endless spool (backup slots in `ams_box_mapping`) | roadmap (ACE; only community sources) |
 | 25 | Aux and chamber fans | checked: the Kobra 4 reports `aux_fan_speed_pct` (0 when idle) and no chamber fan; changes are logged; the official client shows the controls for the S1 only, during a print, through `print/update` |
 | 26–34 | Axis position, rename, USB drive, peripherals, OTA progress, other light types, slice parameters, Kobra X spool rack, `event` reports | roadmap |
 | 35 | Camera light during failure detection | fixed: on while FarolPrint's detection watches, a setting on by default |

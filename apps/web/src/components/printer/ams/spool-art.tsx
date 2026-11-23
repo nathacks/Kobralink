@@ -86,11 +86,17 @@ export function SpoolProgress({
     );
 }
 
+export function slotFraction(spoolFraction: number | undefined, remainingPct: number | undefined): number | undefined {
+    if (spoolFraction !== undefined) return spoolFraction;
+    return remainingPct !== undefined ? Math.min(1, Math.max(0, remainingPct / 100)) : undefined;
+}
+
 export function SlotSpool({
     printerId,
     slotKey,
     color,
     empty,
+    remainingPct,
     className,
     children,
 }: {
@@ -98,13 +104,15 @@ export function SlotSpool({
     slotKey: string;
     color?: string;
     empty?: boolean;
+    remainingPct?: number;
     className?: string;
     children?: React.ReactNode;
 }) {
     const spool = useSlotSpool(printerId, slotKey);
     const fill = empty ? undefined : (color ?? spool.hex);
+    const fraction = slotFraction(spool.fraction, remainingPct);
     return (
-        <SpoolTileBody color={fill} fraction={fill ? spool.fraction : undefined} className={className}>
+        <SpoolTileBody color={fill} fraction={fill ? fraction : undefined} className={className}>
             {children}
         </SpoolTileBody>
     );

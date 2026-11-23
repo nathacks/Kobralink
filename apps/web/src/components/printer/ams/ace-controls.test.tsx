@@ -82,3 +82,29 @@ describe('AceControls scheduled drying', () => {
         expect(mocks.create).not.toHaveBeenCalled();
     });
 });
+
+describe('AceControls drying fault', () => {
+    const withStatus = (status: number) =>
+        ({ ...unit, drying: { ...unit.drying, status, targetTemp: 45, remainTime: 120 } }) as unknown as AceUnit;
+
+    it('shows a drying fault instead of a running drying', async () => {
+        await renderWithProviders(<AceControls printerId="p1" units={[withStatus(2)]} disabled={false} busy={false} />);
+        expect(screen.getByRole('alert').textContent).toBe(m.ace_drying_fault());
+        expect(screen.queryByText(m.ace_drying_status({ temp: 45, duration: '2h' }))).toBeNull();
+        await userEvent.click(screen.getByRole('button', { name: m.common_stop() }));
+        await waitFor(() => expect(mocks.dry).toHaveBeenCalledWith('p1', { action: 'stop' }));
+    });
+
+    it('shows the unit that is drying over one with a fault', async () => {
+        await renderWithProviders(
+            <AceControls
+                printerId="p1"
+                units={[withStatus(2), { ...withStatus(1), id: 1 } as AceUnit]}
+                disabled={false}
+                busy={false}
+            />,
+        );
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByRole('button', { name: m.common_stop() })).toBeTruthy();
+    });
+});

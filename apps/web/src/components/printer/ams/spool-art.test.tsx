@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { remainingFraction } from '@/hooks/use-slot-spool';
 import { isDark } from '@/lib/color';
-import { SpoolArt, SpoolProgress, spoolRadius } from './spool-art';
+import { SpoolArt, SpoolProgress, slotFraction, spoolRadius } from './spool-art';
 
 const filamentRadius = (container: HTMLElement) =>
     Number(container.querySelector('[data-filament]')?.getAttribute('r'));
@@ -61,5 +61,20 @@ describe('SpoolProgress', () => {
     it('is hidden when the amount left is unknown', () => {
         render(<SpoolProgress color="#111111" />);
         expect(screen.queryByRole('progressbar')).toBeNull();
+    });
+});
+
+describe('slotFraction', () => {
+    it('prefers the spool mapped in Spoolman or FarolPrint', () => {
+        expect(slotFraction(0.4, 90)).toBe(0.4);
+    });
+
+    it('falls back to the percentage the ACE reports', () => {
+        expect(slotFraction(undefined, 20)).toBe(0.2);
+        expect(slotFraction(undefined, 0)).toBe(0);
+    });
+
+    it('stays unknown without either', () => {
+        expect(slotFraction(undefined, undefined)).toBeUndefined();
     });
 });
