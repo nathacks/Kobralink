@@ -4,6 +4,7 @@ export type KobraProtocolErrorCode =
     | 'ctrl_invalid'
     | 'upload_no_token'
     | 'upload_unexpected'
+    | 'upload_refused'
     | 'upload_timeout'
     | 'mqtt_closed_handshake';
 

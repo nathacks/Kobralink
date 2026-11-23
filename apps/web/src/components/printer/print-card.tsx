@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { parseFilename } from '@/lib/filename';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { kobraStateLabel } from '@/lib/labels';
+import { kobraStateLabel, printerErrorText } from '@/lib/labels';
 import { filesQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -203,7 +203,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                         active ? 'bg-primary-foreground/15' : 'bg-destructive/15 text-destructive',
                     )}
                 >
-                    [{state.errorCode}] {state.pauseMsg}
+                    [{state.errorCode}] {printerErrorText(state.errorCode, state.pauseMsg)}
                 </div>
             )}
         </section>

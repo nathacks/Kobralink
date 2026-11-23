@@ -9,7 +9,7 @@ import {
 } from '@farolprint/shared';
 import { Injectable, Logger } from '@nestjs/common';
 import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge/printer-bridge';
-import { m, runWithLocale } from '../i18n/locale';
+import { m, printerErrorText, runWithLocale } from '../i18n/locale';
 import { maintenanceTaskName } from '../maintenance/preset-names';
 import { SettingsService } from '../settings/settings.service';
 
@@ -256,7 +256,10 @@ function describe(type: FarolPrintEventType, printer: string, d: EventData): { t
         case 'print_paused':
             return {
                 title: m.notify_print_paused_title({ printer }),
-                body: m.notify_print_paused_body({ code: String(d.code ?? ''), msg: String(d.msg ?? '') }),
+                body: m.notify_print_paused_body({
+                    code: String(d.code ?? ''),
+                    msg: printerErrorText(Number(d.code), String(d.msg ?? '')),
+                }),
             };
         case 'printer_offline':
             return { title: m.notify_printer_offline_title({ printer }), body: m.notify_printer_offline_body() };

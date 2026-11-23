@@ -36,6 +36,7 @@ export interface KobraInfoData {
         taskid?: string | number;
     };
     storage?: { total?: number; used?: number };
+    features?: Record<string, unknown>;
     [k: string]: unknown;
 }
 
@@ -93,10 +94,24 @@ export interface KobraMultiColorBoxData {
     [k: string]: unknown;
 }
 
-export interface KobraLightData {
-    status?: number;
-    brightness?: number;
+export const CAMERA_LIGHT_TYPE = 3;
+
+export interface KobraLight {
+    status?: number | null;
+    brightness?: number | null;
     type?: number;
+}
+
+export interface KobraLightData extends KobraLight {
+    lights?: KobraLight[];
+}
+
+export interface KobraFanData {
+    fan_speed_pct?: number | null;
+    aux_fan_speed_pct?: number | null;
+    box_fan_level?: number | null;
+    taskid?: string | number;
+    [k: string]: unknown;
 }
 
 export interface KobraSkipData {

@@ -274,6 +274,7 @@ export class CoreController {
                 excludedObjects: body.excludedObjects,
                 filamentAssignments: body.filamentAssignments,
                 vibrationCompensation: body.vibrationCompensation,
+                flowCalibration: body.flowCalibration,
                 timelapse: body.timelapse,
                 failureDetection: body.failureDetection,
             }),

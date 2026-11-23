@@ -41,3 +41,14 @@ describe('queuePrintOptionsSchema', () => {
         });
     });
 });
+
+describe('flow calibration in the queue', () => {
+    it('keeps the choice made in the print dialog with the queued item', () => {
+        expect(queuePrintOptionsSchema.parse({ flowCalibration: false })).toEqual({ flowCalibration: false });
+        expect(addQueueItemSchema.parse({ fileId: 'f1', flowCalibration: false }).flowCalibration).toBe(false);
+    });
+
+    it('leaves it to the printer setting when the dialog says nothing', () => {
+        expect(queuePrintOptionsSchema.parse({}).flowCalibration).toBeUndefined();
+    });
+});

@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import net from 'node:net';
 import {
+    type KobraFanData,
     type KobraFileData,
     type KobraInfoData,
     type KobraLightData,
@@ -11,6 +12,7 @@ import {
     type KobraPrintData,
     type KobraSkipData,
     type PrintStartPayload,
+    readLight,
     uploadGcode,
 } from '@farolprint/kobra-protocol';
 import {
@@ -22,8 +24,8 @@ import {
     type FarolPrintEventType,
     type FilamentAssignment,
     type FilamentMode,
+    isPreparing,
     KOBRA_TO_KLIPPER_STATE,
-    PRE_PRINT_STATES,
     type PrinterFileDto,
     type PrinterLiveState,
     type PrinterSample,
@@ -35,7 +37,7 @@ import {
 } from '@farolprint/shared';
 import { Logger } from '@nestjs/common';
 import type { GcodeService, StoredFile } from '../gcode/gcode.service';
-import { connectionErrorMessage, m, protocolErrorMessage } from '../i18n/locale';
+import { connectionErrorMessage, m, printerRefusedMessage, protocolErrorMessage } from '../i18n/locale';
 import { bindPrinterContext } from '../logs/log-buffer';
 import {
     aggregateAceUnits,
@@ -351,6 +353,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.camera.stop();
         this.offline = true;
         this.jobsReconciled = false;
+        this.loggedFeatures = '';
         this.s.connected = false;
         if (wasConnected && error.code !== 'manual' && error.code !== 'reconnecting') {
             this.offlineSince = Date.now();
@@ -409,6 +412,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     this.offlineAlerted = false;
                     this.publish();
                     this.emitEvent('printer_online');
+                    this.client.queryLight();
                 } catch (e) {
                     const err = mqttConnectionError(e);
                     this.s.connectionError = err;
@@ -521,6 +525,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             case 'multiColorBox/report':
                 this.onMultiColorBox(payload as KobraMessage<KobraMultiColorBoxData>);
                 break;
+            case 'fan/report':
+                this.onFan(payload as KobraMessage<KobraFanData>);
+                break;
             case 'light/report':
                 this.onLight(payload as KobraMessage<KobraLightData>);
                 break;
@@ -614,10 +621,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         } else {
             this.s.filename = d.filename ?? this.s.filename;
         }
-        if (PRE_PRINT_STATES.has(kobraState)) this.s.progress = 0;
+        if (d.curr_layer !== undefined) this.setLayer(Number(d.curr_layer));
+        if (isPreparing(kobraState, this.s.currLayer)) this.s.progress = 0;
         else if (d.progress !== undefined) this.s.progress = Number(d.progress) / 100;
         if (d.remain_time !== undefined) this.s.remainTimeSec = Number(d.remain_time) * 60;
-        if (d.curr_layer !== undefined) this.setLayer(Number(d.curr_layer));
         if (d.total_layers !== undefined) this.s.totalLayers = Number(d.total_layers);
         if (d.taskid !== undefined) this.s.taskId = String(d.taskid);
         if (d.settings?.print_speed_mode !== undefined) this.s.printSpeedMode = Number(d.settings.print_speed_mode);
@@ -861,12 +868,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (project.filename !== undefined && !TERMINAL_PRINT_STATES.has(kobraState))
             this.s.filename = project.filename;
-        if (project.progress !== undefined && !PRE_PRINT_STATES.has(kobraState)) {
+        if (project.curr_layer !== undefined) this.setLayer(Number(project.curr_layer));
+        if (project.progress !== undefined && !isPreparing(kobraState, this.s.currLayer)) {
             this.s.progress = Number(project.progress) / 100;
         }
         if (project.print_time !== undefined) this.setPrintTime(Number(project.print_time) * 60);
         if (project.remain_time !== undefined) this.s.remainTimeSec = Number(project.remain_time) * 60;
-        if (project.curr_layer !== undefined) this.setLayer(Number(project.curr_layer));
         if (project.total_layers !== undefined) this.s.totalLayers = Number(project.total_layers);
         if (project.taskid !== undefined) this.s.taskId = String(project.taskid);
         if (d.temp) {
@@ -888,6 +895,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.camera.setUrl(d.urls.rtspUrl);
         }
         if (d.fan_speed_pct !== undefined) this.s.fanSpeed = Number(d.fan_speed_pct);
+        if (d.features && typeof d.features === 'object') this.logFeatures(d.features);
         if (d.print_speed_mode !== undefined) this.s.printSpeedMode = Number(d.print_speed_mode);
         if (kobraState) this.syncJob(kobraState, this.s.filename);
         this.publish();
@@ -939,11 +947,29 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private onLight(p: KobraMessage<KobraLightData>): void {
-        const d = p.data ?? {};
-        this.s.lightOn = Boolean(d.status);
-        this.countLightTap(Date.now());
-        this.s.lightBrightness = Number(d.brightness ?? 80);
+        if (p.action !== 'query') this.countLightTap(Date.now());
+        const light = readLight(p.data);
+        if (!light) return;
+        this.s.lightOn = light.on;
+        this.s.lightBrightness = light.brightness;
         this.publish();
+    }
+
+    private onFan(p: KobraMessage<KobraFanData>): void {
+        const raw = p.data?.fan_speed_pct;
+        const pct = Number(raw);
+        if (raw === undefined || raw === null || !Number.isFinite(pct)) return;
+        this.s.fanSpeed = pct;
+        this.publish();
+    }
+
+    private logFeatures(features: Record<string, unknown>): void {
+        const text = JSON.stringify(
+            Object.fromEntries(Object.entries(features).sort(([a], [b]) => a.localeCompare(b))),
+        );
+        if (text === this.loggedFeatures) return;
+        this.loggedFeatures = text;
+        this.log.log(`Features reported by the printer: ${text}`);
     }
 
     private countLightTap(now: number): void {
@@ -983,7 +1009,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.spoolLastUsage = current;
         if (delta <= 0 || loaded < 0) return;
         const act = activity.get(loaded);
-        if (act === 'feeding' || act === 'retracting') return;
+        if (act === 'feeding' || act === 'retracting' || act === 'heating') return;
         this.spoolUsage.set(loaded, (this.spoolUsage.get(loaded) ?? 0) + delta);
         for (const sink of this.activeSinks()) {
             const rate = sink.syncRateSec;
@@ -1034,6 +1060,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private knownUrlKeys = '';
+    private loggedFeatures = '';
     private paused = false;
 
     private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();
@@ -1077,7 +1104,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (res.state !== 'success' && res.code !== 200) {
             this.log.warn(`deleteBatch refused: state=${res.state} code=${res.code} msg=${res.msg ?? ''}`);
-            throw new BridgeRequestError(m.api_printer_refused({ code: String(res.code ?? '?'), msg: res.msg ?? '' }));
+            throw new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''));
         }
         for (const f of filenames) {
             this.printerThumbs.delete(f);
@@ -1143,10 +1170,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async skipObjects(names: string[]): Promise<void> {
         this.ensureConnected();
-        const res = await this.client.skipObjects(names);
+        const res = await this.client.skipObjects([...new Set([...this.s.skippedObjects, ...names])]);
         if (!res) throw new BridgeRequestError(m.api_skip_no_response());
-        if (res.state === 'failed')
-            throw new BridgeRequestError(m.api_printer_refused({ code: String(res.code ?? '?'), msg: res.msg ?? '' }));
+        if (res.state === 'failed') throw new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''));
     }
 
     async querySkip(): Promise<void> {
@@ -1273,7 +1299,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     setLight(on: boolean, brightness?: number): void {
         this.ensureConnected();
-        const b = brightness ?? this.s.lightBrightness;
+        const wanted = brightness ?? this.s.lightBrightness;
+        const b = on ? (wanted > 0 ? wanted : 100) : 0;
         this.lastOwnLightAt = Date.now();
         this.client.setLight(on, b);
         this.s.lightOn = on;
@@ -1293,7 +1320,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const res = await this.client.moveAxis(axis, moveType, distance);
         if (!res) return;
         if (res.state === 'failed') {
-            throw new BridgeRequestError(m.api_printer_refused({ code: String(res.code ?? '?'), msg: res.msg ?? '' }));
+            throw new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''));
         }
     }
 
@@ -1558,7 +1585,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             project_type: 1,
             filesize: sizeBytes,
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
-            task_settings: this.taskSettings(autoLeveling, []),
+            task_settings: this.taskSettings([], { autoLeveling }),
         };
         this.s.slicerTimeSec = 0;
         this.s.thumbnail = this.printerThumbs.get(filename) ?? '';
@@ -1569,12 +1596,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
             this.log.warn(`local print/start refused: ${JSON.stringify(result)}`);
-            throw new Error(
-                m.api_printer_refused({
-                    code: String(result.code ?? '?'),
-                    msg: result.msg ?? JSON.stringify(result.data),
-                }),
-            );
+            throw new Error(printerRefusedMessage(result.code, result.msg ?? JSON.stringify(result.data)));
         }
         this.s.filename = filename;
         this.jobsReconciled = true;
@@ -1587,14 +1609,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private taskSettings(
-        autoLeveling: boolean | undefined,
         excluded: string[],
-        vibrationCompensation?: boolean,
+        opts: Pick<StartPrintOptions, 'autoLeveling' | 'vibrationCompensation' | 'flowCalibration'> = {},
     ): PrintStartPayload['task_settings'] {
+        const s = this.config.settings;
         return {
-            auto_leveling: (autoLeveling ?? this.config.settings.autoLeveling) ? 1 : 0,
-            vibration_compensation: (vibrationCompensation ?? this.config.settings.vibrationCompensation) ? 1 : 0,
-            flow_calibration: 0,
+            auto_leveling: (opts.autoLeveling ?? s.autoLeveling) ? 1 : 0,
+            vibration_compensation: (opts.vibrationCompensation ?? s.vibrationCompensation) ? 1 : 0,
+            flow_calibration: (opts.flowCalibration ?? s.flowCalibration) ? 1 : 0,
             dry_mode: 0,
             ai_settings: { status: 0, count: 0, type: 1 },
             timelapse: { status: 0, count: 0, type: 64 },
@@ -1633,7 +1655,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             project_type: 1,
             filesize: file.sizeBytes,
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
-            task_settings: this.taskSettings(opts.autoLeveling, excluded, opts.vibrationCompensation),
+            task_settings: this.taskSettings(excluded, opts),
         };
         this.jobOptions = { timelapse: opts.timelapse, failureDetection: opts.failureDetection };
         this.s.slicerTimeSec = file.estPrintTimeSec;
@@ -1646,12 +1668,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const result = await this.client.startPrint(payload);
         if (!result) throw new BridgeRequestError(m.api_print_no_response());
         if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            throw new BridgeRequestError(
-                m.api_printer_refused({
-                    code: String(result.code ?? '?'),
-                    msg: result.msg ?? JSON.stringify(result.data),
-                }),
-            );
+            throw new BridgeRequestError(printerRefusedMessage(result.code, result.msg ?? JSON.stringify(result.data)));
         }
         this.s.filename = file.filename;
         this.jobsReconciled = true;
@@ -1673,6 +1690,7 @@ export interface StartPrintOptions {
     excludedObjects?: string[];
     filamentAssignments?: FilamentAssignment[];
     vibrationCompensation?: boolean;
+    flowCalibration?: boolean;
     timelapse?: boolean;
     failureDetection?: boolean;
 }

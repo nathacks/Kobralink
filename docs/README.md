@@ -17,6 +17,7 @@ camera, AI failure detection, notifications and Home Assistant. It never changes
 |---|---|
 | [Development](development.md) | Setup, commands, tests, CI, commits and releases |
 | [Decisions](decisions.md) | What was decided, and why |
+| [Printer protocol](protocol.md) | The Kobra LAN protocol, what FarolPrint uses of it and where it differs from Anycubic's client |
 | [Contributing](../CONTRIBUTING.md) | Code style, Conventional Commits, pull requests, privacy |
 | [CLAUDE.md](../CLAUDE.md) | Layout, architecture and the rules that are easy to break |
 | [Infra](../infra/README.md) | Docker image and compose files |

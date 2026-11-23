@@ -121,6 +121,18 @@ describe('PrintCard', () => {
         expect(control.resume).toHaveBeenCalledWith('p1');
     });
 
+    it('explains a known pause code in the interface language', async () => {
+        Object.assign(live, {
+            printState: 'paused',
+            filename: 'bracket.gcode',
+            progress: 0.5,
+            pauseMsg: 'Filament entanglement or jam detected, please manually straighten the filament',
+            errorCode: 11842,
+        });
+        await renderWithProviders(<PrintCard printerId="p1" />);
+        expect(screen.getByRole('alert').textContent).toBe(`[11842] ${m.printer_error_tangle_or_clog()}`);
+    });
+
     it('asks before cancelling and opens the skip objects dialog', async () => {
         Object.assign(live, { printState: 'printing', filename: 'bracket.gcode', progress: 0.1 });
         await renderWithProviders(<PrintCard printerId="p1" />);

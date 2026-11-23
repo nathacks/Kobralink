@@ -2,7 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import mqtt, { type IClientOptions, type MqttClient } from 'mqtt';
 import { KobraProtocolError } from './errors';
-import type { KobraInfoData, KobraMessage, KobraMultiColorBoxData, KobraPrintData, KobraSkipData } from './types';
+import {
+    CAMERA_LIGHT_TYPE,
+    type KobraInfoData,
+    type KobraMessage,
+    type KobraMultiColorBoxData,
+    type KobraPrintData,
+    type KobraSkipData,
+} from './types';
 
 export interface KobraLogger {
     debug(msg: string, ...args: unknown[]): void;
@@ -338,7 +345,11 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
     }
 
     setLight(on: boolean, brightness = 80) {
-        this.send('light', 'control', { type: 3, status: on ? 1 : 0, brightness });
+        this.send('light', 'control', { type: CAMERA_LIGHT_TYPE, status: on ? 1 : 0, brightness });
+    }
+
+    queryLight() {
+        this.publishWeb('light', 'query');
     }
 
     setPrintSpeedMode(taskid: string, mode: number) {

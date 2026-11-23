@@ -63,6 +63,19 @@ describe('notification texts', () => {
         expect(custom.body.startsWith('Graisser')).toBe(true);
     });
 
+    it('explains a known pause code in the configured language', () => {
+        const msg = 'Filament entanglement or jam detected, please manually straighten the filament';
+        const en = service().svc.build('p1', 'Kobra', 'print_paused', { code: 11842, msg });
+        expect(en.body).toBe('[11842] Filament tangle or jam detected; straighten the filament by hand');
+        const pt = service({ locale: 'pt-br' }).svc.build('p1', 'Kobra', 'print_paused', { code: 11842, msg });
+        expect(pt.body).toBe('[11842] Filamento enroscado ou travado; desenrosque à mão');
+    });
+
+    it('keeps the printer message for an unknown pause code', () => {
+        const ev = service().svc.build('p1', 'Kobra', 'print_paused', { code: 19999, msg: 'Something new' });
+        expect(ev.body).toBe('[19999] Something new');
+    });
+
     it('follows the configured locale', () => {
         const { svc } = service({ locale: 'fr' });
         expect(svc.build('p1', 'Kobra', 'queue_next', { filename: 'a.gcode' }).title).toBe("Kobra — file d'attente");

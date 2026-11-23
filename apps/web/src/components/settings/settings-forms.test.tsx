@@ -413,3 +413,30 @@ describe('FarolPrint address', () => {
         expect(mocks.save).not.toHaveBeenCalled();
     });
 });
+
+describe('flow calibration setting', () => {
+    it('is on by default and can be turned off for a printer', async () => {
+        const settings = printerSettingsSchema.parse({});
+        expect(settings.flowCalibration).toBe(true);
+        const printer = {
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.235',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings,
+            live: null,
+        } as unknown as PrinterWithLive;
+        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        const flow = switchAfter(m.settings_flow_calibration());
+        expect(flow.getAttribute('aria-checked')).toBe('true');
+        await userEvent.click(flow);
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings.flowCalibration).toBe(false);
+    });
+});

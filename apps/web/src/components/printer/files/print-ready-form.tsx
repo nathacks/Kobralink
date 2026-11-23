@@ -16,6 +16,7 @@ import {
     CalendarClock,
     ChevronDown,
     Clock,
+    Droplets,
     Film,
     Grid3x3,
     Layers,
@@ -60,6 +61,7 @@ export interface PrintReadyResult {
     excludedObjects: string[];
     autoLeveling: boolean;
     vibrationCompensation: boolean;
+    flowCalibration: boolean;
     timelapse: boolean;
     failureDetection: boolean;
 }
@@ -170,6 +172,7 @@ export function PrintReadyForm({
     const [vibrationCompensation, setVibrationCompensation] = useState(
         printer?.settings.vibrationCompensation ?? false,
     );
+    const [flowCalibration, setFlowCalibration] = useState(printer?.settings.flowCalibration ?? true);
     const [timelapse, setTimelapse] = useState(printer?.settings.timelapseEnabled ?? false);
     const [failureDetection, setFailureDetection] = useState(printer?.settings.failureDetection ?? true);
     const [pending, setPending] = useState(false);
@@ -234,6 +237,7 @@ export function PrintReadyForm({
         excludedObjects: excluded,
         autoLeveling,
         vibrationCompensation,
+        flowCalibration,
         timelapse,
         failureDetection,
     });
@@ -467,6 +471,14 @@ export function PrintReadyForm({
                             hint={m.print_ready_vibration_hint()}
                             checked={vibrationCompensation}
                             onChange={setVibrationCompensation}
+                        />
+                        <OptionRow
+                            id="print-ready-flow"
+                            icon={<Droplets />}
+                            label={m.settings_flow_calibration()}
+                            hint={m.print_ready_flow_hint()}
+                            checked={flowCalibration}
+                            onChange={setFlowCalibration}
                         />
                         <OptionRow
                             id="print-ready-timelapse"

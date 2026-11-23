@@ -36,7 +36,8 @@ const SPEED_MODES = [
     { value: 3, label: m.controls_speed_fast, icon: <Zap /> },
 ];
 
-const AXIS = { X: 1, Y: 2, Z: 3, ALL: 4 } as const;
+const AXIS = { X: 1, Y: 2, Z: 3, XY: 4, XYZ: 5 } as const;
+const HOME = 2;
 const DISTANCES = [1, 10, 50];
 
 type Tab = 'controls' | 'axes';
@@ -75,6 +76,7 @@ function AxesPad({ printerId }: { printerId: string }) {
     });
     const offMut = useMutation({ mutationFn: () => api.control.axisOff(printerId), onError });
     const jog = (axis: number, moveType: number) => axisMut.mutate({ axis, moveType, distance });
+    const home = (axis: number) => axisMut.mutate({ axis, moveType: HOME, distance: 0 });
 
     return (
         <div className="flex flex-col items-center gap-4">
@@ -91,7 +93,7 @@ function AxesPad({ printerId }: { printerId: string }) {
                     <Jog onClick={() => jog(AXIS.X, 0)} disabled={locked} title={`X- · ${m.axes_nozzle()}`}>
                         <ArrowLeft />
                     </Jog>
-                    <Jog onClick={() => jog(AXIS.ALL, 2)} disabled={locked} title={m.axes_home()} primary>
+                    <Jog onClick={() => home(AXIS.XY)} disabled={locked} title={m.axes_home_xy()}>
                         <Home />
                     </Jog>
                     <Jog onClick={() => jog(AXIS.X, 1)} disabled={locked} title={`X+ · ${m.axes_nozzle()}`}>
@@ -107,7 +109,9 @@ function AxesPad({ printerId }: { printerId: string }) {
                     <Jog onClick={() => jog(AXIS.Z, 1)} disabled={locked} title="Z+">
                         <ArrowUp />
                     </Jog>
-                    <span className="flex h-11 items-center text-sm font-medium text-muted-foreground">Z</span>
+                    <Jog onClick={() => home(AXIS.Z)} disabled={locked} title={m.axes_home_z()}>
+                        <Home />
+                    </Jog>
                     <Jog onClick={() => jog(AXIS.Z, 0)} disabled={locked} title="Z-">
                         <ArrowDown />
                     </Jog>
@@ -120,14 +124,19 @@ function AxesPad({ printerId }: { printerId: string }) {
                 value={distance}
                 onSelect={setDistance}
             />
-            <Button
-                variant="secondary"
-                className="h-9 w-full rounded-full"
-                disabled={locked}
-                onClick={() => offMut.mutate()}
-            >
-                <Power /> {m.axes_motors_off()}
-            </Button>
+            <div className="grid w-full grid-cols-2 gap-2">
+                <Button className="h-9 rounded-full" disabled={locked} onClick={() => home(AXIS.XYZ)}>
+                    <Home /> {m.axes_home()}
+                </Button>
+                <Button
+                    variant="secondary"
+                    className="h-9 rounded-full"
+                    disabled={locked}
+                    onClick={() => offMut.mutate()}
+                >
+                    <Power /> {m.axes_motors_off()}
+                </Button>
+            </div>
         </div>
     );
 }

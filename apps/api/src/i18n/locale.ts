@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { type Locale, m, overwriteGetLocale, resolveLocale } from '@farolprint/i18n';
 import { KobraProtocolError } from '@farolprint/kobra-protocol';
-import type { ConnectionError } from '@farolprint/shared';
+import { type ConnectionError, printerErrorMessageId } from '@farolprint/shared';
 import type { NextFunction, Request, Response } from 'express';
 import type { z } from 'zod';
 
@@ -80,6 +80,29 @@ export function zodErrorMap(issue: z.core.$ZodRawIssue): string | undefined {
     }
 }
 
+export function printerErrorText(code: number | string | null | undefined, msg: string): string {
+    const id = printerErrorMessageId(code);
+    return id ? m[id]() : msg;
+}
+
+export function printerRefusedMessage(code: number | string | null | undefined, msg: string): string {
+    return m.api_printer_refused({ code: String(code ?? '?'), msg: printerErrorText(code, msg) });
+}
+
+export function uploadRefusedMessage(code: number, msg: string): string {
+    switch (code) {
+        case 19007:
+            return m.api_upload_file_refused({ code });
+        case 19008:
+        case 19009:
+            return m.api_upload_not_saved({ code });
+        case 19010:
+            return m.api_upload_no_space({ code });
+        default:
+            return m.api_upload_refused({ code, msg }).trim();
+    }
+}
+
 export function protocolErrorMessage(e: unknown): string {
     if (!(e instanceof KobraProtocolError)) return e instanceof Error ? e.message : String(e);
     const p = e.params;
@@ -96,6 +119,8 @@ export function protocolErrorMessage(e: unknown): string {
             return m.api_upload_unexpected({ text: p.text ?? '' });
         case 'upload_timeout':
             return m.api_upload_timeout();
+        case 'upload_refused':
+            return uploadRefusedMessage(Number(p.code), String(p.msg ?? ''));
         case 'mqtt_closed_handshake':
             return m.api_mqtt_closed_handshake();
         default:

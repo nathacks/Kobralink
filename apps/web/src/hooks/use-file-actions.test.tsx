@@ -37,6 +37,7 @@ const result = {
     excludedObjects: [] as string[],
     autoLeveling: true,
     vibrationCompensation: false,
+    flowCalibration: true,
     timelapse: false,
     failureDetection: false,
 };

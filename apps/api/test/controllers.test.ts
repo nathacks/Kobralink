@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { cancelPrintSchema, schedulePrintSchema, updatePrintJobSchema } from '@farolprint/shared';
+import { cancelPrintSchema, schedulePrintSchema, startPrintSchema, updatePrintJobSchema } from '@farolprint/shared';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { AutomationController } from '../src/automations/automation.controller';
 import type { AutomationService } from '../src/automations/automation.service';
@@ -241,6 +241,48 @@ describe('CoreController cancel', () => {
         await ctrl.cancel('p1', pipe.transform(undefined));
         expect(cancel.mock.calls).toEqual([['adhesion'], ['']]);
         expect(() => pipe.transform({ reason: 'bogus' })).toThrow(BadRequestException);
+    });
+});
+
+describe('CoreController print', () => {
+    it('passes every option of the print dialog to the printer, flow calibration included', async () => {
+        const printStoredFile = mock(async (_id: string, _opts: Record<string, unknown>) => ({ filename: 'a.gcode' }));
+        const registry = {
+            get: () => ({ config: { ip: '127.0.0.1', httpPort: 7125 }, printStoredFile }),
+        } as unknown as BridgeRegistry;
+        const gcode = { get: async (id: string) => ({ id, filename: 'a.gcode' }) } as unknown as GcodeService;
+        const ctrl = new CoreController(registry, gcode, {} as StatsService);
+        const body = new ZodPipe(startPrintSchema).transform({
+            fileId: 'f1',
+            autoLeveling: true,
+            vibrationCompensation: false,
+            flowCalibration: false,
+            timelapse: true,
+            failureDetection: false,
+        });
+        await ctrl.print('p1', body);
+        const [id, opts] = printStoredFile.mock.calls[0];
+        expect(id).toBe('f1');
+        expect(String(opts.serveBase)).toEndWith(':7125');
+        expect(opts).toMatchObject({
+            autoLeveling: true,
+            vibrationCompensation: false,
+            flowCalibration: false,
+            timelapse: true,
+            failureDetection: false,
+            excludedObjects: [],
+        });
+    });
+
+    it('leaves flow calibration to the printer setting when the dialog says nothing', async () => {
+        const printStoredFile = mock(async (_id: string, _opts: Record<string, unknown>) => ({ filename: 'a.gcode' }));
+        const registry = {
+            get: () => ({ config: { ip: '127.0.0.1', httpPort: 7125 }, printStoredFile }),
+        } as unknown as BridgeRegistry;
+        const gcode = { get: async (id: string) => ({ id, filename: 'a.gcode' }) } as unknown as GcodeService;
+        const ctrl = new CoreController(registry, gcode, {} as StatsService);
+        await ctrl.print('p1', new ZodPipe(startPrintSchema).transform({ fileId: 'f1' }));
+        expect(printStoredFile.mock.calls[0][1].flowCalibration).toBeUndefined();
     });
 });
 

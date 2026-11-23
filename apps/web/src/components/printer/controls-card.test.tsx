@@ -141,7 +141,29 @@ describe('ControlsCard', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Z-' }));
         expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 3, moveType: 0, distance: 1 });
         await userEvent.click(screen.getByRole('button', { name: m.axes_home() }));
-        expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 4, moveType: 2, distance: 1 });
+        expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 5, moveType: 2, distance: 0 });
+    });
+
+    it('homes XYZ, XY and Z with the official axis codes', async () => {
+        await renderWithProviders(<ControlsCard printerId="p1" />);
+        await openAxes();
+        await userEvent.click(screen.getByRole('button', { name: '50 mm' }));
+        await userEvent.click(screen.getByRole('button', { name: m.axes_home_xy() }));
+        expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 4, moveType: 2, distance: 0 });
+        await userEvent.click(screen.getByRole('button', { name: m.axes_home_z() }));
+        expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 3, moveType: 2, distance: 0 });
+        await userEvent.click(screen.getByRole('button', { name: m.axes_home() }));
+        expect(control.axis).toHaveBeenLastCalledWith('p1', { axis: 5, moveType: 2, distance: 0 });
+        expect(control.axis).toHaveBeenCalledTimes(3);
+    });
+
+    it('locks every home button while printing', async () => {
+        live.printState = 'printing';
+        await renderWithProviders(<ControlsCard printerId="p1" />);
+        await openAxes();
+        for (const name of [m.axes_home(), m.axes_home_xy(), m.axes_home_z()]) {
+            expect(screen.getByRole('button', { name }).hasAttribute('disabled')).toBe(true);
+        }
     });
 
     it('disables the motors', async () => {

@@ -6,6 +6,7 @@ import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 
 const AXIS_ID: Record<'x' | 'y' | 'z', number> = { x: 1, y: 2, z: 3 };
+const HOME_AXIS_ID: Record<'all' | 'xy' | 'z', number> = { all: 5, xy: 4, z: 3 };
 
 @Injectable()
 export class MacroService {
@@ -103,7 +104,7 @@ export class MacroService {
                 bridge.setSpeedMode(a.mode);
                 return;
             case 'home':
-                await bridge.moveAxis(a.axis === 'all' ? 4 : a.axis === 'xy' ? 2 : 3, 2, 0);
+                await bridge.moveAxis(HOME_AXIS_ID[a.axis], 2, 0);
                 return;
             case 'move':
                 await bridge.moveAxis(AXIS_ID[a.axis], a.distance >= 0 ? 1 : 0, Math.abs(a.distance));

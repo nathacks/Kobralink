@@ -64,3 +64,14 @@ describe('queue start settings', () => {
         expect(printerSettingsSchema.safeParse({ queueAutoStartDelaySec: 1.5 }).success).toBe(false);
     });
 });
+
+describe('flow calibration setting', () => {
+    it('is on by default, also for printers saved before it existed', () => {
+        expect(printerSettingsSchema.parse({}).flowCalibration).toBe(true);
+        expect(printerSettingsSchema.parse({ autoLeveling: false }).flowCalibration).toBe(true);
+    });
+
+    it('keeps a printer that turned it off', () => {
+        expect(printerSettingsSchema.parse({ flowCalibration: false }).flowCalibration).toBe(false);
+    });
+});

@@ -57,6 +57,31 @@ and docs; the reasons behind the choices are in [decisions.md](decisions.md#dash
   smart plug (the printer's power URLs, such as Tasmota or a Home Assistant webhook), wait, notify.
 - Every notification links to the FarolPrint screen of the recommended action.
 
+## Printer protocol
+
+Follow-up of the protocol survey of November 2026; the numbers refer to the divergences in
+[protocol.md](protocol.md#divergences).
+
+1. **Fixes (done)**: preparation states, homing codes, light brightness, ACE feed status, object skip list, upload
+   answer, drying presets (items 1–9).
+2. **State (done)**: query the light on connect without counting the answer as a trigger tap, read `fan/report`, log
+   `info.features` once per connection, translate the common error codes with Anycubic's texts (items 10–13).
+3. **Checks on a real printer**: on the maintainer's Kobra 4, its `info.features`, auxiliary and chamber fans, the
+   per-printer certificate from `/ctrl`, the camera restart sequence, when `print/query` answers (items 12, 25, 36,
+   38, 39); the Kobra X `ams_index` with an ACE needs someone with a Kobra X and an ACE (item 42).
+4. **Print options**: flow calibration on by default with a switch in the print dialog, kept by the queue and
+   scheduled prints (done, item 19); show leveling, vibration compensation and flow calibration only when the printer
+   reports them in `info.features`, once the values of step 3 are known (item 20).
+5. **Later**: ACE details (slot statuses, remaining weight, RFID or manual, gradients, drying fault, dry before print,
+   endless spool), printer subfolders, the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own
+   timelapse on its USB drive, auxiliary and chamber fan controls once item 25 is checked, other light types, axis
+   position, rename on the printer, USB drive, peripherals, firmware update progress, slice parameters, the Kobra X
+   spool rack and `event` reports, the camera light during failure detection, the Kobra X camera light that any
+   request to port 18088 turns on, speed mode 4, `/ctrl` code 19002 (items 14–18, 21, 22, 24–35, 41, 43).
+
+Not planned: the printer's own AI detection, the `web` topic for every command, and sending nozzle and bed temperatures
+in one `print/update` (items 23, 37 and 40; reasons in [decisions.md](decisions.md#printer-protocol)).
+
 ## Later
 
 - A queue timeline: when each queued item is expected to start and end on each printer.

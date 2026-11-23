@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
         settings: {
             autoLeveling: true,
             vibrationCompensation: false,
+            flowCalibration: true,
             timelapseEnabled: true,
             failureDetection: false,
             profile: { powerW: null },
@@ -66,20 +67,35 @@ describe('PrintReadyForm', () => {
         const state = (name: RegExp) => screen.getByRole('switch', { name }).getAttribute('aria-checked');
         expect(state(/auto bed leveling/i)).toBe('true');
         expect(state(/vibration compensation/i)).toBe('false');
+        expect(state(/flow calibration/i)).toBe('true');
         expect(state(/record a timelapse/i)).toBe('true');
         expect(state(/failure detection/i)).toBe('false');
+    });
+
+    it('starts flow calibration off when the printer has it off, and on when the setting is unknown', async () => {
+        const settings = mocks.printer.settings as Record<string, unknown>;
+        settings.flowCalibration = false;
+        const first = await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
+        expect(screen.getByRole('switch', { name: /flow calibration/i }).getAttribute('aria-checked')).toBe('false');
+        first.unmount();
+        delete settings.flowCalibration;
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
+        expect(screen.getByRole('switch', { name: /flow calibration/i }).getAttribute('aria-checked')).toBe('true');
+        settings.flowCalibration = true;
     });
 
     it('sends the options chosen for this print', async () => {
         const onPrint = vi.fn().mockResolvedValue(undefined);
         await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={onPrint} />);
         await userEvent.click(screen.getByRole('switch', { name: /vibration compensation/i }));
+        await userEvent.click(screen.getByRole('switch', { name: /flow calibration/i }));
         await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
         await userEvent.click(screen.getByRole('button', { name: /print/i }));
         expect(onPrint).toHaveBeenCalledWith(
             expect.objectContaining({
                 autoLeveling: true,
                 vibrationCompensation: true,
+                flowCalibration: false,
                 timelapse: false,
                 failureDetection: false,
             }),

@@ -17,6 +17,15 @@ describe('schedulePrintSchema', () => {
         });
     });
 
+    it('keeps the flow calibration choice for the scheduled start', () => {
+        const parsed = schedulePrintSchema.parse({
+            fileId: 'f1',
+            startAt: '2026-11-01T08:00:00.000Z',
+            flowCalibration: false,
+        });
+        expect(parsed.flowCalibration).toBe(false);
+    });
+
     it('rejects a missing or unparseable start time', () => {
         expect(schedulePrintSchema.safeParse({ fileId: 'f1' }).success).toBe(false);
         expect(schedulePrintSchema.safeParse({ fileId: 'f1', startAt: 'tomorrow' }).success).toBe(false);

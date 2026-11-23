@@ -90,6 +90,7 @@ export const startPrintSchema = z.object({
     excludedObjects: z.array(z.string().min(1)).max(500).default([]),
     filamentAssignments: z.array(filamentAssignmentSchema).max(64).optional(),
     vibrationCompensation: z.boolean().optional(),
+    flowCalibration: z.boolean().optional(),
     timelapse: z.boolean().optional(),
     failureDetection: z.boolean().optional(),
 });

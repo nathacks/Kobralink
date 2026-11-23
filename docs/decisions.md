@@ -10,6 +10,7 @@ reasons behind them.
 - [Settings](#settings)
 - [Single-printer workflow](#single-printer-workflow)
 - [Dashboard redesign](#dashboard-redesign)
+- [Printer protocol](#printer-protocol)
 - [Releases](#releases)
 - [Open questions](#open-questions)
 
@@ -275,6 +276,64 @@ Bambu tools so people migrating from them find things where they expect. The pha
   print events, maintenance, filament for low spools and automations for automation messages. Discord, Telegram, ntfy
   and the webhook get the link built from FarolPrint's own address (`publicUrl`, set in the setup wizard or the general
   settings); without it they carry no link. Discord shows it as an "Open in FarolPrint" link under the message (a clickable embed title alone went unnoticed), ntfy as a button, Telegram as a link line. In the dashboard, the toast and the browser notification open the screen.
+
+## Printer protocol
+
+- **Anycubic's own LAN client is the reference** (maintainer's request, November 2026). The protocol was surveyed
+  against Anycubic's workbench code, the maintainer's Kobra 4 and the community projects; the result, the divergences
+  and their status are in [protocol.md](protocol.md). When sources disagree, the official client wins, and anything
+  only a community project claims is checked on a printer before FarolPrint builds on it.
+- **Preparation states end at the first layer.** Every state the printer reports while it prepares a job (the official
+  ones such as `flow_calibrating`, `drying` and `downloading`, plus the 14 of newer firmware) maps to an active print
+  and is listed once in `PREPARING_KOBRA_STATES`. Filament cutting, purging and loading also happen during a
+  multi-colour print, so they only count as calibration (progress hidden and zeroed, no elapsed time) while no layer
+  has been printed; after that the progress stays and the status badge names the step. Before this, a Kobra 4 print
+  started from its screen logged `flow_calibrating` as unknown and the dashboard did not show it as calibration.
+- **Homing follows the official client** (maintainer's decision). Three buttons as in Anycubic's Device tab: Home XY in
+  the middle of the XY pad (axis 4), Home Z between Z+ and Z- (axis 3) and Home XYZ next to "Disable motors"
+  (axis 5), all with distance 0. The button labelled "Home XYZ" used to send axis 4, so Z never homed, and the `xy`
+  macro action sent axis 2, the Y axis.
+- **Flow calibration on by default** (maintainer's decision). The Kobra 4 runs a flow calibration (`flow_calibrating`)
+  when a print starts from its screen, while FarolPrint always sent `flow_calibration: 0`. It is now a printer setting,
+  on by default (printers added before it get it on too), with a switch in the print dialog to turn it off for one
+  print; the queue and scheduled prints keep the choice made in the dialog. Prints started from OrcaSlicer or from the
+  printer's own files follow the printer setting. Showing it only on printers that report `flow_calibration_support`
+  waits for the Kobra 4 capabilities ([roadmap](roadmap.md#printer-protocol)).
+- **Drying presets are Anycubic's** (maintainer's decision). The defaults are the presets of the official drying
+  dialog: PLA and PLA+ 45 °C 4 h, PETG 50 °C 4 h, TPU 55 °C 4 h, ABS / ASA 55 °C 8 h, PA / PC 55 °C 12 h. The old ones
+  asked for 60 and 70 °C, which an ACE Pro refuses (code 11505). Presets a user saved are kept; "Restore defaults"
+  brings the new ones.
+- **The light turns on at full brightness.** The printer reports brightness 0 while the light is off, and FarolPrint
+  sent that 0 back when turning it on. Like the official client, it now sends 100 (or the brightness a macro asks for)
+  to turn the light on and 0 to turn it off.
+- **Skipping objects sends the whole list.** The official client sends the parts already skipped together with the
+  new ones; FarolPrint did the same only on screen and sent the new parts alone to the printer.
+- **ACE feed status follows the official meaning**: 1 heating, 2 unloading, 3 loading; 10 and 11 are a finished load
+  and unload, not work in progress. Filament usage is not charged while a slot heats, loads or unloads.
+- **A refused upload stops the print.** The printer's answer to `/gcode_upload` is now checked: a code other than 200
+  (or 0) is an error with the code and, for 19007–19010, the reason (name or type refused, not saved, no space).
+  Before, any answer counted as a success and the print failed later with a confusing message.
+- **The light is asked for on connect.** FarolPrint sends `light/query` once per connection, on the `web` topic like the
+  official client, so the light switch is right before anyone touches it. Only the camera light (type 3), the one the
+  dashboard switches, is read; the Kobra 4 lists more than one lamp. A query answer never counts as a tap for the bed
+  clear trigger, while every other light message still does, whatever the lamp, so the trigger keeps working as it was
+  tested. A light message without a status leaves the switch as it is instead of turning it off.
+- **The fan follows `fan/report`.** The printer pushes the part fan speed as soon as it changes; FarolPrint used to wait
+  for the next `info` report. A report without a speed changes nothing.
+- **Printer capabilities are logged before they are used.** `info.features` says what the printer supports (flow
+  calibration, drying first, timelapse…), but nobody has published it for the Kobra 4. FarolPrint logs it once per
+  connection, so the print options can be shown per model once the values are known (never invented).
+- **Common printer errors are explained in the interface language** (maintainer's request). 43 pause and failure codes
+  (filament runout, clog, tangle, homing, heating, file out of range, missing G-code commands, user pause or stop…)
+  map to texts adapted from Anycubic's own table; 11842, missing from that table, uses the text the Kobra 4 sends. The
+  code stays visible next to the text, and any other code keeps the printer's message. The same texts are used in the
+  pause banner, the failure history, refused command messages and notifications.
+- **Not planned from the survey** (maintainer's decision, November 2026):
+  - *The printer's own AI detection.* FarolPrint runs its own detection on the camera stream, the printer's settings
+    can only be changed through Anycubic's cloud, and the meaning of the per-print `ai_settings` fields is unknown.
+  - *Every command on the `web` topic*, as the official client does. The `slicer` topic works for everything
+    FarolPrint sends there; only commands that need `web` (temperatures, print updates, the light query) use it.
+  - *Nozzle and bed temperatures in one `print/update`.* Two messages work the same; the change would be cosmetic.
 
 ## Releases
 

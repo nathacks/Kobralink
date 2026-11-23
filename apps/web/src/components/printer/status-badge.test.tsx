@@ -21,10 +21,18 @@ describe('StatusBadge', () => {
 
 describe('StatusBadge while calibrating', () => {
     it('says the printer is calibrating whatever the calibration step', () => {
-        for (const kobraState of ['auto_leveling', 'vibrating', 'preheating']) {
+        for (const kobraState of ['auto_leveling', 'vibrating', 'preheating', 'flow_calibrating']) {
             const { unmount } = render(<StatusBadge state={state({ kobraState, printState: 'printing' })} />);
             expect(screen.getByText(m.state_calibrating())).toBeTruthy();
             unmount();
         }
+    });
+
+    it('names a step that happens after the first layer instead of calling it calibration', () => {
+        render(
+            <StatusBadge state={state({ kobraState: 'filament_cutting', printState: 'printing', currLayer: 30 })} />,
+        );
+        expect(screen.getByText(m.state_filament_cutting())).toBeTruthy();
+        expect(screen.queryByText(m.state_calibrating())).toBeNull();
     });
 });

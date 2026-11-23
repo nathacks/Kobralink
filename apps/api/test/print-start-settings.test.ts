@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { PrintStartPayload } from '@farolprint/kobra-protocol';
+import { printerSettingsSchema } from '@farolprint/shared';
 import { type BridgePrinterConfig, PrinterBridge } from '../src/bridge/printer-bridge';
 import type { GcodeService, StoredFile } from '../src/gcode/gcode.service';
 
@@ -16,7 +17,7 @@ const file = {
     objects: [],
 } as unknown as StoredFile;
 
-function setup(settings: { autoLeveling: boolean; vibrationCompensation: boolean }) {
+function setup(settings: { autoLeveling: boolean; vibrationCompensation: boolean; flowCalibration?: boolean }) {
     const gcode = {
         readData: async () => ({ file, data: Buffer.alloc(file.sizeBytes) }),
         getByFilename: async () => null,
@@ -82,5 +83,32 @@ describe('print/start task settings', () => {
         expect(h.sent()).toMatchObject({ auto_leveling: 1, vibration_compensation: 0 });
         expect(h.logged()).toContain('on-printer.gcode');
         expect(h.logged()).toContain(`task_settings=${JSON.stringify(h.sent())}`);
+    });
+
+    it('runs flow calibration by default, from the printer settings', async () => {
+        const h = setup(printerSettingsSchema.parse({}));
+        await h.bridge.printStoredFile(file.id, { serveBase });
+        expect(h.sent()).toMatchObject({ flow_calibration: 1 });
+    });
+
+    it('skips flow calibration when the dialog turns it off for one print', async () => {
+        const h = setup({ autoLeveling: true, vibrationCompensation: false, flowCalibration: true });
+        await h.bridge.printStoredFile(file.id, { serveBase, flowCalibration: false });
+        expect(h.sent()).toMatchObject({ flow_calibration: 0, auto_leveling: 1 });
+    });
+
+    it('follows a printer that has flow calibration off', async () => {
+        const h = setup({ autoLeveling: true, vibrationCompensation: false, flowCalibration: false });
+        await h.bridge.printStoredFile(file.id, { serveBase });
+        expect(h.sent()).toMatchObject({ flow_calibration: 0 });
+        const on = setup({ autoLeveling: true, vibrationCompensation: false, flowCalibration: false });
+        await on.bridge.printStoredFile(file.id, { serveBase, flowCalibration: true });
+        expect(on.sent()).toMatchObject({ flow_calibration: 1 });
+    });
+
+    it('uses the printer setting for a file already on the printer', async () => {
+        const h = setup({ autoLeveling: false, vibrationCompensation: false, flowCalibration: true });
+        await h.bridge.printPrinterFile('on-printer.gcode', 2048);
+        expect(h.sent()).toMatchObject({ flow_calibration: 1 });
     });
 });

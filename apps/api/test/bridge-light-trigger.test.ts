@@ -92,3 +92,51 @@ describe('light trigger', () => {
         expect(h.triggers()).toBe(0);
     });
 });
+
+describe('setLight', () => {
+    function lit(stored: number) {
+        const h = bridge();
+        const sent: [boolean, number][] = [];
+        (h.b as unknown as { client: { connected: boolean; setLight: (on: boolean, b: number) => void } }).client = {
+            connected: true,
+            setLight: (on, b) => {
+                sent.push([on, b]);
+            },
+        };
+        (h.b as unknown as { onReport: (s: string, p: Record<string, unknown>) => void }).onReport('light/report', {
+            action: 'control',
+            data: { status: 0, brightness: stored },
+        });
+        return { b: h.b, sent };
+    }
+
+    it('turns the light on at full brightness when the printer reported it at 0', () => {
+        const h = lit(0);
+        h.b.setLight(true);
+        expect(h.sent).toEqual([[true, 100]]);
+        expect(h.b.snapshot()).toMatchObject({ lightOn: true, lightBrightness: 100 });
+    });
+
+    it('keeps the brightness the printer last reported', () => {
+        const h = lit(60);
+        h.b.setLight(true);
+        expect(h.sent).toEqual([[true, 60]]);
+    });
+
+    it('uses the brightness a macro asks for, but never 0 to turn it on', () => {
+        const h = lit(60);
+        h.b.setLight(true, 30);
+        h.b.setLight(true, 0);
+        expect(h.sent).toEqual([
+            [true, 30],
+            [true, 100],
+        ]);
+    });
+
+    it('sends brightness 0 to turn it off, like the official client', () => {
+        const h = lit(80);
+        h.b.setLight(false);
+        expect(h.sent).toEqual([[false, 0]]);
+        expect(h.b.snapshot()).toMatchObject({ lightOn: false, lightBrightness: 0 });
+    });
+});

@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { m } from '@/lib/i18n';
+import { printerErrorText } from '@/lib/labels';
 import { appSettingsQuery, printerQuery } from '@/lib/queries';
 import { type SseHandler, type SseMultiplexer, type SseStatus, sseMultiplexer } from '@/lib/sse-multiplexer';
 import { printersStore } from '@/stores/printers';
@@ -126,11 +127,18 @@ function GlobalSubscriptions({ onOpen }: { onOpen?: (path: string) => void }) {
     });
 
     useSse<RefusedPayload>('printers', 'refused', (r) => {
-        toast.error(m.toast_command_refused({ command: `${r.topic}/${r.action}`, code: r.code, msg: r.msg }), {
-            id: `refused:${r.printerId}:${r.topic}:${r.action}`,
-            description: r.printerName,
-            duration: 8000,
-        });
+        toast.error(
+            m.toast_command_refused({
+                command: `${r.topic}/${r.action}`,
+                code: r.code,
+                msg: printerErrorText(r.code, r.msg),
+            }),
+            {
+                id: `refused:${r.printerId}:${r.topic}:${r.action}`,
+                description: r.printerName,
+                duration: 8000,
+            },
+        );
     });
 
     return null;

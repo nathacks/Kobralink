@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { appSettingsSchema, updateAppSettingsSchema } from '../src/settings';
+import { aceDryPresetSchema, appSettingsSchema, DEFAULT_DRY_PRESETS, updateAppSettingsSchema } from '../src/settings';
 
 describe('updateAppSettingsSchema', () => {
     it('keeps only the keys present in the body', () => {
@@ -46,5 +46,29 @@ describe('publicUrl', () => {
         );
         expect(appSettingsSchema.safeParse({ publicUrl: 'farol.local' }).success).toBe(false);
         expect(updateAppSettingsSchema.parse({ publicUrl: '' })).toEqual({ publicUrl: '' });
+    });
+});
+
+describe('DEFAULT_DRY_PRESETS', () => {
+    it('are the presets of the official Anycubic drying dialog', () => {
+        expect(DEFAULT_DRY_PRESETS).toEqual([
+            { name: 'PLA', targetTemp: 45, duration: 240 },
+            { name: 'PLA+', targetTemp: 45, duration: 240 },
+            { name: 'PETG', targetTemp: 50, duration: 240 },
+            { name: 'TPU', targetTemp: 55, duration: 240 },
+            { name: 'ABS / ASA', targetTemp: 55, duration: 480 },
+            { name: 'PA / PC', targetTemp: 55, duration: 720 },
+        ]);
+    });
+
+    it('never ask an ACE for more than 55 °C and stay valid presets', () => {
+        for (const preset of DEFAULT_DRY_PRESETS) {
+            expect(preset.targetTemp).toBeLessThanOrEqual(55);
+            expect(aceDryPresetSchema.safeParse(preset).success).toBe(true);
+        }
+    });
+
+    it('are what a fresh install starts with', () => {
+        expect(appSettingsSchema.parse({}).aceDryPresets).toEqual(DEFAULT_DRY_PRESETS);
     });
 });

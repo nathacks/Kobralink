@@ -5,8 +5,9 @@ Guide for agents (and humans) working on FarolPrint: a bridge that makes Anycubi
 AI failure detection, notifications and Home Assistant discovery.
 
 This is the community fork of [NatHacks/Kobralink](https://github.com/NatHacks/Kobralink). Read the
-[README](README.md) for the product, [docs/decisions.md](docs/decisions.md) for what was decided and why, and
-[docs/development.md](docs/development.md) for how to work on it.
+[README](README.md) for the product, [docs/decisions.md](docs/decisions.md) for what was decided and why,
+[docs/development.md](docs/development.md) for how to work on it and [docs/protocol.md](docs/protocol.md) for the
+printer's LAN protocol (what FarolPrint uses, what Anycubic's own client does differently).
 
 ## How we work
 

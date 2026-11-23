@@ -58,10 +58,11 @@ export type AceDryPreset = z.infer<typeof aceDryPresetSchema>;
 
 export const DEFAULT_DRY_PRESETS: AceDryPreset[] = [
     { name: 'PLA', targetTemp: 45, duration: 240 },
-    { name: 'PETG', targetTemp: 55, duration: 300 },
-    { name: 'ABS', targetTemp: 60, duration: 300 },
-    { name: 'TPU', targetTemp: 50, duration: 300 },
-    { name: 'PA', targetTemp: 70, duration: 480 },
+    { name: 'PLA+', targetTemp: 45, duration: 240 },
+    { name: 'PETG', targetTemp: 50, duration: 240 },
+    { name: 'TPU', targetTemp: 55, duration: 240 },
+    { name: 'ABS / ASA', targetTemp: 55, duration: 480 },
+    { name: 'PA / PC', targetTemp: 55, duration: 720 },
 ];
 
 export const costSettingsSchema = z.object({

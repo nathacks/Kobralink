@@ -1,14 +1,40 @@
 export type KlipperPrintState = 'standby' | 'printing' | 'paused' | 'complete' | 'error';
 
+export const PREPARING_KOBRA_STATES = [
+    'preheating',
+    'auto_leveling',
+    'vibrating',
+    'flow_calibrating',
+    'checking',
+    'updated',
+    'init',
+    'drying',
+    'downloading',
+    'slicing',
+    'waiting',
+    'hotbed_heating',
+    'hotbed_cooling_off',
+    'nozzle_heating',
+    'nozzle_cooling',
+    'nozzle_cooling_off',
+    'nozzle_purging',
+    'nozzle_wiping',
+    'frequency_sweeping',
+    'z_offset_calibrating',
+    'filament_cutting',
+    'extfilbox_filament_feeding',
+    'extfilbox_filament_unfeeding',
+    'ace_filament_feeding',
+    'ace_filament_unfeeding',
+] as const;
+
+export type PreparingKobraState = (typeof PREPARING_KOBRA_STATES)[number];
+
 export type KobraState =
     | 'free'
     | 'busy'
     | 'printing'
-    | 'preheating'
-    | 'auto_leveling'
-    | 'checking'
-    | 'updated'
-    | 'init'
+    | PreparingKobraState
     | 'pausing'
     | 'paused'
     | 'pause'
@@ -129,12 +155,7 @@ export const KOBRA_TO_KLIPPER_STATE: Record<string, KlipperPrintState> = {
     free: 'standby',
     busy: 'printing',
     printing: 'printing',
-    preheating: 'printing',
-    auto_leveling: 'printing',
-    vibrating: 'printing',
-    checking: 'printing',
-    updated: 'printing',
-    init: 'printing',
+    ...Object.fromEntries(PREPARING_KOBRA_STATES.map((s) => [s, 'printing' as const])),
     pausing: 'paused',
     paused: 'paused',
     pause: 'paused',
@@ -155,17 +176,19 @@ export function slotUsableForPrint(slot: AmsSlot, mode: FilamentMode): boolean {
     return slot.boxId === -1;
 }
 
-export const PRE_PRINT_STATES = new Set(['preheating', 'auto_leveling', 'vibrating', 'checking', 'updated', 'init']);
-export const ACTIVE_PRINT_STATES = new Set([
+export const PRE_PRINT_STATES: ReadonlySet<string> = new Set(PREPARING_KOBRA_STATES);
+export const ACTIVE_PRINT_STATES: ReadonlySet<string> = new Set([
     'printing',
-    'preheating',
-    'auto_leveling',
-    'vibrating',
-    'checking',
-    'init',
+    ...PREPARING_KOBRA_STATES.filter((s) => s !== 'updated'),
 ]);
 
-export function isCalibrating(state: Pick<PrinterLiveState, 'printState' | 'kobraState'>): boolean {
-    return state.printState === 'printing' && PRE_PRINT_STATES.has(state.kobraState);
+export function isPreparing(kobraState: string, currLayer = 0): boolean {
+    return PRE_PRINT_STATES.has(kobraState) && !(currLayer > 0);
+}
+
+export function isCalibrating(
+    state: Pick<PrinterLiveState, 'printState' | 'kobraState'> & Partial<Pick<PrinterLiveState, 'currLayer'>>,
+): boolean {
+    return state.printState === 'printing' && isPreparing(state.kobraState, state.currLayer);
 }
 export const TERMINAL_PRINT_STATES = new Set(['finished', 'stoped', 'canceled']);

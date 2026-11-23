@@ -78,6 +78,8 @@ export function aggregateSlots(boxes: KobraColorBox[], mode: FilamentMode): { sl
     return { slots, loaded };
 }
 
+const FEED_ACTIVITY: Record<number, string> = { 1: 'heating', 2: 'retracting', 3: 'feeding' };
+
 export function slotActivityMap(boxes: KobraColorBox[], globalLoaded: number, mode: FilamentMode): Map<number, string> {
     const map = new Map<number, string>();
     for (const box of boxes) {
@@ -89,10 +91,8 @@ export function slotActivityMap(boxes: KobraColorBox[], globalLoaded: number, mo
         if (mode === 'ace_direct') global = boxId * 4 + local;
         else if (mode === 'ace_hub') global = boxId >= 0 ? 3 + boxId * 4 + local : local;
         else global = local;
-        const st = Number(fs.current_status ?? 0);
-
-        if (st === 10) map.set(global, 'feeding');
-        else if (st === 11) map.set(global, 'retracting');
+        const activity = FEED_ACTIVITY[Number(fs.current_status ?? 0)];
+        if (activity) map.set(global, activity);
     }
     if (globalLoaded >= 0 && !map.has(globalLoaded)) map.set(globalLoaded, 'loaded');
     return map;

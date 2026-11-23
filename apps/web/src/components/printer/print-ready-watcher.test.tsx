@@ -34,6 +34,7 @@ const chosen = {
     excludedObjects: ['cube'],
     autoLeveling: false,
     vibrationCompensation: false,
+    flowCalibration: false,
     timelapse: true,
     failureDetection: false,
 };

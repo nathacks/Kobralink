@@ -36,6 +36,7 @@ export type PrinterProfile = z.infer<typeof printerProfileSchema>;
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),
     vibrationCompensation: z.boolean().default(false),
+    flowCalibration: z.boolean().default(true),
 
     defaultAmsSlot: z.union([z.literal('auto'), z.number().int().min(0).max(15)]).default('auto'),
     pollIntervalSec: z.number().int().min(1).max(60).default(3),

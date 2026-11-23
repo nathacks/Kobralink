@@ -275,6 +275,13 @@ export function PrinterSettingsForm({
                             </Row>
                         )}
                     </form.Field>
+                    <form.Field name="settings.flowCalibration">
+                        {(field) => (
+                            <Row label={m.settings_flow_calibration()} hint={m.settings_flow_calibration_hint()}>
+                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                            </Row>
+                        )}
+                    </form.Field>
                     <form.Field name="settings.cameraAlwaysOn">
                         {(field) => (
                             <Row label={m.settings_camera_always_on()} hint={m.settings_camera_always_on_hint()}>

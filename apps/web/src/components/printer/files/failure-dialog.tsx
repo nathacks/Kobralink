@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/lib/api';
 import { formatDate, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
-import { failureReasonLabel } from '@/lib/labels';
+import { failureReasonLabel, printerErrorText } from '@/lib/labels';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 const NONE = '__none__';
@@ -41,7 +41,9 @@ export function FailureDialog({ printerId, job }: { printerId: string; job: Prin
             <div className="grid gap-4 py-2">
                 <div className="text-sm text-muted-foreground">
                     {formatDate(job.startedAt)} · {formatDuration(job.durationSec ?? 0)}
-                    {job.errorCode ? ` · ${m.history_error_code({ code: job.errorCode, msg: job.errorMsg })}` : ''}
+                    {job.errorCode
+                        ? ` · ${m.history_error_code({ code: job.errorCode, msg: printerErrorText(job.errorCode, job.errorMsg) })}`
+                        : ''}
                 </div>
                 {job.hasSnapshot ? (
                     <img
