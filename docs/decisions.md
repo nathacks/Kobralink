@@ -268,6 +268,13 @@ Bambu tools so people migrating from them find things where they expect. The pha
   meter from what Home Assistant lists, and the power button and the automation power action go through
   `switch.turn_on`/`turn_off`. Without Home Assistant the card is hidden. URLs saved before still work for printers
   that have them, but cannot be edited from the dashboard any more.
+- **Home Assistant gets the camera frame whatever the print state** (maintainer's request, November 2026). The MQTT
+  camera used to get a frame only while printing, so it stayed empty between prints. Every 5 s FarolPrint now sends
+  the latest frame if it is new and under 10 s old, retained so Home Assistant shows the last frame after a restart.
+  It stays passive: it never starts the camera, it only forwards frames that exist because something else runs the
+  stream (a viewer, detection, a timelapse, "always on"). An MQTT camera is a still image refreshed every few
+  seconds; live video in Home Assistant comes from its MJPEG camera integration on the printer's Moonraker port
+  (`/api/camera/stream`, still image `/api/camera/snapshot`).
 - **Automations are rules, not scripts** (October 2026). A rule has one trigger (a print finished, a print cancelled
   or failed, a bed cleared, a spool running low, or a time of day), a target (one printer, the printers carrying all
   the given tags, or every printer) and up to ten actions run in order: a macro, the light, loading or unloading an

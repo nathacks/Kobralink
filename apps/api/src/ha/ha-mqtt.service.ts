@@ -5,6 +5,10 @@ import type { PrinterBridge } from '../bridge/printer-bridge';
 import { SettingsService } from '../settings/settings.service';
 
 const PUBLISH_THROTTLE_MS = 2000;
+/** How often the latest camera frame is offered to Home Assistant. */
+export const CAMERA_PUBLISH_MS = 5000;
+/** A frame older than this is stale (the camera stopped) and is not published. */
+export const CAMERA_MAX_AGE_MS = 10_000;
 
 interface Attached {
     bridge: PrinterBridge;
@@ -12,6 +16,9 @@ interface Attached {
     pending: PrinterLiveState | null;
     off: () => void;
     announced: boolean;
+    cameraTimer: NodeJS.Timeout | null;
+    /** `latestJpegAt` of the last frame sent, so the same frame is never sent twice. */
+    cameraSentAt: number;
 }
 
 @Injectable()
@@ -29,6 +36,10 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleDestroy(): Promise<void> {
+        for (const a of this.attached.values()) {
+            if (a.timer) clearTimeout(a.timer);
+            if (a.cameraTimer) clearInterval(a.cameraTimer);
+        }
         await this.disconnect();
     }
 
@@ -61,8 +72,10 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
                 client.publish(`${cfg.topicPrefix}/status`, 'online', { retain: true });
                 for (const a of this.attached.values()) {
                     a.announced = false;
+                    a.cameraSentAt = 0;
                     this.announce(a.bridge);
                     this.publishState(a.bridge, a.bridge.snapshot());
+                    this.publishCamera(a);
                 }
                 client.subscribe(`${cfg.topicPrefix}/+/cmd/#`);
             });
@@ -81,7 +94,15 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     attach(bridge: PrinterBridge): void {
-        const entry: Attached = { bridge, timer: null, pending: null, off: () => undefined, announced: false };
+        const entry: Attached = {
+            bridge,
+            timer: null,
+            pending: null,
+            off: () => undefined,
+            announced: false,
+            cameraTimer: null,
+            cameraSentAt: 0,
+        };
         const onState = (state: PrinterLiveState) => {
             entry.pending = state;
             if (entry.timer) return;
@@ -93,10 +114,12 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         };
         bridge.on('state', onState);
         entry.off = () => bridge.off('state', onState);
+        entry.cameraTimer = setInterval(() => this.publishCamera(entry), CAMERA_PUBLISH_MS);
         this.attached.set(bridge.id, entry);
         if (this.connected) {
             this.announce(bridge);
             this.publishState(bridge, bridge.snapshot());
+            this.publishCamera(entry);
         }
     }
 
@@ -105,6 +128,7 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         if (!a) return;
         a.off();
         if (a.timer) clearTimeout(a.timer);
+        if (a.cameraTimer) clearInterval(a.cameraTimer);
         this.attached.delete(printerId);
         if (this.client && this.cfg) {
             this.client.publish(`${this.cfg.topicPrefix}/${printerId}/availability`, 'offline', { retain: true });
@@ -308,10 +332,22 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
             errorCode: s.errorCode,
         };
         client.publish(this.topic(bridge.id, 'state'), JSON.stringify(payload), { retain: true });
-        const jpeg = bridge.camera.latestJpeg;
-        if (jpeg && s.printState === 'printing' && Date.now() - bridge.camera.latestJpegAt < 10_000) {
-            client.publish(this.topic(bridge.id, 'camera'), jpeg.toString('base64'));
-        }
+    }
+
+    /**
+     * Sends the camera's latest frame, whatever the print state. Passive: it never starts the camera, it only
+     * forwards frames that exist because something else runs it (a viewer, detection, timelapse, always-on).
+     * Retained, so Home Assistant shows the last frame after a restart instead of an empty camera.
+     */
+    private publishCamera(entry: Attached): void {
+        const client = this.client;
+        if (!client?.connected) return;
+        const { latestJpeg, latestJpegAt } = entry.bridge.camera;
+        if (!latestJpeg || latestJpegAt === entry.cameraSentAt) return;
+        if (Date.now() - latestJpegAt >= CAMERA_MAX_AGE_MS) return;
+        this.announce(entry.bridge);
+        entry.cameraSentAt = latestJpegAt;
+        client.publish(this.topic(entry.bridge.id, 'camera'), latestJpeg.toString('base64'), { retain: true });
     }
 
     private onCommand(topic: string, payload: string): void {

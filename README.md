@@ -118,6 +118,11 @@ The OrcaSlicer **Device** tab only targets the printer: send a job, follow progr
 filaments. Everything else — print queue, file library, macros, filament profiles per slot, camera, failure
 detection, statistics, notifications, API keys — lives in the FarolPrint dashboard on `:7100`.
 
+With Home Assistant MQTT discovery on, the printer's camera entity shows the latest frame every few seconds while
+the camera runs (it never turns the camera on by itself). For live video, add Home Assistant's **MJPEG IP Camera**
+integration with `http://<bridge-ip>:7125/api/camera/stream` as the MJPEG URL and
+`http://<bridge-ip>:7125/api/camera/snapshot` as the still image URL (use the printer's own Moonraker port).
+
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
 
