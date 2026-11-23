@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.22.0](https://github.com/riccardoalv/farolprint/compare/v0.21.0...v0.22.0) (2026-11-23)
+
+
+### Features
+
+* **bridge:** read light, fan and capabilities, explain printer errors ([a15c8ab](https://github.com/riccardoalv/farolprint/commit/a15c8ab7ad560520351e12d2defc00523b9ae930))
+* **print:** flow calibration on by default with a switch in the print dialog ([a15c8ab](https://github.com/riccardoalv/farolprint/commit/a15c8ab7ad560520351e12d2defc00523b9ae930))
+
+
+### Bug Fixes
+
+* **bridge:** align the printer protocol with Anycubic's LAN client ([a15c8ab](https://github.com/riccardoalv/farolprint/commit/a15c8ab7ad560520351e12d2defc00523b9ae930))
+
 ## [0.21.0](https://github.com/riccardoalv/farolprint/compare/v0.20.0...v0.21.0) (2026-11-19)
 
 
