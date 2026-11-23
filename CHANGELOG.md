@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/riccardoalv/farolprint/compare/v0.23.0...v0.24.0) (2026-11-23)
+
+
+### Features
+
+* **protocol:** list the test models and explain /ctrl refusals ([#65](https://github.com/riccardoalv/farolprint/issues/65)) ([9a5c054](https://github.com/riccardoalv/farolprint/commit/9a5c0549a0723ae00cbe7ff2ca1afdf858b056cd))
+
 ## [0.23.0](https://github.com/riccardoalv/farolprint/compare/v0.22.0...v0.23.0) (2026-11-23)
 
 
