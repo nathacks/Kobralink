@@ -49,6 +49,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/kobralink
+          readme-filepath: infra/README.md
+          enable-url-completion: true
+
       - name: Cancel workflow on failure
         if: failure()
         run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}

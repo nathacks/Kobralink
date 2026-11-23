@@ -1,6 +1,6 @@
 <p align="center"><img src="apps/web/public/logo.svg" alt="Kobralink" width="128" /></p>
 
-# Kobralink
+<h1 align="center">Kobralink</h1>
 
 <p align="center">
   <a href="https://github.com/NatHacks/Kobralink/releases/latest"><img src="https://img.shields.io/github/v/release/NatHacks/Kobralink?label=release" alt="GitHub release" /></a>

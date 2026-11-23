@@ -158,6 +158,7 @@
     "camera_live": "Transmisión en directo",
     "camera_connecting": "Conectando con la transmisión…",
     "camera_unavailable": "Transmisión no disponible",
+    "camera_not_connected": "No hay cámara conectada",
     "camera_stopped": "Cámara detenida",
     "camera_restart": "Reiniciar transmisión",
     "camera_alt": "Transmisión de la cámara",

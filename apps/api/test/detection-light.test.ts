@@ -54,7 +54,19 @@ function setup(overrides: Partial<FailureDetectionSettings> = {}) {
         await internals.tick();
         bridge.state.printState = 'printing';
     };
-    return { svc, bridge, analyze, pause };
+    const tick = () => internals.tick();
+    const loadModelThen = (change: () => void) => {
+        internals.ensureModel = async () => {
+            change();
+            return { detect: async () => [] };
+        };
+    };
+    const act = () => {
+        const w = watch as { acted: boolean; unsubscribe: unknown };
+        w.acted = true;
+        w.unsubscribe = null;
+    };
+    return { svc, bridge, analyze, pause, tick, loadModelThen, act };
 }
 
 describe('camera light during failure detection', () => {
@@ -106,6 +118,58 @@ describe('camera light during failure detection', () => {
         await h.analyze();
         h.svc.detach(h.bridge.id);
         expect(h.bridge.light).toEqual([true, false]);
+    });
+
+    it('does not turn the light on when the print ends while the model loads', async () => {
+        const h = setup();
+        h.loadModelThen(() => {
+            h.bridge.state.printState = 'standby';
+        });
+        await h.analyze();
+        expect(h.bridge.light).toEqual([]);
+    });
+
+    it('turns its light off once the printer stops printing, even without a job end', async () => {
+        const h = setup();
+        await h.analyze();
+        h.bridge.state.printState = 'standby';
+        await h.tick();
+        expect(h.bridge.light).toEqual([true, false]);
+        await h.tick();
+        expect(h.bridge.light).toEqual([true, false]);
+    });
+
+    it('turns the light on again for the next print after it turned it off', async () => {
+        const h = setup();
+        await h.analyze();
+        h.bridge.state.printState = 'standby';
+        await h.tick();
+        h.bridge.state.printState = 'printing';
+        await h.analyze();
+        expect(h.bridge.light).toEqual([true, false, true]);
+    });
+
+    it('leaves the light on after detection stopped the print, so the camera shows what happened', async () => {
+        const h = setup();
+        await h.analyze();
+        h.act();
+        h.bridge.state.printState = 'standby';
+        await h.tick();
+        h.bridge.emit('job', 'end');
+        await h.tick();
+        expect(h.bridge.light).toEqual([true]);
+        expect(h.bridge.state.lightOn).toBe(true);
+    });
+
+    it('turns the light on again for a print after one detection stopped', async () => {
+        const h = setup();
+        await h.analyze();
+        h.act();
+        h.bridge.emit('job', 'end');
+        h.bridge.state.lightOn = false;
+        h.bridge.emit('job', 'start');
+        await h.analyze();
+        expect(h.bridge.light).toEqual([true, true]);
     });
 
     it('keeps watching when the light cannot be switched', async () => {

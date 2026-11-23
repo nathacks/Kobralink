@@ -50,14 +50,15 @@ describe('diagnostic logs for the next print', () => {
         expect(h.lines.some((l) => l.startsWith('Extra fans'))).toBe(false);
     });
 
-    it('logs what an updated report carries, once per content', () => {
+    it('logs what an updated report carries once per shape, not at every fan change', () => {
         const h = setup();
-        h.print('updated', { settings: { print_speed_pct: 100, z_comp: 0 }, taskid: '7' });
-        h.print('updated', { settings: { print_speed_pct: 100, z_comp: 0 }, taskid: '7' });
-        h.print('updated', { settings: { print_speed_pct: 150, z_comp: 0 }, taskid: '7' });
+        h.print('updated', { settings: { fan_speed_pct: 100, z_comp: 0 }, taskid: '7' });
+        h.print('updated', { settings: { fan_speed_pct: 30, z_comp: 0 }, taskid: '7' });
+        h.print('updated', { settings: { fan_speed_pct: 90, z_comp: 0 }, taskid: '7', localtask: 1 });
+        h.print('updated', { settings: { fan_speed_pct: 60, z_comp: 0 }, taskid: '7', localtask: 1 });
         expect(h.lines.filter((l) => l.includes('(updated)'))).toEqual([
-            'Print settings acknowledged by the printer (updated): {"settings":{"print_speed_pct":100,"z_comp":0},"keys":["settings","taskid"]}',
-            'Print settings acknowledged by the printer (updated): {"settings":{"print_speed_pct":150,"z_comp":0},"keys":["settings","taskid"]}',
+            'Print settings acknowledged by the printer (updated): {"settings":{"fan_speed_pct":100,"z_comp":0},"keys":["settings","taskid"]}',
+            'Print settings acknowledged by the printer (updated): {"settings":{"fan_speed_pct":90,"z_comp":0},"keys":["localtask","settings","taskid"]}',
         ]);
     });
 

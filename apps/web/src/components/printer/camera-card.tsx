@@ -21,6 +21,7 @@ export function CameraCard({ printerId, className }: { printerId: string; classN
     const userStopped = useRef(false);
     const printing = state.printState === 'printing';
     const offline = !state.connected;
+    const noCamera = state.peripherals?.camera === false;
     const detection = useQuery(printerDetectionQuery(printerId, printing)).data;
     const watching = printing && Boolean(detection?.active);
 
@@ -60,7 +61,11 @@ export function CameraCard({ printerId, className }: { printerId: string; classN
     }, [printing]);
 
     const autostart =
-        (cameraAlwaysOn || (printing && cameraOnPrint)) && phase === 'off' && !offline && !userStopped.current;
+        (cameraAlwaysOn || (printing && cameraOnPrint)) &&
+        phase === 'off' &&
+        !offline &&
+        !noCamera &&
+        !userStopped.current;
     useEffect(() => {
         if (autostart && !start.isPending) start.mutate();
     }, [autostart, start]);
@@ -75,13 +80,15 @@ export function CameraCard({ printerId, className }: { printerId: string; classN
                 <div>
                     <h2 className="text-lg font-medium leading-tight">{m.camera_title()}</h2>
                     <p className="text-sm text-muted-foreground">
-                        {phase === 'live'
-                            ? m.camera_live()
-                            : phase === 'starting'
-                              ? m.camera_connecting()
-                              : phase === 'error'
-                                ? m.camera_unavailable()
-                                : m.camera_stopped()}
+                        {noCamera
+                            ? m.camera_not_connected()
+                            : phase === 'live'
+                              ? m.camera_live()
+                              : phase === 'starting'
+                                ? m.camera_connecting()
+                                : phase === 'error'
+                                  ? m.camera_unavailable()
+                                  : m.camera_stopped()}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

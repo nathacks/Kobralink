@@ -158,6 +158,7 @@
     "camera_live": "Ao vivo",
     "camera_connecting": "Conectando ao stream…",
     "camera_unavailable": "Stream indisponível",
+    "camera_not_connected": "Nenhuma câmera conectada",
     "camera_stopped": "Câmera parada",
     "camera_restart": "Reiniciar stream",
     "camera_alt": "Stream da câmera",

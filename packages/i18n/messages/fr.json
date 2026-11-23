@@ -158,6 +158,7 @@
     "camera_live": "Flux en direct",
     "camera_connecting": "Connexion au flux…",
     "camera_unavailable": "Flux indisponible",
+    "camera_not_connected": "Aucune caméra branchée",
     "camera_stopped": "Caméra arrêtée",
     "camera_restart": "Relancer le flux",
     "camera_alt": "Flux caméra",

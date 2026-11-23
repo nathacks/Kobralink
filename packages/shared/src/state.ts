@@ -118,6 +118,20 @@ export function aceSlotStatus(status: number): AceSlotStatus | null {
 export const ACE_DRYING_ON = 1;
 export const ACE_DRYING_FAULT = 2;
 
+export interface PrinterPeripherals {
+    camera: boolean;
+    usbDrive: boolean;
+    ace: boolean;
+}
+
+export function readPeripherals(raw: unknown): PrinterPeripherals | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const d = raw as Record<string, unknown>;
+    const flag = (v: unknown) => v === true || v === 1;
+    if (!['camera', 'udisk', 'multiColorBox'].some((k) => k in d)) return null;
+    return { camera: flag(d.camera), usbDrive: flag(d.udisk), ace: flag(d.multiColorBox) };
+}
+
 export interface AceDrying {
     status: number;
     targetTemp: number;
@@ -179,6 +193,7 @@ export interface PrinterLiveState {
     storageTotalMb: number;
     storageUsedMb: number;
     features: PrinterFeatures | null;
+    peripherals: PrinterPeripherals | null;
     updatedAt: number;
 }
 

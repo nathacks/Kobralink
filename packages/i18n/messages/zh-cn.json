@@ -158,6 +158,7 @@
     "camera_live": "实时画面",
     "camera_connecting": "正在连接视频流…",
     "camera_unavailable": "视频流不可用",
+    "camera_not_connected": "未连接摄像头",
     "camera_stopped": "摄像头已停止",
     "camera_restart": "重启视频流",
     "camera_alt": "摄像头画面",

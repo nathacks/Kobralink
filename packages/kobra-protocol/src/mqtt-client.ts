@@ -55,6 +55,7 @@ export type KobraReportSuffix =
     | 'skip/report'
     | 'fan/report'
     | 'video/report'
+    | 'peripherie/report'
     | (string & {});
 
 export interface KobraMqttEvents {
@@ -352,6 +353,10 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
 
     queryLight() {
         this.publishWeb('light', 'query');
+    }
+
+    queryPeripherals() {
+        this.send('peripherie', 'query');
     }
 
     setPrintSpeedMode(taskid: string, mode: number) {

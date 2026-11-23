@@ -53,6 +53,8 @@ export interface KobraPrintData {
         print_speed_mode?: number;
         target_nozzle_temp?: number;
         target_hotbed_temp?: number;
+        fan_speed_pct?: number;
+        z_comp?: number;
     };
     [k: string]: unknown;
 }
@@ -100,6 +102,13 @@ export interface KobraLight {
     status?: number | null;
     brightness?: number | null;
     type?: number;
+}
+
+export interface KobraPeripheralsData {
+    camera?: number | boolean;
+    udisk?: number | boolean;
+    multiColorBox?: number | boolean;
+    [k: string]: unknown;
 }
 
 export interface KobraLightData extends KobraLight {

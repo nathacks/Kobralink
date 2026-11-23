@@ -88,15 +88,16 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
             litByUs: false,
         };
         const onJob = (phase: 'start' | 'end') => {
+            const acted = watch.acted;
             watch.prediction.reset();
             watch.boxes = [];
             watch.warned = false;
             watch.acted = false;
             watch.triggeredAt = 0;
-            if (phase === 'end') {
-                this.stopWatching(watch);
-                this.restoreLight(watch);
-            }
+            if (phase !== 'end') return;
+            this.stopWatching(watch);
+            if (acted) watch.litByUs = false;
+            else this.restoreLight(watch);
         };
         bridge.on('job', onJob);
         watch.detach = () => bridge.off('job', onJob);
@@ -297,10 +298,11 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
         if (!cfg.enabled) return;
         const now = Date.now();
         for (const w of this.watches.values()) {
-            const printing = w.bridge.snapshot().printState === 'printing';
-            const wanted = printing && w.bridge.failureDetectionForJob && !w.acted;
+            const printState = w.bridge.snapshot().printState;
+            const wanted = printState === 'printing' && w.bridge.failureDetectionForJob && !w.acted;
             if (!wanted) {
                 if (w.unsubscribe) this.stopWatching(w);
+                if (!w.acted && printState !== 'printing' && printState !== 'paused') this.restoreLight(w);
                 continue;
             }
             if (w.busy || now - w.lastAt < cfg.intervalSec * 1000) continue;
@@ -314,6 +316,7 @@ export class DetectionService implements OnModuleInit, OnModuleDestroy {
     private async analyze(w: Watch, cfg: FailureDetectionSettings): Promise<void> {
         const model = await this.ensureModel();
         if (!model) return;
+        if (w.bridge.snapshot().printState !== 'printing') return;
         if (!w.unsubscribe) {
             if (!w.bridge.camera.hasUrl) {
                 await w.bridge.client.startCamera().catch((e) => this.log.warn(`Camera start: ${String(e)}`));

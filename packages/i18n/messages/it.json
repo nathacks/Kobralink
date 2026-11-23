@@ -158,6 +158,7 @@
     "camera_live": "Diretta",
     "camera_connecting": "Connessione al flusso…",
     "camera_unavailable": "Flusso non disponibile",
+    "camera_not_connected": "Nessuna fotocamera collegata",
     "camera_stopped": "Fotocamera fermata",
     "camera_restart": "Riavvia flusso",
     "camera_alt": "Flusso della fotocamera",
