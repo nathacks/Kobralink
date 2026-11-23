@@ -297,8 +297,7 @@ Bambu tools so people migrating from them find things where they expect. The pha
   when a print starts from its screen, while FarolPrint always sent `flow_calibration: 0`. It is now a printer setting,
   on by default (printers added before it get it on too), with a switch in the print dialog to turn it off for one
   print; the queue and scheduled prints keep the choice made in the dialog. Prints started from OrcaSlicer or from the
-  printer's own files follow the printer setting. Showing it only on printers that report `flow_calibration_support`
-  waits for the Kobra 4 capabilities ([roadmap](roadmap.md#printer-protocol)).
+  printer's own files follow the printer setting.
 - **Drying presets are Anycubic's** (maintainer's decision). The defaults are the presets of the official drying
   dialog: PLA and PLA+ 45 °C 4 h, PETG 50 °C 4 h, TPU 55 °C 4 h, ABS / ASA 55 °C 8 h, PA / PC 55 °C 12 h. The old ones
   asked for 60 and 70 °C, which an ACE Pro refuses (code 11505). Presets a user saved are kept; "Restore defaults"
@@ -321,8 +320,15 @@ Bambu tools so people migrating from them find things where they expect. The pha
 - **The fan follows `fan/report`.** The printer pushes the part fan speed as soon as it changes; FarolPrint used to wait
   for the next `info` report. A report without a speed changes nothing.
 - **Printer capabilities are logged before they are used.** `info.features` says what the printer supports (flow
-  calibration, drying first, timelapse…), but nobody has published it for the Kobra 4. FarolPrint logs it once per
-  connection, so the print options can be shown per model once the values are known (never invented).
+  calibration, drying first, timelapse…). FarolPrint logs it once per connection; the maintainer's Kobra 4 reports
+  leveling, vibration compensation and flow calibration, and no drying first ([protocol.md](protocol.md#print-start)).
+- **The calibration options follow `info.features`.** Leveling, vibration compensation and flow calibration show in the
+  print dialog and the printer settings only when the printer reports `auto_leveling_support`,
+  `vibration_compensation_support` or `flow_calibration_support` as true, and `print/start` sends 0 for an option it
+  does not report, whatever the dialog, the queue item or the setting says. Until a printer has reported its features
+  (never connected yet, or a firmware without them) every option shows, as before: unknown is not unsupported. A
+  flag missing from the features the printer did report counts as unsupported, since every printer seen so far (S1,
+  Kobra 4) lists all three. A hidden option keeps its stored setting, so it comes back if a firmware update adds it.
 - **Common printer errors are explained in the interface language** (maintainer's request). 43 pause and failure codes
   (filament runout, clog, tangle, homing, heating, file out of range, missing G-code commands, user pause or stop…)
   map to texts adapted from Anycubic's own table; 11842, missing from that table, uses the text the Kobra 4 sends. The

@@ -440,3 +440,47 @@ describe('flow calibration setting', () => {
         expect(mocks.printerUpdate.mock.calls[0][1].settings.flowCalibration).toBe(false);
     });
 });
+
+describe('print options the printer reports', () => {
+    const printerWith = (live: unknown) =>
+        ({
+            id: 'p1',
+            name: 'Kobra 4',
+            ip: '192.168.1.50',
+            httpPort: 7125,
+            deviceId: 'abcdef123456',
+            modeId: '20028',
+            username: 'user',
+            createdAt: '2026-10-20T00:00:00.000Z',
+            model: 'Anycubic Kobra 4',
+            settings: printerSettingsSchema.parse({}),
+            live,
+        }) as unknown as PrinterWithLive;
+
+    it('shows the three options while the features are unknown', async () => {
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printerWith({ features: null })} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
+        expect(screen.getByText(m.settings_auto_leveling())).toBeTruthy();
+        expect(screen.getByText(m.settings_vibration())).toBeTruthy();
+        expect(screen.getByText(m.settings_flow_calibration())).toBeTruthy();
+    });
+
+    it('hides the options the printer does not support and keeps their stored values', async () => {
+        const live = { features: { auto_leveling_support: true, vibration_compensation_support: false } };
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printerWith(live)} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
+        expect(screen.getByText(m.settings_auto_leveling())).toBeTruthy();
+        expect(screen.queryByText(m.settings_vibration())).toBeNull();
+        expect(screen.queryByText(m.settings_flow_calibration())).toBeNull();
+        await userEvent.click(switchAfter(m.settings_auto_leveling()));
+        await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+        await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
+        expect(mocks.printerUpdate.mock.calls[0][1].settings).toMatchObject({
+            autoLeveling: false,
+            vibrationCompensation: false,
+            flowCalibration: true,
+        });
+    });
+});

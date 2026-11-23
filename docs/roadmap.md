@@ -66,12 +66,12 @@ Follow-up of the protocol survey of November 2026; the numbers refer to the dive
    answer, drying presets (items 1–9).
 2. **State (done)**: query the light on connect without counting the answer as a trigger tap, read `fan/report`, log
    `info.features` once per connection, translate the common error codes with Anycubic's texts (items 10–13).
-3. **Checks on a real printer**: on the maintainer's Kobra 4, its `info.features`, auxiliary and chamber fans, the
-   per-printer certificate from `/ctrl`, the camera restart sequence, when `print/query` answers (items 12, 25, 36,
-   38, 39); the Kobra X `ams_index` with an ACE needs someone with a Kobra X and an ACE (item 42).
-4. **Print options**: flow calibration on by default with a switch in the print dialog, kept by the queue and
-   scheduled prints (done, item 19); show leveling, vibration compensation and flow calibration only when the printer
-   reports them in `info.features`, once the values of step 3 are known (item 20).
+3. **Checks on a real printer**: on the maintainer's Kobra 4, its `info.features` (done, item 12), auxiliary and
+   chamber fans, the per-printer certificate from `/ctrl`, the camera restart sequence, when `print/query` answers
+   (items 25, 36, 38, 39); the Kobra X `ams_index` with an ACE needs someone with a Kobra X and an ACE (item 42).
+4. **Print options (done)**: flow calibration on by default with a switch in the print dialog, kept by the queue and
+   scheduled prints (item 19); leveling, vibration compensation and flow calibration shown only when the printer
+   reports them in `info.features` (item 20).
 5. **Later**: ACE details (slot statuses, remaining weight, RFID or manual, gradients, drying fault, dry before print,
    endless spool), printer subfolders, the `updated` snapshot fields (`print_speed_pct`, `z_comp`), the printer's own
    timelapse on its USB drive, auxiliary and chamber fan controls once item 25 is checked, other light types, axis

@@ -132,6 +132,36 @@ describe('info features', () => {
         h.report('info/report', { data: { state: 'free' } });
         expect(featuresLogged(h.log)).toHaveLength(0);
     });
+
+    it('are unknown until the printer reports them', () => {
+        const h = bridge();
+        expect(h.b.snapshot().features).toBeNull();
+        h.report('info/report', { data: { state: 'free' } });
+        expect(h.b.snapshot().features).toBeNull();
+    });
+
+    it('are kept in the live state, flags only', () => {
+        const h = bridge();
+        h.report('info/report', {
+            data: { features: { flow_calibration_support: true, drying_first_support: false, version: '2' } },
+        });
+        expect(h.b.snapshot().features).toEqual({ flow_calibration_support: true, drying_first_support: false });
+    });
+
+    it('stay known when a later report has none and after a disconnection', () => {
+        const h = bridge();
+        h.report('info/report', { data: { features: { auto_leveling_support: true } } });
+        h.report('info/report', { data: { state: 'free' } });
+        h.markOffline({ code: 'lost' });
+        expect(h.b.snapshot().features).toEqual({ auto_leveling_support: true });
+    });
+
+    it('are replaced when the printer reports new ones', () => {
+        const h = bridge();
+        h.report('info/report', { data: { features: { auto_leveling_support: true } } });
+        h.report('info/report', { data: { features: { auto_leveling_support: false } } });
+        expect(h.b.snapshot().features).toEqual({ auto_leveling_support: false });
+    });
 });
 
 describe('connecting', () => {

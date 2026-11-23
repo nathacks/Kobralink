@@ -1,3 +1,5 @@
+import type { PrinterFeatures } from './features';
+
 export type KlipperPrintState = 'standby' | 'printing' | 'paused' | 'complete' | 'error';
 
 export const PREPARING_KOBRA_STATES = [
@@ -141,6 +143,7 @@ export interface PrinterLiveState {
     manualOffline: boolean;
     storageTotalMb: number;
     storageUsedMb: number;
+    features: PrinterFeatures | null;
     updatedAt: number;
 }
 

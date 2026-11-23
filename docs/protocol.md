@@ -81,25 +81,37 @@ public sources below. The decisions taken from it are in [decisions.md](decision
 
 | `task_settings` field | FarolPrint | Meaning |
 |---|---|---|
-| `auto_leveling` | printer setting, on by default; print dialog | bed leveling, state `auto_leveling` |
-| `vibration_compensation` | printer setting, off by default; print dialog | resonance compensation, state `vibrating` |
-| `flow_calibration` | printer setting, on by default; print dialog | flow calibration, state `flow_calibrating` ✔ (the Kobra 4 runs it) |
+| `auto_leveling` | printer setting, on by default; print dialog; 0 unless `auto_leveling_support` | bed leveling, state `auto_leveling` |
+| `vibration_compensation` | printer setting, off by default; print dialog; 0 unless `vibration_compensation_support` | resonance compensation, state `vibrating` |
+| `flow_calibration` | printer setting, on by default; print dialog; 0 unless `flow_calibration_support` | flow calibration, state `flow_calibrating` ✔ (the Kobra 4 runs it) |
 | `dry_mode` | always 0 | 2 = dry in the ACE first, then print ✔ (ACE only) |
 | `ai_settings` | always off | the printer's own failure detection; `count`/`type` unknown 🟡. FarolPrint runs its own. |
 | `timelapse` | always off | the printer's own timelapse, needs a USB drive (10134–10137) 🟡. FarolPrint records its own. |
 | `drying_settings` | always zero | origin unknown, only FarolPrint and upstream send it |
 | `model_objects_skip_parts` | objects excluded in the print dialog | skip before starting |
 
-The printer says what it supports in `info.features`: `auto_leveling_support`, `vibration_compensation_support`,
-`flow_calibration_support`, `drying_first_support`, `camera_timelapse_support`, `delete_batch_support` and more 🟡.
-Nobody has published them for the Kobra 4 yet ❓; FarolPrint logs them once per connection ("Features reported by the
-printer") so they can be read from the logs page.
+The printer says what it supports in `info.features`, logged once per connection ("Features reported by the printer").
+The maintainer's Kobra 4 reports ✔:
+
+| Flag | Kobra 4 | Meaning |
+|---|---|---|
+| `auto_leveling_support`, `vibration_compensation_support`, `flow_calibration_support` | true | the three calibration options of `print/start` |
+| `drying_first_support` | false | `dry_mode: 2` (needs an ACE) |
+| `camera_timelapse_support` | true | the printer's own timelapse |
+| `preheating_support`, `pre_cancel_support`, `keep_print_head_temp_support` | true | not documented |
+| `fod_support` | true | foreign object detection on the bed, not documented |
+| `delete_batch_support`, `gcode_3mf_support` | true | `file/deleteBatch`, 3MF G-code files |
+| `shengwang_rtc_support`, `shengwang_rdt_support` | true | the cloud camera and data channels (Agora) |
+
+An S1 capture has the other 12 flags, all true (drying first included), and no `keep_print_head_temp_support` 🟡.
+FarolPrint shows a calibration option and sends it only when its flag is true; while a printer has not reported `features`, every option
+shows (`supportsPrintOption` in `packages/shared/src/features.ts`).
 
 ## What FarolPrint reads
 
 | Report | Fields used |
 |---|---|
-| `info/report` | `version`, `model`, `state`, `project.{state, filename, progress, print_time, remain_time, curr_layer, total_layers, taskid}`, `temp`, `urls`, `fan_speed_pct`, `print_speed_mode`, `features` (logged) |
+| `info/report` | `version`, `model`, `state`, `project.{state, filename, progress, print_time, remain_time, curr_layer, total_layers, taskid}`, `temp`, `urls`, `fan_speed_pct`, `print_speed_mode`, `features` (logged, kept in the live state, gates the calibration options) |
 | `print/report` | `state`, `code`/`msg` on a pause, `filename`, `progress`, `print_time` (minutes), `remain_time` (minutes), `curr_layer`, `total_layers`, `taskid`, `supplies_usage` (mm), `settings.print_speed_mode` |
 | `tempature/report` | current and target nozzle and bed |
 | `multiColorBox/report` | boxes, slots (`status`, `type`, `color`, `rfid`, `sku`), `loaded_slot`, `feed_status`, `auto_feed`, drying |
@@ -174,13 +186,13 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 9 | Drying presets above the ACE Pro limit | fixed: official presets |
 | 10 | Light state unknown until it changes (no `light/query`; its answer must not count as a trigger tap) | fixed |
 | 11 | `fan/report` ignored | fixed |
-| 12 | `info.features` not read | logged; reading them on the Kobra 4 is in the roadmap ❓ |
+| 12 | `info.features` not read | fixed: logged and kept; the Kobra 4 values are above ✔ |
 | 13 | Error codes shown raw, in the printer's language | fixed: 43 common codes translated, the printer message otherwise |
 | 14–16 | ACE slot statuses, slot `weight`/`edit_status`/`color_group`, drying fault 2 counted as drying | roadmap (ACE) |
 | 17 | Files in printer subfolders (such as `/test_model/`) not listed | roadmap |
 | 18 | `updated` snapshot fields (`print_speed_pct`, `z_comp`) ignored | roadmap |
 | 19 | Flow calibration option | fixed: on by default, switch in the print dialog |
-| 20 | Options shown only when `info.features` reports them | roadmap, after reading the Kobra 4 capabilities (item 12) |
+| 20 | Options shown only when `info.features` reports them | fixed: leveling, vibration compensation and flow calibration |
 | 21 | Dry in the ACE before printing (`dry_mode: 2`) | roadmap (ACE) |
 | 22 | The printer's own timelapse (needs a USB drive) | roadmap |
 | 23 | The printer's own AI detection | not planned: FarolPrint runs its own, and LAN cannot change the printer's settings |

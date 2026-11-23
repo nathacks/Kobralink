@@ -4,6 +4,7 @@ export * from './cost';
 export * from './detection';
 export * from './dry';
 export * from './events';
+export * from './features';
 export * from './filament';
 export * from './files';
 export * from './forms';

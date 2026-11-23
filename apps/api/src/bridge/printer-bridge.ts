@@ -30,9 +30,12 @@ import {
     type PrinterLiveState,
     type PrinterSample,
     type PrinterSettings,
+    type PrintOption,
+    readFeatures,
     type SpoolmanPricing,
     type SpoolUsageEntry,
     slotUsableForPrint,
+    supportsPrintOption,
     TERMINAL_PRINT_STATES,
 } from '@farolprint/shared';
 import { Logger } from '@nestjs/common';
@@ -212,6 +215,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             manualOffline: false,
             storageTotalMb: 0,
             storageUsedMb: 0,
+            features: null,
             updatedAt: Date.now(),
         };
         this.client = this.createClient();
@@ -895,7 +899,11 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.camera.setUrl(d.urls.rtspUrl);
         }
         if (d.fan_speed_pct !== undefined) this.s.fanSpeed = Number(d.fan_speed_pct);
-        if (d.features && typeof d.features === 'object') this.logFeatures(d.features);
+        const features = readFeatures(d.features);
+        if (features && d.features) {
+            this.s.features = features;
+            this.logFeatures(d.features);
+        }
         if (d.print_speed_mode !== undefined) this.s.printSpeedMode = Number(d.print_speed_mode);
         if (kobraState) this.syncJob(kobraState, this.s.filename);
         this.publish();
@@ -1613,10 +1621,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         opts: Pick<StartPrintOptions, 'autoLeveling' | 'vibrationCompensation' | 'flowCalibration'> = {},
     ): PrintStartPayload['task_settings'] {
         const s = this.config.settings;
+        const on = (option: PrintOption) =>
+            supportsPrintOption(this.s.features, option) && (opts[option] ?? s[option]) ? 1 : 0;
         return {
-            auto_leveling: (opts.autoLeveling ?? s.autoLeveling) ? 1 : 0,
-            vibration_compensation: (opts.vibrationCompensation ?? s.vibrationCompensation) ? 1 : 0,
-            flow_calibration: (opts.flowCalibration ?? s.flowCalibration) ? 1 : 0,
+            auto_leveling: on('autoLeveling'),
+            vibration_compensation: on('vibrationCompensation'),
+            flow_calibration: on('flowCalibration'),
             dry_mode: 0,
             ai_settings: { status: 0, count: 0, type: 1 },
             timelapse: { status: 0, count: 0, type: 64 },

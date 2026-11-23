@@ -84,6 +84,30 @@ describe('PrintReadyForm', () => {
         settings.flowCalibration = true;
     });
 
+    it('shows the three calibration options while the printer has not reported its features', async () => {
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
+        for (const name of [/auto bed leveling/i, /vibration compensation/i, /flow calibration/i]) {
+            expect(screen.getByRole('switch', { name })).toBeTruthy();
+        }
+    });
+
+    it('hides the calibration options the printer does not report', async () => {
+        const live = mocks.live as Record<string, unknown>;
+        live.features = { auto_leveling_support: true, vibration_compensation_support: false };
+        try {
+            const onPrint = vi.fn().mockResolvedValue(undefined);
+            await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={onPrint} />);
+            expect(screen.getByRole('switch', { name: /auto bed leveling/i })).toBeTruthy();
+            expect(screen.queryByRole('switch', { name: /vibration compensation/i })).toBeNull();
+            expect(screen.queryByRole('switch', { name: /flow calibration/i })).toBeNull();
+            expect(screen.getByRole('switch', { name: /record a timelapse/i })).toBeTruthy();
+            await userEvent.click(screen.getByRole('button', { name: /print/i }));
+            expect(onPrint).toHaveBeenCalledWith(expect.objectContaining({ autoLeveling: true }));
+        } finally {
+            delete live.features;
+        }
+    });
+
     it('sends the options chosen for this print', async () => {
         const onPrint = vi.fn().mockResolvedValue(undefined);
         await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={onPrint} />);

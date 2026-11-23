@@ -1,4 +1,9 @@
-import { type PrinterProfile, type PrinterSettingsFormValues, printerSettingsFormSchema } from '@farolprint/shared';
+import {
+    type PrinterProfile,
+    type PrinterSettingsFormValues,
+    printerSettingsFormSchema,
+    supportsPrintOption,
+} from '@farolprint/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -261,27 +266,33 @@ export function PrinterSettingsForm({
                     <CardTitle>{m.settings_print()}</CardTitle>
                 </CardHeader>
                 <CardContent className="divide-y">
-                    <form.Field name="settings.autoLeveling">
-                        {(field) => (
-                            <Row label={m.settings_auto_leveling()} hint={m.settings_auto_leveling_hint()}>
-                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
-                            </Row>
-                        )}
-                    </form.Field>
-                    <form.Field name="settings.vibrationCompensation">
-                        {(field) => (
-                            <Row label={m.settings_vibration()}>
-                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
-                            </Row>
-                        )}
-                    </form.Field>
-                    <form.Field name="settings.flowCalibration">
-                        {(field) => (
-                            <Row label={m.settings_flow_calibration()} hint={m.settings_flow_calibration_hint()}>
-                                <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
-                            </Row>
-                        )}
-                    </form.Field>
+                    {supportsPrintOption(printer.live?.features, 'autoLeveling') && (
+                        <form.Field name="settings.autoLeveling">
+                            {(field) => (
+                                <Row label={m.settings_auto_leveling()} hint={m.settings_auto_leveling_hint()}>
+                                    <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                                </Row>
+                            )}
+                        </form.Field>
+                    )}
+                    {supportsPrintOption(printer.live?.features, 'vibrationCompensation') && (
+                        <form.Field name="settings.vibrationCompensation">
+                            {(field) => (
+                                <Row label={m.settings_vibration()}>
+                                    <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                                </Row>
+                            )}
+                        </form.Field>
+                    )}
+                    {supportsPrintOption(printer.live?.features, 'flowCalibration') && (
+                        <form.Field name="settings.flowCalibration">
+                            {(field) => (
+                                <Row label={m.settings_flow_calibration()} hint={m.settings_flow_calibration_hint()}>
+                                    <Switch checked={field.state.value} onCheckedChange={field.handleChange} />
+                                </Row>
+                            )}
+                        </form.Field>
+                    )}
                     <form.Field name="settings.cameraAlwaysOn">
                         {(field) => (
                             <Row label={m.settings_camera_always_on()} hint={m.settings_camera_always_on_hint()}>

@@ -41,6 +41,7 @@ function setup(settings: { autoLeveling: boolean; vibrationCompensation: boolean
     const startPrint = mock(async (_payload: PrintStartPayload) => ({ state: 'success', code: 0 }));
     const log = mock((_msg: string) => undefined);
     const internals = bridge as unknown as {
+        onReport: (suffix: string, payload: Record<string, unknown>) => void;
         ensureConnected: () => void;
         pushToPrinter: () => Promise<void>;
         client: { startPrint: typeof startPrint };
@@ -52,7 +53,8 @@ function setup(settings: { autoLeveling: boolean; vibrationCompensation: boolean
     internals.log.log = log;
     const sent = () => (startPrint.mock.calls[0] as [PrintStartPayload])[0].task_settings;
     const logged = () => log.mock.calls.map((c) => String(c[0])).find((l) => l.startsWith('print/start')) ?? '';
-    return { bridge, sent, logged };
+    const features = (features: Record<string, boolean>) => internals.onReport('info/report', { data: { features } });
+    return { bridge, sent, logged, features };
 }
 
 const serveBase = 'http://127.0.0.1:7125';
@@ -110,5 +112,55 @@ describe('print/start task settings', () => {
         const h = setup({ autoLeveling: false, vibrationCompensation: false, flowCalibration: true });
         await h.bridge.printPrinterFile('on-printer.gcode', 2048);
         expect(h.sent()).toMatchObject({ flow_calibration: 1 });
+    });
+});
+
+describe('print/start options the printer does not report', () => {
+    const all = { autoLeveling: true, vibrationCompensation: true, flowCalibration: true };
+    const kobra4 = {
+        auto_leveling_support: true,
+        vibration_compensation_support: true,
+        flow_calibration_support: true,
+    };
+
+    it('sends every option while the printer has not reported its features', async () => {
+        const h = setup(all);
+        await h.bridge.printStoredFile(file.id, { serveBase });
+        expect(h.sent()).toMatchObject({ auto_leveling: 1, vibration_compensation: 1, flow_calibration: 1 });
+    });
+
+    it('sends every option a printer reporting all three supports', async () => {
+        const h = setup(all);
+        h.features(kobra4);
+        await h.bridge.printStoredFile(file.id, { serveBase });
+        expect(h.sent()).toMatchObject({ auto_leveling: 1, vibration_compensation: 1, flow_calibration: 1 });
+    });
+
+    it('turns off an option the printer reports as unsupported, even when the dialog asks for it', async () => {
+        const h = setup(all);
+        h.features({ ...kobra4, flow_calibration_support: false });
+        await h.bridge.printStoredFile(file.id, { serveBase, flowCalibration: true });
+        expect(h.sent()).toMatchObject({ auto_leveling: 1, vibration_compensation: 1, flow_calibration: 0 });
+    });
+
+    it('turns off an option missing from the reported features', async () => {
+        const h = setup(all);
+        h.features({ auto_leveling_support: true });
+        await h.bridge.printStoredFile(file.id, { serveBase });
+        expect(h.sent()).toMatchObject({ auto_leveling: 1, vibration_compensation: 0, flow_calibration: 0 });
+    });
+
+    it('applies to a file already on the printer too', async () => {
+        const h = setup(all);
+        h.features({ ...kobra4, auto_leveling_support: false });
+        await h.bridge.printPrinterFile('on-printer.gcode', 2048, true);
+        expect(h.sent()).toMatchObject({ auto_leveling: 0, flow_calibration: 1 });
+    });
+
+    it('still lets the dialog turn off a supported option', async () => {
+        const h = setup(all);
+        h.features(kobra4);
+        await h.bridge.printStoredFile(file.id, { serveBase, vibrationCompensation: false });
+        expect(h.sent()).toMatchObject({ vibration_compensation: 0, flow_calibration: 1 });
     });
 });

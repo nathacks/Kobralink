@@ -7,6 +7,7 @@ import {
     type QueueTarget,
     type SlotFilamentInfo,
     slotUsableForPrint,
+    supportsPrintOption,
 } from '@farolprint/shared';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -456,30 +457,36 @@ export function PrintReadyForm({
                 <div className="grid gap-2">
                     <div className="text-sm font-medium text-muted-foreground">{m.print_ready_options()}</div>
                     <div className="divide-y divide-border/60 overflow-hidden rounded-2xl bg-secondary/60">
-                        <OptionRow
-                            id="print-ready-auto-leveling"
-                            icon={<Grid3x3 />}
-                            label={m.settings_auto_leveling()}
-                            hint={m.print_ready_leveling_hint()}
-                            checked={autoLeveling}
-                            onChange={setAutoLeveling}
-                        />
-                        <OptionRow
-                            id="print-ready-vibration"
-                            icon={<AudioWaveform />}
-                            label={m.settings_vibration()}
-                            hint={m.print_ready_vibration_hint()}
-                            checked={vibrationCompensation}
-                            onChange={setVibrationCompensation}
-                        />
-                        <OptionRow
-                            id="print-ready-flow"
-                            icon={<Droplets />}
-                            label={m.settings_flow_calibration()}
-                            hint={m.print_ready_flow_hint()}
-                            checked={flowCalibration}
-                            onChange={setFlowCalibration}
-                        />
+                        {supportsPrintOption(state.features, 'autoLeveling') && (
+                            <OptionRow
+                                id="print-ready-auto-leveling"
+                                icon={<Grid3x3 />}
+                                label={m.settings_auto_leveling()}
+                                hint={m.print_ready_leveling_hint()}
+                                checked={autoLeveling}
+                                onChange={setAutoLeveling}
+                            />
+                        )}
+                        {supportsPrintOption(state.features, 'vibrationCompensation') && (
+                            <OptionRow
+                                id="print-ready-vibration"
+                                icon={<AudioWaveform />}
+                                label={m.settings_vibration()}
+                                hint={m.print_ready_vibration_hint()}
+                                checked={vibrationCompensation}
+                                onChange={setVibrationCompensation}
+                            />
+                        )}
+                        {supportsPrintOption(state.features, 'flowCalibration') && (
+                            <OptionRow
+                                id="print-ready-flow"
+                                icon={<Droplets />}
+                                label={m.settings_flow_calibration()}
+                                hint={m.print_ready_flow_hint()}
+                                checked={flowCalibration}
+                                onChange={setFlowCalibration}
+                            />
+                        )}
                         <OptionRow
                             id="print-ready-timelapse"
                             icon={<Film />}
