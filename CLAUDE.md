@@ -155,7 +155,8 @@ package.json script calls `bun`/`bunx` explicitly (Vite runs under `bunx --bun v
 - **No comments in the code** (explicit request of the original author, kept in this fork).
 - The certificates in `apps/api/certs/*` (Anycubic Slicer client certificate) are third-party material: do not modify
   them. They ship as is in the repo, and the Docker image so users have nothing to provide; they
-  cannot be generated (the printer's MQTT broker checks this exact certificate).
+  cannot be generated. The Kobra 4 also accepts its own `/ctrl` certificate or none and checks the password instead
+  ([protocol.md](docs/protocol.md#checks-on-the-kobra-4)); other models are unverified, so the bundled one stays.
 - **Never put real printer data in fixtures**: MQTT username/password, device ID, `/info` token, serial numbers and
   public IPs are anonymized first.
 - **A printer allows a single MQTT session.** A second client (a test script, another bridge) is refused while

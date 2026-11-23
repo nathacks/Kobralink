@@ -37,7 +37,12 @@ public sources below. The decisions taken from it are in [decisions.md](decision
 - **MQTT over TLS on 9883** (3.1.1). Requests go to `anycubic/anycubicCloud/v1/{slicer|web}/printer/<modeId>/<deviceId>/<type>`,
   reports come on `anycubic/anycubicCloud/v1/printer/public/<modeId>/<deviceId>/<type>/report`. The body is
   `{type, action, msgid, timestamp, data}`; a report adds `state`, `code` and `msg`. `code` 0 or 200 is OK, 10000–19999
-  is an error ✔. The printer accepts a single session.
+  is an error ✔. The printer accepts a single session. Every request is also acknowledged on
+  `…/printer/public/<modeId>/<deviceId>/response` (`code` 0, no data), and reports do not carry the request's `msgid`
+  ✔ (Kobra 4).
+- **MQTT authentication**: the broker checks the username and password from `/ctrl` (a wrong password is refused with
+  "Not authorized"). On the Kobra 4 it accepts the bundled Slicer certificate, the per-printer `devicecrt`/`devicepk`
+  from `/ctrl` (what the official client uses) and no client certificate at all ✔. Other models are unverified.
 - **Model ids**: 20024 Kobra 3, 20025 S1, 20028 Kobra 4, 20029 S1 Max, 20030 Kobra X 🟡. ACE model ids: 40001 ACE Pro,
   40002 ACE 2 / ACE 2 Pro 🟡.
 
@@ -46,7 +51,7 @@ public sources below. The decisions taken from it are in [decisions.md](decision
 | type / action | data | Used for |
 |---|---|---|
 | `info/query` | — | the poll loop (state, temperatures, upload URL, camera URL) |
-| `print/query` | — | the poll loop while printing (🟡 sources disagree on when the printer answers) |
+| `print/query` | — | the poll loop while printing (🟡 sources disagree on when the printer answers; an idle Kobra 4 does not ✔) |
 | `multiColorBox/getInfo` | — | the poll loop (ACE slots; an empty list means an external spool only) |
 | `print/start` | see below | every print |
 | `print/pause`, `print/resume`, `print/stop` | `{taskid}` | print controls |
@@ -57,7 +62,7 @@ public sources below. The decisions taken from it are in [decisions.md](decision
 | `light/query` | — | once per connection, on the `web` topic like the official client, to know the light before it changes ✔ |
 | `axis/move` | `{axis, move_type, distance}` | jog and home. Axis 1 X, 2 Y, 3 Z, 4 XY, 5 XYZ; move type 0 minus, 1 plus, 2 home ✔ |
 | `axis/turnOff` | — | motors off |
-| `video/startCapture`, `video/stopCapture` | — | camera |
+| `video/startCapture`, `video/stopCapture` | — | camera; on the Kobra 4 they drive the cloud push and the LAN stream flows anyway ✔ |
 | `multiColorBox/setInfo`, `feedFilament`, `setAutoFeed`, `setDry` | `{multi_color_box:[…]}` | ACE slot edit, load / unload, auto refill, drying |
 | `skip/query_obj`, `skip/start` | `{objects_skip_parts}` | object skip; `start` gets the parts already skipped plus the new ones ✔ |
 | `file/listLocal`, `file/deleteBatch`, `file/fileDetails` | — | printer storage, thumbnails, objects |
@@ -121,7 +126,7 @@ shows (`supportsPrintOption` in `packages/shared/src/features.ts`).
 | `skip/report` | skipped objects |
 | `buried/report` | storage size, file size, layers and estimate of the running file |
 
-Ignored today: `status/report`, `video/report`, `axis/report` (beyond refusals), `peripherie`,
+Ignored today: `aux_fan_speed_pct` in `info`, `status/report`, `video/report`, `axis/report` (beyond refusals), `peripherie`,
 `ota`, `event`, `extfilbox`, `aiSettings`, `calibration`, `properties`.
 
 ### ACE slot and feed values ✔
@@ -164,6 +169,22 @@ FarolPrint explains 43 common codes in the interface language (`PRINTER_ERROR_ME
 Kobra 4 sends): in the pause banner, the failure history, refused commands and notifications. Any other code shows the
 printer's own message.
 
+### Checks on the Kobra 4
+
+Run on the maintainer's Kobra 4 (firmware 1.2.1.3, no ACE) on 23 November 2026, idle, with FarolPrint stopped for
+under a minute each time so a probe could hold the single MQTT session.
+
+| Check | Result |
+|---|---|
+| `/ctrl` while FarolPrint holds the session | answers 200 (no 19002) and returns the same username, password and device id as when the printer was added: the credentials are stable |
+| `/ctrl` bundle | `broker`, `deviceId`, `deviceType`, `devicecrt` and `devicepk` (PEM), `ip`, `modeId`, `modelId`, `modelName`, `username`, `password` |
+| Client certificate | the per-printer certificate, the bundled Slicer certificate and no certificate all connect and get answers; a wrong password is refused |
+| Fans | `info` reports `fan_speed_pct` and `aux_fan_speed_pct`, no chamber fan field; `fan/query` answers with `fan_speed_pct` only |
+| `info` fields | `aux_fan_speed_pct`, `fan_speed_pct`, `features`, `ip`, `last_project`, `model`, `print_speed_mode`, `printerName`, `project`, `state`, `temp`, `urls`, `version` |
+| `print/query` while idle | no `print/report` within 12 s on the `slicer` or the `web` topic, only the acknowledgement; while printing: not checked yet ❓ |
+| `light/query` | answered on both topics within 60 ms, with one lamp: the camera light (type 3) |
+| Camera | the HTTP-FLV stream on 18088 keeps flowing (about 40 KB/s) whatever `video/startCapture` and `stopCapture` do; they answer `initSuccess`, `joinSuccess`, `pushStarted` and `pushStopped`, the cloud push. A start while running, a stop and start at once, and stop, 1 s, start all work. Requests to 18088 do not turn the light on |
+
 ## Not available over LAN
 
 Writing the printer's AI detection settings, triggering a firmware update, the cloud camera, a Z offset command and raw
@@ -197,12 +218,13 @@ Status of every gap found by the survey; the ones already fixed are marked **fix
 | 22 | The printer's own timelapse (needs a USB drive) | roadmap |
 | 23 | The printer's own AI detection | not planned: FarolPrint runs its own, and LAN cannot change the printer's settings |
 | 24 | Endless spool (backup slots in `ams_box_mapping`) | roadmap (ACE) |
-| 25–35 | Aux and chamber fans (controls after the check in item 25), axis position, rename, USB drive, peripherals, OTA progress, other light types, slice parameters, Kobra X spool rack, `event` reports, camera light for detection | roadmap |
-| 36 | The official client connects with the per-printer `devicecrt`/`devicepk` from `/ctrl`, not the bundled Slicer certificate | to test ❓ |
+| 25 | Aux and chamber fans | checked: the Kobra 4 reports `aux_fan_speed_pct` and no chamber fan; controls in the roadmap |
+| 26–35 | Axis position, rename, USB drive, peripherals, OTA progress, other light types, slice parameters, Kobra X spool rack, `event` reports, camera light for detection | roadmap |
+| 36 | The official client connects with the per-printer `devicecrt`/`devicepk` from `/ctrl`, not the bundled Slicer certificate | checked: the Kobra 4 accepts it, the Slicer one and none; the broker checks the password |
 | 37 | The official client publishes everything on the `web` topic; FarolPrint mostly uses `slicer` | not planned: it works |
-| 38 | The official client restarts the camera with stop, ~1 s, start | roadmap |
-| 39 | `print/query` answer timing unclear | to test ❓ |
+| 38 | The official client restarts the camera with stop, ~1 s, start | checked: not needed on the Kobra 4, whose LAN stream does not depend on start and stop |
+| 39 | `print/query` answer timing unclear | idle: no answer on the Kobra 4; while printing: to check ❓ |
 | 40 | Nozzle and bed temperatures sent as two `print/update` | not planned: cosmetic |
 | 41 | Speed mode 4 (`speed_factor` 1.5) in the Moonraker mapping has no source | roadmap |
 | 42 | `print_time` in seconds on the S1 Max (not a supported model); Kobra X `ams_index` with an ACE unverified | to test: needs a Kobra X with an ACE ❓ |
-| 43 | `/ctrl` 19002 shown as an invalid answer; any request to 18088 lights the Kobra X camera light, which "camera always on" keeps lit | roadmap |
+| 43 | `/ctrl` 19002 shown as an invalid answer; any request to 18088 lights the Kobra X camera light, which "camera always on" keeps lit | roadmap (Kobra X; the Kobra 4 light stays off) |

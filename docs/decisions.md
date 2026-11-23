@@ -256,7 +256,8 @@ Bambu tools so people migrating from them find things where they expect. The pha
   meter picked per printer from the energy sensors Home Assistant lists) at the start and the end of each print, and
   stores the difference on the job. The energy cost then uses that measurement; prints without a reading keep the
   estimate from the average draw. A meter that went backwards (reset, replaced plug) gives no reading rather than a
-  wrong one. Reading a plug's own API without Home Assistant stays on the roadmap.
+  wrong one. Reading a plug's own API (Tasmota, Shelly) without Home Assistant is not planned (maintainer's decision,
+  November 2026): measured energy comes from Home Assistant, else the average draw.
 - **The smart plug is chosen in Home Assistant** (maintainer's decision, October 2026). The printer settings no longer
   ask for on, off and status URLs: with Home Assistant connected, a "Plug" card picks the plug's switch and its energy
   meter from what Home Assistant lists, and the power button and the automation power action go through
@@ -314,21 +315,27 @@ Bambu tools so people migrating from them find things where they expect. The pha
   Before, any answer counted as a success and the print failed later with a confusing message.
 - **The light is asked for on connect.** FarolPrint sends `light/query` once per connection, on the `web` topic like the
   official client, so the light switch is right before anyone touches it. Only the camera light (type 3), the one the
-  dashboard switches, is read; the Kobra 4 lists more than one lamp. A query answer never counts as a tap for the bed
-  clear trigger, while every other light message still does, whatever the lamp, so the trigger keeps working as it was
-  tested. A light message without a status leaves the switch as it is instead of turning it off.
+  dashboard switches, is read; the official client also knows a head and a box light (the Kobra 4 reports only the
+  camera light). A query answer never counts as a tap for the bed clear trigger, while every other light message still
+  does, whatever the lamp, so the trigger keeps working as it was tested. A light message without a status leaves the
+  switch as it is instead of turning it off.
 - **The fan follows `fan/report`.** The printer pushes the part fan speed as soon as it changes; FarolPrint used to wait
   for the next `info` report. A report without a speed changes nothing.
 - **Printer capabilities are logged before they are used.** `info.features` says what the printer supports (flow
   calibration, drying first, timelapse…). FarolPrint logs it once per connection; the maintainer's Kobra 4 reports
   leveling, vibration compensation and flow calibration, and no drying first ([protocol.md](protocol.md#print-start)).
-- **The calibration options follow `info.features`.** Leveling, vibration compensation and flow calibration show in the
-  print dialog and the printer settings only when the printer reports `auto_leveling_support`,
-  `vibration_compensation_support` or `flow_calibration_support` as true, and `print/start` sends 0 for an option it
-  does not report, whatever the dialog, the queue item or the setting says. Until a printer has reported its features
-  (never connected yet, or a firmware without them) every option shows, as before: unknown is not unsupported. A
-  flag missing from the features the printer did report counts as unsupported, since every printer seen so far (S1,
-  Kobra 4) lists all three. A hidden option keeps its stored setting, so it comes back if a firmware update adds it.
+- **The calibration options follow `info.features`** (maintainer's decision, November 2026). Leveling, vibration
+  compensation and flow calibration show in the print dialog and the printer settings only when the printer reports
+  `auto_leveling_support`, `vibration_compensation_support` or `flow_calibration_support` as true, and `print/start`
+  sends 0 for an option it does not report, whatever the dialog, the queue item or the setting says. Until a printer
+  has reported its features (never connected yet, or a firmware without them) every option shows, as before: unknown
+  is not unsupported. A flag missing from the features the printer did report counts as unsupported, since every
+  printer seen so far (S1, Kobra 4) lists all three. A hidden option keeps its stored setting, so it comes back if a firmware update adds it.
+- **The bundled Slicer certificate stays** (maintainer's decision, November 2026). The Kobra 4 also accepts its own
+  `devicecrt`/`devicepk` from `/ctrl`, which the official client uses, or no client certificate at all: its broker
+  checks the username and password ([protocol.md](protocol.md#checks-on-the-kobra-4)). No other model has been
+  checked, so FarolPrint keeps connecting with the bundled certificate; switching to the per-printer one is reconsidered
+  once a Kobra X has been checked.
 - **Common printer errors are explained in the interface language** (maintainer's request). 43 pause and failure codes
   (filament runout, clog, tangle, homing, heating, file out of range, missing G-code commands, user pause or stop…)
   map to texts adapted from Anycubic's own table; 11842, missing from that table, uses the text the Kobra 4 sends. The
