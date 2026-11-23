@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { installCrashGuard } from './common/crash-guard';
 import { loadEnv } from './config/env';
 import { installI18n, localeMiddleware } from './i18n/locale';
 import { BufferedLogger } from './logs/log-buffer';
@@ -12,6 +13,7 @@ import { applyPendingRestore } from './system/restore';
 async function bootstrap() {
     const env = loadEnv();
     const log = new Logger('FarolPrint');
+    installCrashGuard(log);
     installI18n();
     applyPendingRestore(env.dataDir, (msg) => log.log(msg));
     await initPrisma();

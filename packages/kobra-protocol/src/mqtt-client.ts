@@ -162,10 +162,7 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         });
 
         client.on('message', (topic, payload) => this.onMessage(topic, payload));
-        client.on('error', (err) => {
-            this.log.warn(`MQTT error: ${err.message}`);
-            this.emit('error', err);
-        });
+        client.on('error', (err) => this.onClientError(err));
         client.on('close', () => {
             this.failAllPending();
             if (this.client === client) this.client = null;
@@ -177,6 +174,11 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         });
         this.log.info(`MQTT connected to ${this.opts.host}:${this.opts.port ?? 9883}`);
         this.emit('connected');
+    }
+
+    private onClientError(err: Error): void {
+        this.log.warn(`MQTT error: ${err.message}`);
+        if (this.listenerCount('error') > 0) this.emit('error', err);
     }
 
     async disconnect(): Promise<void> {

@@ -47,6 +47,11 @@ reasons behind them.
   fallback, from the stored printer. UI texts do not name a specific model.
 - **A printer allows a single MQTT session.** FarolPrint owns it while connected; tools that capture messages must stop
   FarolPrint first.
+- **A printer going away never stops FarolPrint.** On 23 November 2026 the maintainer's Kobra 4 went off the network
+  with the session open; the socket's `ECONNRESET` was re-emitted as an `error` event nobody listened to, and the
+  whole server stopped. The MQTT client now only re-emits socket errors when something listens, and the API ignores,
+  with a warning, a network error (`ECONNRESET`, `EPIPE`, `ETIMEDOUT`…) that escapes every handler; any other uncaught
+  error still stops the process as before.
 - **A file is uploaded to the printer once.** With the "Dialog after upload" setting, an OrcaSlicer upload pushes the
   file to the printer and opens the dialog in the dashboard; confirming the dialog reuses that upload (same name, MD5
   and size as the last one) instead of sending the file again, so the print starts right away. The upload is forgotten

@@ -384,7 +384,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             };
             sock.setTimeout(2000, () => finish(false));
             sock.once('connect', () => finish(true));
-            sock.once('error', () => finish(false));
+            sock.on('error', () => finish(false));
         });
     }
 
