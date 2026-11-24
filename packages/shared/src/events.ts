@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type KobralinkEventType =
     | 'print_started'
     | 'print_finished'
@@ -45,3 +47,12 @@ export function eventLinkPath(type: KobralinkEventType, printerId: string): stri
             return printerId ? `/printers/${printerId}` : '/printers';
     }
 }
+
+export const pushSubscriptionSchema = z.object({
+    endpoint: z.url({ protocol: /^https$/ }).max(2048),
+    keys: z.object({ p256dh: z.string().min(1).max(256), auth: z.string().min(1).max(256) }),
+});
+export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
+
+export const pushUnsubscribeSchema = z.object({ endpoint: z.string().min(1).max(2048) });
+export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;

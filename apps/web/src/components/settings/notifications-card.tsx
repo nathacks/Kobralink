@@ -1,6 +1,6 @@
 import { type AppSettings, notificationEventsSchema, notificationSettingsSchema, optionalUrl } from '@kobralink/shared';
 import { useForm, useStore } from '@tanstack/react-form';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useSaveSettings } from '@/hooks/use-save-settings';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
+import { currentPushSubscription, disablePush, enablePush, pushSupport } from '@/lib/push';
 import { Field, SettingsCard, SwitchRow } from './settings-form-card';
 
 const schema = notificationSettingsSchema.required().extend({
@@ -35,6 +36,42 @@ const EVENT_LABELS: [keyof AppSettings['notifications']['events'], () => string]
     ['alerts', m.notif_ev_alerts],
     ['printFailure', m.notif_ev_print_failure],
 ];
+
+function PushRow() {
+    const support = pushSupport();
+    const qc = useQueryClient();
+    const sub = useQuery({ queryKey: ['push-subscription'], queryFn: currentPushSubscription, staleTime: Infinity });
+    const toggle = useMutation({
+        mutationFn: async (on: boolean) => {
+            if (on) return enablePush();
+            if (sub.data) await disablePush(sub.data);
+            return null;
+        },
+        onSuccess: (next) => {
+            qc.setQueryData(['push-subscription'], next);
+            if (next) toast.success(m.notif_push_enabled());
+        },
+        onError: (e) => toast.error(e.message === 'denied' ? m.notif_browser_denied() : e.message),
+    });
+    return (
+        <SwitchRow
+            label={m.notif_push()}
+            hint={
+                support === 'insecure'
+                    ? m.notif_push_insecure()
+                    : support === 'unsupported'
+                      ? m.notif_push_unsupported()
+                      : m.notif_push_hint()
+            }
+        >
+            <Switch
+                checked={!!sub.data}
+                disabled={support !== 'ok' || sub.isPending || toggle.isPending}
+                onCheckedChange={(on) => toggle.mutate(on)}
+            />
+        </SwitchRow>
+    );
+}
 
 export function NotificationsCard({ settings }: { settings: AppSettings }) {
     const save = useSaveSettings();
@@ -136,6 +173,7 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
                     </SwitchRow>
                 )}
             </form.Field>
+            <PushRow />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {text('discordUrl', 'Discord', 'https://discord.com/api/webhooks/…', m.notif_discord_hint())}
                 {text('ntfyUrl', 'ntfy', 'https://ntfy.sh/kobralink', m.notif_ntfy_hint())}

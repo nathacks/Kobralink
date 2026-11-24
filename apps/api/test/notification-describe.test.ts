@@ -2,13 +2,16 @@ import { describe, expect, it, mock } from 'bun:test';
 import { type AppSettings, appSettingsSchema, eventLinkPath as linkPath } from '@kobralink/shared';
 import { installI18n } from '../src/i18n/locale';
 import { eventUrl, headerValue, NotificationService } from '../src/notifications/notification.service';
+import type { PushService } from '../src/notifications/push.service';
 import type { SettingsService } from '../src/settings/settings.service';
+
+const noPush = { hasSubscribers: async () => false } as unknown as PushService;
 
 installI18n();
 
 function service(overrides: Record<string, unknown> = {}) {
     const current: AppSettings = appSettingsSchema.parse({ locale: 'en', ...overrides });
-    const svc = new NotificationService({ get: () => current } as unknown as SettingsService);
+    const svc = new NotificationService({ get: () => current } as unknown as SettingsService, noPush);
     const deliver = mock(async () => ({ delivered: [], failed: [] }));
     (svc as unknown as { deliver: typeof deliver }).deliver = deliver;
     return { svc, deliver };
@@ -167,7 +170,7 @@ describe('notification links', () => {
                     ntfyUrl: 'http://ntfy.test/kobralink',
                 },
             });
-            const svc = new NotificationService({ get: () => current } as unknown as SettingsService);
+            const svc = new NotificationService({ get: () => current } as unknown as SettingsService, noPush);
             svc.emitCustom('p1', 'Kobra', 'queue_next', { filename: 'a.gcode' });
             await new Promise((r) => setTimeout(r, 20));
             const body = (host: string) => String(calls.find((c) => c.url.includes(host))?.init.body ?? '');
@@ -193,5 +196,22 @@ describe('headerValue', () => {
     it('keeps plain text and encodes the rest for ntfy headers', () => {
         expect(headerValue('Kobra - queue')).toBe('Kobra - queue');
         expect(headerValue('Kobra — fila')).toBe(`=?UTF-8?B?${Buffer.from('Kobra — fila').toString('base64')}?=`);
+    });
+});
+
+describe('push channel', () => {
+    it('sends to subscribed devices and reports the channel only when one exists', async () => {
+        const current = appSettingsSchema.parse({ locale: 'en' });
+        const sent: unknown[] = [];
+        let subscribed = false;
+        const push = {
+            hasSubscribers: async () => subscribed,
+            send: async (e: unknown) => void sent.push(e),
+        } as unknown as PushService;
+        const svc = new NotificationService({ get: () => current } as unknown as SettingsService, push);
+        expect(await svc.test()).toEqual({ delivered: [], failed: [] });
+        subscribed = true;
+        expect(await svc.test()).toEqual({ delivered: ['push'], failed: [] });
+        expect(sent).toHaveLength(1);
     });
 });
