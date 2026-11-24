@@ -58,6 +58,7 @@ const GROUPS: SettingGroup[] = [
         hint: m.notif_hint,
         items: [
             [m.notif_browser, m.notif_browser_hint],
+            [m.notif_push, m.notif_push_hint],
             [() => 'Discord', m.notif_discord_hint],
             [() => 'ntfy', m.notif_ntfy_hint],
             [m.notif_telegram_token],

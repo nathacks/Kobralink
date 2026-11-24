@@ -39,7 +39,8 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 - **AI failure detection** (optional, Obico model) with notify / pause / cancel, lighting the camera while it watches
 - **Automations**: rules on print end, failure, cleared bed, low filament or a time of day that run macros, switch
   the light or the smart plug, load or unload filament and notify
-- **Notifications**: webhook, Discord, Telegram, ntfy, each linking to the right screen · **Home Assistant** MQTT
+- **Notifications**: webhook, Discord, Telegram, ntfy and web push (installable app, works with the browser closed;
+  needs HTTPS), each linking to the right screen · **Home Assistant** MQTT
   discovery (sensors, controls, camera, print thumbnail), and the real energy of each print read from the plug's meter in Home Assistant
 - **History & stats**: estimated cost before printing (file card, preview and print dialog), actual cost per print
   (filament and energy) on a history of cards with the preview of each print, comparison with the previous

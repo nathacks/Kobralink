@@ -12,6 +12,7 @@ import type { BridgeDomainEvent, CommandRefused, PrinterBridge } from '../bridge
 import { m, printerErrorText, runWithLocale } from '../i18n/locale';
 import { maintenanceTaskName } from '../maintenance/preset-names';
 import { SettingsService } from '../settings/settings.service';
+import { PushService } from './push.service';
 
 const HISTORY_MAX = 200;
 
@@ -47,7 +48,10 @@ export class NotificationService extends EventEmitter<{
     private readonly history: KobralinkEvent[] = [];
     private readonly detached = new Map<string, () => void>();
 
-    constructor(private readonly settings: SettingsService) {
+    constructor(
+        private readonly settings: SettingsService,
+        private readonly webPush: PushService,
+    ) {
         super();
         this.setMaxListeners(200);
     }
@@ -150,6 +154,7 @@ export class NotificationService extends EventEmitter<{
             tasks.push(['telegram', this.sendTelegram(cfg.telegramToken, cfg.telegramChatId, event)]);
         }
         if (cfg.ntfyUrl) tasks.push(['ntfy', this.sendNtfy(cfg.ntfyUrl, event)]);
+        if (await this.webPush.hasSubscribers()) tasks.push(['push', this.webPush.send(event)]);
         await Promise.all(
             tasks.map(([channel, p]) =>
                 p.then(

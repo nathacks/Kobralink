@@ -74,6 +74,9 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   pas demander ; rien à valider dans le dashboard. Protocole 2026 sans session, clients 2025 = une session en mémoire par
   `initialize` (max 50, liée à la clé). Tout nouvel outil = l'ajouter à
   `MCP_TOOL_NAMES` (shared), une clé `mcp_tool_<nom>` dans les 7 langues et les compteurs de `mcp-http.test.ts`.
+- Web push : `notifications/push.service.ts` (lib `web-push`, clés VAPID générées dans `dataDir/.vapid.json`, table
+  `push_subscription` par utilisateur), envoyé comme les autres canaux par `NotificationService`. Front : `public/sw.js` +
+  `manifest.webmanifest`, `src/lib/push.ts` ; HTTPS ou localhost obligatoire, désactivé dans Electron.
 - Clés API : une seule config Better Auth (préfixe `kl_`), page Réglages → Clés API. `metadata` = `{ printerId | null, uses }`
   (`apiKeyMetadataSchema`, `packages/shared/src/api-keys.ts`), validée dans le hook `before` de `auth.ts`. Toute vérification
   passe par `ApiKeyService.verify(key, usagesAcceptés)` (`apps/api/src/auth/api-key.service.ts`) : Moonraker = `moonraker`,

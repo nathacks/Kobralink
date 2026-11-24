@@ -43,6 +43,7 @@ import type {
     PrinterSample,
     PrintJobDto,
     PrintPrinterFileInput,
+    PushSubscriptionInput,
     QueueCheckDto,
     QueueCheckInput,
     QueueItemDto,
@@ -225,6 +226,12 @@ export const api = {
                     method: 'POST',
                 },
             ),
+    },
+
+    push: {
+        key: () => request<{ publicKey: string }>('/api/v1/push/key'),
+        subscribe: (input: PushSubscriptionInput) => request<void>('/api/v1/push/subscribe', json(input)),
+        unsubscribe: (endpoint: string) => request<void>('/api/v1/push/unsubscribe', json({ endpoint })),
     },
 
     spools: {
