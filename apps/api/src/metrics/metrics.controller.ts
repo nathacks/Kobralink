@@ -1,6 +1,7 @@
 import { Controller, Get, Header, Req, UnauthorizedException } from '@nestjs/common';
 import { AllowAnonymous, AuthService } from '@thallesp/nestjs-better-auth';
 import type { Request } from 'express';
+import { ApiKeyService } from '../auth/api-key.service';
 import type { KobralinkAuth } from '../auth/auth';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { renderMetrics } from './metrics';
@@ -9,6 +10,7 @@ import { renderMetrics } from './metrics';
 export class MetricsController {
     constructor(
         private readonly auth: AuthService<KobralinkAuth>,
+        private readonly apiKeys: ApiKeyService,
         private readonly registry: BridgeRegistry,
     ) {}
 
@@ -29,10 +31,9 @@ export class MetricsController {
         const bearer = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
         const key = bearer ?? (typeof req.headers['x-api-key'] === 'string' ? req.headers['x-api-key'] : '');
         if (key) {
-            const res = await this.auth.api.verifyApiKey({ body: { key, configId: 'default' } }).catch(() => null);
-            if (!res?.valid) throw new UnauthorizedException();
-            const printerId = (res.key?.metadata as { printerId?: unknown } | null | undefined)?.printerId;
-            return typeof printerId === 'string' && printerId ? printerId : null;
+            const verified = await this.apiKeys.verify(key, ['metrics']);
+            if (!verified) throw new UnauthorizedException();
+            return verified.printerId;
         }
         const headers = new Headers();
         if (req.headers.cookie) headers.set('cookie', req.headers.cookie);

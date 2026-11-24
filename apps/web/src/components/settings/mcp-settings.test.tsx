@@ -9,7 +9,6 @@ import { ConsentCard } from '@/routes/oauth/consent';
 import { renderWithProviders, testQueryClient } from '@/test/render';
 import { McpAppsCard } from './mcp-apps-card';
 import { McpCard } from './mcp-card';
-import { McpKeysCard } from './mcp-keys-card';
 import { McpToolsCard } from './mcp-tools-card';
 import { settingHits } from './settings-index';
 
@@ -67,7 +66,6 @@ function client(role: 'admin' | 'operator' = 'admin', url = 'https://kobra.examp
 beforeEach(() => {
     for (const fn of Object.values(auth)) fn.mockReset();
     auth.list.mockResolvedValue({ data: { apiKeys: [] } });
-    auth.create.mockResolvedValue({ data: { key: 'kl_mcp_secret' } });
 });
 
 describe('MCP settings', () => {
@@ -83,26 +81,17 @@ describe('MCP settings', () => {
         expect(screen.getByText(m.mcp_oauth_local())).toBeTruthy();
     });
 
-    it('creates a read key by default and shows the command once', async () => {
-        await renderWithProviders(<McpKeysCard />, { queryClient: client() });
-        await userEvent.type(screen.getByLabelText(m.api_keys_name()), 'Laptop');
-        await userEvent.click(screen.getByRole('button', { name: m.api_keys_create() }));
-        expect(auth.create).toHaveBeenCalledWith({ name: 'Laptop', configId: 'mcp', metadata: { access: 'read' } });
-        expect(await screen.findByText(/claude mcp add .*Bearer kl_mcp_secret/)).toBeTruthy();
-    });
-
     it('is reachable from the settings search', async () => {
         await renderWithProviders(
             <>
                 <McpCard />
-                <McpKeysCard />
                 <McpAppsCard />
                 <McpToolsCard />
             </>,
             { queryClient: client() },
         );
         const hits = settingHits(stored, [], true).filter((h) => h.to === '/settings/mcp' && h.card !== undefined);
-        expect(hits.length).toBeGreaterThan(5);
+        expect(hits.length).toBeGreaterThanOrEqual(5);
         expect(hits.filter((h) => !findSetting(h.card ?? '', h.label)?.exact)).toEqual([]);
         expect(screen.getByText(/claude\.ai ·/)).toBeTruthy();
     });

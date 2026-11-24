@@ -48,7 +48,7 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
 - L'API principale (:7100) : `/api/auth/*` (Better Auth), `/api/v1/*` (protégé), sert `apps/web/dist`.
   Un module Nest par domaine (`printers`, `core` = contrôle, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
   `detection`, `notifications`, `ha` = discovery MQTT Home Assistant, `home-assistant` = API HA (énergie, prise), `maintenance`,
-  `automations`, `schedule`, `stats`, `metrics` (Prometheus, clé API en Bearer), `system`, `users`, `settings`).
+  `automations`, `schedule`, `stats`, `metrics` (Prometheus, clé API usage `metrics` en Bearer), `system`, `users`, `settings`).
 - Live state UI : SSE `/api/v1/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query ;
   `patchLiveState` fait l'optimistic update local avant confirmation MQTT.
 - Macros = liste d'actions JSON (`macroActionSchema` dans `packages/shared/src/macros.ts`), pas du GCode ;
@@ -64,8 +64,8 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
   `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
 - Serveur MCP : `apps/api/src/mcp/` sur `POST /api/mcp` (SDK `@modelcontextprotocol/server` v2), réglage
-  `mcpEnabled` (off par défaut, admin). Deux auth : clés API `configId: 'mcp'` (préfixe `kl_mcp_`, `metadata.access`, jamais
-  acceptées par Moonraker) et OAuth 2.1 (`@better-auth/mcp` + `jwt`, seulement si `BETTER_AUTH_URL` est en HTTPS ou localhost ;
+  `mcpEnabled` (off par défaut, admin). Deux auth : clé API avec l'usage `mcp_read`/`mcp_control` (toujours toutes
+  les imprimantes) et OAuth 2.1 (`@better-auth/mcp` + `jwt`, seulement si `BETTER_AUTH_URL` est en HTTPS ou localhost ;
   DCR ouvert, consentement sur `/oauth/consent`, tables `oauth_*`). `mcp-read.tools.ts` (20) et `mcp-control.tools.ts` (36) ;
   les verrous « imprimante occupée » et `bedIsClear` sont imposés ici car l'API REST ne les a pas. Les réponses passent par
   `toToolJson` (retire caméra, IP, identifiants, miniatures). Autorisations par outil : `settings.mcpTools`
@@ -74,6 +74,11 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   pas demander ; rien à valider dans le dashboard. Protocole 2026 sans session, clients 2025 = une session en mémoire par
   `initialize` (max 50, liée à la clé). Tout nouvel outil = l'ajouter à
   `MCP_TOOL_NAMES` (shared), une clé `mcp_tool_<nom>` dans les 7 langues et les compteurs de `mcp-http.test.ts`.
+- Clés API : une seule config Better Auth (préfixe `kl_`), page Réglages → Clés API. `metadata` = `{ printerId | null, uses }`
+  (`apiKeyMetadataSchema`, `packages/shared/src/api-keys.ts`), validée dans le hook `before` de `auth.ts`. Toute vérification
+  passe par `ApiKeyService.verify(key, usagesAcceptés)` (`apps/api/src/auth/api-key.service.ts`) : Moonraker = `moonraker`,
+  `/api/v1/metrics` = `metrics`, MCP = `mcp_*`. Nouvelle fonctionnalité à clé = un usage de plus dans `API_KEY_USES` + un interrupteur
+  dans `api-keys-card.tsx`.
 - i18n : UI en fr, en, de, es, it, zh-cn, pt-br. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
   (locale persistée en localStorage, dayjs synchronisé) ; API : `import { m } from '../i18n/locale'` (locale par requête via
   `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = l'ajouter dans **tous** les `messages/*.json`.

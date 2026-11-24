@@ -1,8 +1,10 @@
 import type { LinkProps } from '@tanstack/react-router';
 import {
+    Activity,
     Bell,
     Bot,
     Cable,
+    KeyRound,
     type LucideIcon,
     Plug,
     ScanEye,
@@ -28,6 +30,8 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     { to: '/settings/integrations', icon: Plug, label: m.settings_tab_integrations },
     { to: '/settings/slicer', icon: Cable, label: m.settings_tab_slicer },
     { to: '/settings/mcp', icon: Bot, label: m.mcp_tab },
+    { to: '/settings/api-keys', icon: KeyRound, label: m.api_keys_title },
+    { to: '/settings/prometheus', icon: Activity, label: () => 'Prometheus' },
     { to: '/settings/macros', icon: Zap, label: m.settings_tab_macros },
     { to: '/settings/users', icon: Users, label: m.settings_tab_users, adminOnly: true },
     { to: '/settings/system', icon: Server, label: m.settings_tab_system },

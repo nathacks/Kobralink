@@ -46,7 +46,8 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
   period, utilisation, mean time between failures, idle time and estimate accuracy per printer, failures by reason
   (Pareto) with the camera snapshot of the moment, wasted filament, CSV export
 - **Prometheus metrics** at `/api/v1/metrics` (temperatures, progress, state, ACE humidity…), authenticated with an
-  API key (`authorization: { credentials: kl_… }` in the scrape config; a key scoped to a printer only sees that one)
+  API key with the *Prometheus metrics* use (`authorization: { credentials: kl_… }` in the scrape config; a key scoped to
+  a printer only sees that one)
 - **Preventive maintenance** per printer: tasks due by print hours, number of prints or days, with history
 - **Macros**, backup / restore, update check, multi-user, light and dark themes
 - UI in **French**, **English**, **German**, **Spanish**, **Italian**, **Simplified Chinese** and
@@ -132,9 +133,10 @@ integration with `http://<bridge-ip>:7125/api/camera/stream` as the MJPEG URL an
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
 
-To lock the Moonraker ports, open **Settings → OrcaSlicer → API keys** in the dashboard, enable *Require an API key*
-and generate a key per printer and client — a key only unlocks the printer it was created for, so pasting
-it in OrcaSlicer targets that printer. Clients send it as an `X-Api-Key` header (OrcaSlicer's "API Key / Password"
+To lock the Moonraker ports, enable *Require an API key* in **Settings → OrcaSlicer**, then generate keys in
+**Settings → API keys**. Every key (Moonraker, Prometheus metrics, AI assistant) is managed on that one page: tick
+the uses it opens and pick one printer or all of them — a Moonraker key bound to a printer only unlocks that printer,
+so pasting it in OrcaSlicer targets it. Clients send it as an `X-Api-Key` header (OrcaSlicer's "API Key / Password"
 field, Fluidd, Obico, Home Assistant), as `Authorization: Bearer`, or as `?api_key=` in the URL (camera `<img>`
 tags). WebSocket clients can also use the standard Moonraker `/access/oneshot_token` flow. Mainsail has no
 API key field and will not connect while the option is on.
@@ -152,7 +154,7 @@ through 56 tools (20 read, 36 control). It is **off by default**: an admin turns
 
 | Client | How to connect |
 | ------ | -------------- |
-| Claude Code, Cursor, any client with headers (LAN is fine) | Create an MCP key in **Settings → MCP (AI)**, then `claude mcp add --transport http kobralink http://<ip>:7100/api/mcp --header "Authorization: Bearer kl_mcp_..."` |
+| Claude Code, Cursor, any client with headers (LAN is fine) | Create a key with the *AI assistant (MCP)* use in **Settings → API keys**, then `claude mcp add --transport http kobralink http://<ip>:7100/api/mcp --header "Authorization: Bearer kl_..."` |
 | claude.ai, ChatGPT (cloud) | Public HTTPS address ([`docker-compose.https.yml`](infra/README.md#https-with-caddy-mcp-oauth)), then add `https://<domain>/api/mcp` as a connector and sign in with your Kobralink account (OAuth 2.1, PKCE, dynamic client registration) |
 
 - **Access**: each key or connected app is *read only* or *control*. The role of its owner is checked on every request,

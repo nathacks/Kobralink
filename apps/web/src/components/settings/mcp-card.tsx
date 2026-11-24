@@ -9,12 +9,16 @@ import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
 import { appSettingsQuery, mcpInfoQuery } from '@/lib/queries';
 
-export function useMcpUrl(): string {
+export function useApiUrl(path: string): string {
     const info = useQuery(mcpInfoQuery);
     const [host] = useHosts();
     if (!info.data) return '';
     const url = new URL(info.data.url);
-    return url.protocol === 'https:' ? info.data.url : `http://${host}:${url.port || 80}${MCP_PATH}`;
+    return url.protocol === 'https:' ? `${url.origin}${path}` : `http://${host}:${url.port || 80}${path}`;
+}
+
+export function useMcpUrl(): string {
+    return useApiUrl(MCP_PATH);
 }
 
 export function mcpCommand(url: string, key: string): string {

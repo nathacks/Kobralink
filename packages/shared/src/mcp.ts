@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-export const MCP_KEY_CONFIG = 'mcp';
 export const MCP_PATH = '/api/mcp';
 
 export const MCP_ACCESS = ['read', 'control'] as const;

@@ -1,7 +1,7 @@
 import { requireMcpAuth } from '@better-auth/mcp';
 import {
     canOperate,
-    MCP_KEY_CONFIG,
+    MCP_KEY_USES,
     MCP_PATH,
     MCP_SCOPES,
     type McpAccess,
@@ -12,6 +12,7 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthService } from '@thallesp/nestjs-better-auth';
 import { createInsufficientScopeError } from 'better-auth/oauth2';
+import { ApiKeyService } from '../auth/api-key.service';
 import type { KobralinkAuth } from '../auth/auth';
 import { loadEnv } from '../config/env';
 import { m } from '../i18n/locale';
@@ -32,6 +33,7 @@ type Serve = (request: Request, principal: McpPrincipal) => Promise<Response>;
 export class McpAuthService {
     constructor(
         private readonly auth: AuthService<KobralinkAuth>,
+        private readonly apiKeys: ApiKeyService,
         private readonly prisma: PrismaService,
     ) {}
 
@@ -46,12 +48,10 @@ export class McpAuthService {
     }
 
     private async fromApiKey(key: string): Promise<McpPrincipal | null> {
-        const res = await this.auth.api
-            .verifyApiKey({ body: { key, configId: MCP_KEY_CONFIG } })
-            .catch(() => ({ valid: false, key: null }) as const);
-        if (!res.valid || !res.key) return null;
-        const wanted = (res.key.metadata as { access?: unknown } | null)?.access === 'control' ? 'control' : 'read';
-        return this.principal(res.key.referenceId, wanted, `key:${res.key.id}`, res.key.name ?? res.key.id);
+        const verified = await this.apiKeys.verify(key, MCP_KEY_USES);
+        if (!verified || verified.printerId !== null) return null;
+        const wanted = verified.uses.includes('mcp_control') ? 'control' : 'read';
+        return this.principal(verified.userId, wanted, `key:${verified.id}`, verified.name);
     }
 
     private fromOAuth(request: Request, serve: Serve): Promise<Response> {

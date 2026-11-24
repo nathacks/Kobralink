@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
+import { ApiKeyModule } from './auth/api-key.service';
 import { createAuth } from './auth/auth';
 import { SetupController } from './auth/setup.controller';
 import { AutomationModule } from './automations/automation.module';
@@ -36,6 +37,7 @@ const env = loadEnv();
 @Module({
     imports: [
         PrismaModule,
+        ApiKeyModule,
         AuthModule.forRoot({ auth: createAuth(), bodyParser: { json: { limit: '5mb' } } }),
         GcodeModule,
         SettingsModule,

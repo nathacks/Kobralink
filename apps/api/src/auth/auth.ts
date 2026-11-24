@@ -1,7 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { apiKey } from '@better-auth/api-key';
 import { mcp } from '@better-auth/mcp';
-import { canOperate, MCP_KEY_CONFIG, MCP_OFFLINE_SCOPE, MCP_PATH, MCP_SCOPES, type UserRole } from '@kobralink/shared';
+import {
+    apiKeyMetadataSchema,
+    canOperate,
+    MCP_OFFLINE_SCOPE,
+    MCP_PATH,
+    MCP_SCOPES,
+    type UserRole,
+} from '@kobralink/shared';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
@@ -71,15 +78,7 @@ export function createAuth() {
             },
         },
         plugins: [
-            apiKey([
-                { ...apiKeyOptions, configId: 'default', defaultPrefix: 'kl_' },
-                {
-                    ...apiKeyOptions,
-                    configId: MCP_KEY_CONFIG,
-                    defaultPrefix: 'kl_mcp_',
-                    startingCharactersConfig: { charactersLength: 11 },
-                },
-            ]),
+            apiKey({ ...apiKeyOptions, defaultPrefix: 'kl_' }),
             ...(env.oauthAvailable ? oauthPlugins(`${env.baseUrl}${MCP_PATH}`) : []),
         ],
         hooks: {
@@ -90,6 +89,11 @@ export function createAuth() {
                     return;
                 }
                 if (!ctx.path.startsWith('/api-key/')) return;
+                const body = ctx.body as { metadata?: unknown } | undefined;
+                const setsMetadata = ctx.path === '/api-key/create' || body?.metadata !== undefined;
+                if (setsMetadata && !apiKeyMetadataSchema.safeParse(body?.metadata).success) {
+                    throw new APIError('BAD_REQUEST', { message: m.api_key_bad_scope() });
+                }
                 const session = await getSessionFromCtx(ctx);
                 if (!session) return;
                 const role = (session.user as { role?: UserRole }).role;

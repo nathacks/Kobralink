@@ -1,8 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { Injectable, Logger } from '@nestjs/common';
-import { AuthService } from '@thallesp/nestjs-better-auth';
-import type { KobralinkAuth } from '../auth/auth';
+import { Injectable } from '@nestjs/common';
+import { ApiKeyService } from '../auth/api-key.service';
 import { SettingsService } from '../settings/settings.service';
 
 const KEY_CACHE_TTL_MS = 30_000;
@@ -16,12 +15,11 @@ interface IncomingLike {
 
 @Injectable()
 export class MoonrakerAuthService {
-    private readonly log = new Logger(MoonrakerAuthService.name);
     private readonly validKeys = new Map<string, { exp: number; printerId: string | null }>();
     private readonly oneshots = new Map<string, number>();
 
     constructor(
-        private readonly auth: AuthService<KobralinkAuth>,
+        private readonly apiKeys: ApiKeyService,
         private readonly settings: SettingsService,
     ) {}
 
@@ -53,16 +51,9 @@ export class MoonrakerAuthService {
         if (!key) return false;
         const cached = this.validKeys.get(key);
         if (cached !== undefined && cached.exp > Date.now()) return this.matches(cached.printerId, printerId);
-        let scope: string | null = null;
-        try {
-            const res = await this.auth.api.verifyApiKey({ body: { key, configId: 'default' } });
-            if (!res.valid) return false;
-            const meta = res.key?.metadata as { printerId?: unknown } | null | undefined;
-            scope = typeof meta?.printerId === 'string' && meta.printerId ? meta.printerId : null;
-        } catch (e) {
-            this.log.warn(`API key verification failed: ${(e as Error).message}`);
-            return false;
-        }
+        const verified = await this.apiKeys.verify(key, ['moonraker']);
+        if (!verified) return false;
+        const scope = verified.printerId;
         this.validKeys.set(key, { exp: Date.now() + KEY_CACHE_TTL_MS, printerId: scope });
         return this.matches(scope, printerId);
     }

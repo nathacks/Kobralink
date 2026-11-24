@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createHash, randomBytes } from 'node:crypto';
-import { MCP_KEY_CONFIG, MCP_PATH, MCP_TOOL_NAMES } from '@kobralink/shared';
+import { type ApiKeyUse, MCP_PATH, MCP_TOOL_NAMES } from '@kobralink/shared';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AuthService } from '@thallesp/nestjs-better-auth';
 import { internalSignup, type KobralinkAuth } from '../src/auth/auth';
@@ -55,8 +55,12 @@ async function user(name: string, role: string) {
         .join('; ');
 }
 
-async function key(name: string, configId: string, metadata: object): Promise<string> {
-    const res = await post('/api/auth/api-key/create', { name: 'k', configId, metadata }, { cookie: cookies[name] });
+function createKey(name: string, metadata: unknown): Promise<Response> {
+    return post('/api/auth/api-key/create', { name: 'k', metadata }, { cookie: cookies[name] });
+}
+
+async function key(name: string, uses: ApiKeyUse[], printerId: string | null = null): Promise<string> {
+    const res = await createKey(name, { printerId, uses });
     return ((await res.json()) as { key: string }).key;
 }
 
@@ -85,23 +89,21 @@ describe('MCP access with API keys', () => {
         expect(none.status).toBe(401);
         expect(none.headers.get('www-authenticate')).toContain('oauth-protected-resource');
         expect((await rpc('kl_mcp_nope', 'tools/list')).status).toBe(401);
-        expect((await rpc(await key('admin', 'default', {}), 'tools/list')).status).toBe(401);
+        expect((await rpc(await key('admin', ['moonraker', 'metrics']), 'tools/list')).status).toBe(401);
     });
 
     it('lists every tool with a valid schema, and only reading tools to a read key', async () => {
-        const full = await rpc(await key('operator', MCP_KEY_CONFIG, { access: 'control' }), 'tools/list');
+        const full = await rpc(await key('operator', ['mcp_control']), 'tools/list');
         const tools = full.body.result.tools as { name: string; inputSchema: { type: string }; annotations: object }[];
         expect(tools).toHaveLength(56);
         expect(new Set(tools.map((t) => t.name)).size).toBe(56);
         expect(tools.every((t) => t.inputSchema.type === 'object')).toBe(true);
-        const read = await rpc(await key('operator', MCP_KEY_CONFIG, { access: 'read' }), 'tools/list');
+        const read = await rpc(await key('operator', ['mcp_read']), 'tools/list');
         expect(read.body.result.tools).toHaveLength(20);
-        const bare = await rpc(await key('operator', MCP_KEY_CONFIG, {}), 'tools/list');
-        expect(bare.body.result.tools).toHaveLength(20);
     });
 
     it('follows the current role of the owner and the revocation of the key', async () => {
-        const token = await key('operator', MCP_KEY_CONFIG, { access: 'control' });
+        const token = await key('operator', ['mcp_control']);
         const call = { name: 'remove_from_queue', arguments: { itemId: 'none' } };
         expect((await rpc(token, 'tools/call', call)).body.result.isError).toBeUndefined();
         await getPrisma().user.update({ where: { email: 'operator@example.com' }, data: { role: 'viewer' } });
@@ -109,19 +111,19 @@ describe('MCP access with API keys', () => {
         const refused = await rpc(token, 'tools/call', call);
         expect(refused.body.error ?? refused.body.result.isError).toBeTruthy();
         await getPrisma().user.update({ where: { email: 'operator@example.com' }, data: { role: 'operator' } });
-        await getPrisma().apikey.updateMany({ where: { configId: MCP_KEY_CONFIG }, data: { enabled: false } });
+        await getPrisma().apikey.updateMany({ data: { enabled: false } });
         expect((await rpc(token, 'tools/list')).status).toBe(401);
     });
 
     it('never opens a Moonraker port with an MCP key', async () => {
         const moonraker = app.get(MoonrakerAuthService, { strict: false });
-        const token = await key('admin', MCP_KEY_CONFIG, { access: 'control' });
+        const token = await key('admin', ['mcp_control']);
         expect(await moonraker.verifyKey(token, 'p1')).toBe(false);
-        expect(await moonraker.verifyKey(await key('admin', 'default', { printerId: 'p1' }), 'p1')).toBe(true);
+        expect(await moonraker.verifyKey(await key('admin', ['moonraker'], 'p1'), 'p1')).toBe(true);
     });
 
     it('answers 404 when the server is off, and only an admin can switch it', async () => {
-        const token = await key('admin', MCP_KEY_CONFIG, { access: 'read' });
+        const token = await key('admin', ['mcp_read']);
         const patch = (who: string) =>
             fetch(`${base}/api/v1/settings`, {
                 method: 'PATCH',
@@ -182,7 +184,7 @@ describe('MCP question in the chat', () => {
 
     it.each(['accept', 'decline'])('asks, then follows the answer: %s', async (action) => {
         await settings.update({ mcpTools: { remove_from_queue: 'ask' } });
-        const token = await key('admin', MCP_KEY_CONFIG, { access: 'control' });
+        const token = await key('admin', ['mcp_control']);
         const s = await session(token, { elicitation: {} });
         let asked = 0;
         let result: { isError?: boolean } | undefined;
@@ -199,7 +201,7 @@ describe('MCP question in the chat', () => {
 
     it('refuses when the application cannot ask, with or without a session', async () => {
         await settings.update({ mcpTools: { remove_from_queue: 'ask' } });
-        const token = await key('admin', MCP_KEY_CONFIG, { access: 'control' });
+        const token = await key('admin', ['mcp_control']);
         const s = await session(token, {});
         expect(await (await s.send(remove)).text()).toContain('cannot ask');
         expect((await rpc(token, 'tools/call', remove.params)).body.result.content[0].text).toContain('cannot ask');
@@ -207,7 +209,7 @@ describe('MCP question in the chat', () => {
     });
 
     it('keeps a session to its key and to the current permissions', async () => {
-        const token = await key('admin', MCP_KEY_CONFIG, { access: 'control' });
+        const token = await key('admin', ['mcp_control']);
         const s = await session(token, {});
         const count = async () =>
             ((await (await s.send({ id: 1, method: 'tools/list' })).text()).match(/"inputSchema"/g) ?? []).length;
@@ -215,10 +217,43 @@ describe('MCP question in the chat', () => {
         await settings.update({ mcpTools: { remove_from_queue: 'deny' } });
         expect(await count()).toBe(55);
         await settings.update({ mcpTools: { remove_from_queue: 'allow' } });
-        const other = await key('admin', MCP_KEY_CONFIG, { access: 'control' });
+        const other = await key('admin', ['mcp_control']);
         expect((await s.send({ id: 1, method: 'tools/list' }, other)).status).toBe(404);
-        await getPrisma().apikey.updateMany({ where: { configId: MCP_KEY_CONFIG }, data: { enabled: false } });
+        await getPrisma().apikey.updateMany({ data: { enabled: false } });
         expect((await s.send({ id: 1, method: 'tools/list' })).status).toBe(401);
+    });
+});
+
+describe('API key uses', () => {
+    it('refuses keys without a use, with two MCP accesses or an MCP key bound to a printer', async () => {
+        for (const metadata of [
+            undefined,
+            { uses: [] },
+            { uses: ['mcp_read', 'mcp_control'] },
+            { printerId: 'p1', uses: ['mcp_read'] },
+            { uses: ['nope'] },
+        ]) {
+            expect((await createKey('admin', metadata)).status).toBe(400);
+        }
+    });
+
+    it('opens only the ticked uses and the chosen printer', async () => {
+        const moonraker = app.get(MoonrakerAuthService, { strict: false });
+        const metrics = (token: string) =>
+            fetch(`${base}/api/v1/metrics`, { headers: { authorization: `Bearer ${token}` } }).then((r) => r.status);
+        const onlyMetrics = await key('admin', ['metrics']);
+        expect(await metrics(onlyMetrics)).toBe(200);
+        expect(await moonraker.verifyKey(onlyMetrics, 'p1')).toBe(false);
+        expect((await rpc(onlyMetrics, 'tools/list')).status).toBe(401);
+        const printerOnly = await key('admin', ['moonraker'], 'p1');
+        expect(await metrics(printerOnly)).toBe(401);
+        expect(await moonraker.verifyKey(printerOnly, 'p1')).toBe(true);
+        expect(await moonraker.verifyKey(printerOnly, 'p2')).toBe(false);
+        const all = await key('admin', ['moonraker', 'metrics', 'mcp_read']);
+        expect(await metrics(all)).toBe(200);
+        expect(await moonraker.verifyKey(all, 'p2')).toBe(true);
+        expect((await rpc(all, 'tools/list')).body.result.tools).toHaveLength(20);
+        expect(await metrics(await key('admin', ['mcp_control']))).toBe(401);
     });
 });
 
