@@ -1,6 +1,5 @@
-import type { CompatReason, QueueItemDto, QueueWaitReason } from '@kobralink/shared';
+import type { CompatReason, Printer, QueueItemDto, QueueWaitReason } from '@kobralink/shared';
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
-import type { PrinterWithLive } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -34,7 +33,7 @@ const WAIT_CLASS: Record<QueueWaitReason, string> = {
     manual: 'bg-primary/15 text-primary-strong',
 };
 
-export function targetLabel(item: Pick<QueueItemDto, 'printerId' | 'targetTags'>, printers: PrinterWithLive[]): string {
+export function targetLabel(item: Pick<QueueItemDto, 'printerId' | 'targetTags'>, printers: Printer[]): string {
     if (item.printerId) return printers.find((p) => p.id === item.printerId)?.name ?? item.printerId;
     if (item.targetTags.length) return m.queue_target_tags({ tags: item.targetTags.join(', ') });
     return m.queue_target_any();
@@ -50,7 +49,7 @@ export function QueueItemRow({
     onRemove,
 }: {
     item: QueueItemDto;
-    printers: PrinterWithLive[];
+    printers: Printer[];
     first: boolean;
     last: boolean;
     onUp: () => void;

@@ -27,7 +27,6 @@ export function SystemCard() {
             if (!u?.checked) toast.error(m.system_update_check_failed());
             else toast.success(u.available ? m.system_update_available({ version: u.latest }) : m.system_update_none());
         },
-        onError: (e) => toast.error(e.message),
     });
     const restore = useMutation({
         mutationFn: api.system.restore,
@@ -35,7 +34,6 @@ export function SystemCard() {
             toast.success(m.system_restore_started());
             setTimeout(() => window.location.reload(), 6000);
         },
-        onError: (e) => toast.error(e.message),
     });
     const restart = useMutation({
         mutationFn: api.system.restart,
@@ -43,7 +41,6 @@ export function SystemCard() {
             toast.success(m.system_restarting());
             setTimeout(() => window.location.reload(), 5000);
         },
-        onError: (e) => toast.error(e.message),
     });
     const d = info.data;
     return (

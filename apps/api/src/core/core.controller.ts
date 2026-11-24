@@ -32,7 +32,6 @@ import {
     updatePrintJobSchema,
 } from '@kobralink/shared';
 import {
-    BadGatewayException,
     BadRequestException,
     Body,
     Controller,
@@ -57,6 +56,7 @@ import type { z } from 'zod';
 import { BridgeRegistry } from '../bridge/bridge.registry';
 import { serveH264, serveSnapshot, serveStream } from '../bridge/camera';
 import { BridgeOfflineError, BridgeRequestError, type PrinterBridge } from '../bridge/printer-bridge';
+import { badGateway } from '../common/bad-gateway';
 import { localIpFor } from '../common/net';
 import { ZodPipe } from '../common/zod.pipe';
 import { GcodeService } from '../gcode/gcode.service';
@@ -64,6 +64,10 @@ import { m } from '../i18n/locale';
 import { StatsService } from '../stats/stats.service';
 
 type MulterFile = { originalname: string; buffer: Buffer; size: number };
+
+function wholeNumber(raw: string | undefined): number {
+    return Math.max(0, Math.trunc(Number(raw) || 0));
+}
 
 @Controller('api/v1/printers/:id')
 export class CoreController {
@@ -82,7 +86,7 @@ export class CoreController {
     private run<T>(fn: () => T): T {
         const rethrow = (e: unknown): never => {
             if (e instanceof BridgeOfflineError) throw new ServiceUnavailableException(e.message);
-            if (e instanceof BridgeRequestError) throw new BadGatewayException(e.message);
+            if (e instanceof BridgeRequestError) throw badGateway(e);
             throw e;
         };
         try {
@@ -235,7 +239,7 @@ export class CoreController {
     }
 
     @Post('files')
-    @UseInterceptors(AnyFilesInterceptor({ limits: { files: 1 } }))
+    @UseInterceptors(AnyFilesInterceptor({ defParamCharset: 'utf8', limits: { files: 1 } }))
     async upload(
         @Param('id') id: string,
         @UploadedFiles() files: MulterFile[] | undefined,
@@ -368,7 +372,7 @@ export class CoreController {
 
     @Get('history')
     history(@Param('id') id: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-        return this.stats.history(id, Math.min(Number(limit) || 50, 200), Number(offset) || 0);
+        return this.stats.history(id, Math.min(wholeNumber(limit) || 50, 200), wholeNumber(offset));
     }
 
     @Patch('history/:jobId')

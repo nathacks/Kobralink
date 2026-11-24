@@ -16,14 +16,13 @@ import { MACRO_ICON } from './macro-icon';
 const manageClass = 'flex size-9 items-center justify-center rounded-full bg-secondary hover:bg-accent [&_svg]:size-4';
 
 export function MacrosCard({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
+    const connected = useLiveState(printerId, (s) => s.connected);
     const pinned = usePinnedPrinter();
     const qc = useQueryClient();
     const macros = useQuery(macrosQuery);
     const run = useMutation({
         mutationFn: (macroId: string) => api.macros.run(printerId, macroId),
         onSuccess: (_, id) => toast.success(m.macros_done({ name: macros.data?.find((x) => x.id === id)?.name ?? '' })),
-        onError: (e) => toast.error(e.message),
     });
     const list = macros.data ?? [];
     const invalidate = () => qc.invalidateQueries({ queryKey: ['macros'] });
@@ -85,7 +84,7 @@ export function MacrosCard({ printerId, className }: { printerId: string; classN
                                 <button
                                     key={macro.id}
                                     type="button"
-                                    disabled={!state.connected || run.isPending}
+                                    disabled={!connected || run.isPending}
                                     onClick={() => run.mutate(macro.id)}
                                     className="flex flex-col items-center gap-2 rounded-2xl bg-secondary/60 px-3 py-4 text-sm font-medium transition-colors enabled:hover:bg-primary enabled:hover:text-primary-foreground disabled:opacity-50"
                                 >

@@ -66,15 +66,12 @@ export function ControlsCard({ printerId, className }: { printerId: string; clas
 }
 
 function AxesPad({ printerId }: { printerId: string }) {
-    const state = useLiveState(printerId);
-    const locked = !state.connected || state.printState === 'printing';
+    const locked = useLiveState(printerId, (s) => !s.connected || s.printState === 'printing');
     const [distance, setDistance] = useState(10);
-    const onError = (e: Error) => toast.error(e.message);
     const axisMut = useMutation({
         mutationFn: (input: { axis: number; moveType: number; distance: number }) => api.control.axis(printerId, input),
-        onError,
     });
-    const offMut = useMutation({ mutationFn: () => api.control.axisOff(printerId), onError });
+    const offMut = useMutation({ mutationFn: () => api.control.axisOff(printerId) });
     const jog = (axis: number, moveType: number) => axisMut.mutate({ axis, moveType, distance });
     const home = (axis: number) => axisMut.mutate({ axis, moveType: HOME, distance: 0 });
 
@@ -142,15 +139,19 @@ function AxesPad({ printerId }: { printerId: string }) {
 }
 
 function Toggles({ printerId }: { printerId: string }) {
-    const state = useLiveState(printerId);
+    const state = useLiveState(printerId, ({ connected, printState, lightOn, fanSpeed, printSpeedMode }) => ({
+        connected,
+        printState,
+        lightOn,
+        fanSpeed,
+        printSpeedMode,
+    }));
     const offline = !state.connected;
     const busy = state.printState === 'printing';
     const patchLiveState = printersStore.actions.patchLiveState;
     const qc = useQueryClient();
-    const printer = usePrinter(printerId);
-    const powerSet = Boolean(
-        printer?.settings.plugSwitch || printer?.settings.powerOnUrl || printer?.settings.powerOffUrl,
-    );
+    const settings = usePrinter(printerId, (p) => p?.settings);
+    const powerSet = Boolean(settings?.plugSwitch || settings?.powerOnUrl || settings?.powerOffUrl);
     const power = useQuery(powerStatusQuery(printerId, powerSet));
     const powerConfigured = powerSet && power.data?.configured !== false;
     const powerMut = useMutation({
@@ -159,16 +160,13 @@ function Toggles({ printerId }: { printerId: string }) {
             toast.success(r.state === 'on' ? m.controls_power_on_toast() : m.controls_power_off_toast());
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'power'] });
         },
-        onError: (e: Error) => toast.error(e.message),
     });
 
-    const onError = (e: Error) => toast.error(e.message);
-    const fanMut = useMutation({ mutationFn: (speed: number) => api.control.fan(printerId, { speed }), onError });
+    const fanMut = useMutation({ mutationFn: (speed: number) => api.control.fan(printerId, { speed }) });
     const lightMut = useMutation({
         mutationFn: (on: boolean) => api.control.light(printerId, { on }),
-        onError,
     });
-    const speedMut = useMutation({ mutationFn: (mode: number) => api.control.speed(printerId, { mode }), onError });
+    const speedMut = useMutation({ mutationFn: (mode: number) => api.control.speed(printerId, { mode }) });
 
     const powerOn = power.data?.state === 'on' || (power.data?.state === 'unknown' && state.connected);
     const powerStatus = power.isError

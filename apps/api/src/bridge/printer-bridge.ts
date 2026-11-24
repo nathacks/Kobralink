@@ -22,7 +22,6 @@ import {
     ACE_DRYING_FAULT,
     ACE_DRYING_ON,
     ACTIVE_PRINT_STATES,
-    type AceDrying,
     type AmsSlot,
     type ConnectionError,
     type FailureReason,
@@ -66,7 +65,6 @@ import { CameraCache } from './camera';
 
 const MAX_SAMPLES = 120;
 const SAMPLE_INTERVAL_MS = 2000;
-const RECONNECT_WINDOW_MS = 30000;
 const PRINT_HOLD_MS = 60000;
 const SNAPSHOT_MAX_AGE_MS = 120000;
 const CAMERA_STALE_MS = 30000;
@@ -75,6 +73,7 @@ const CAMERA_KICK_INTERVAL_MS = 60000;
 const LIGHT_TRIGGER_WINDOW_MS = 20_000;
 const LIGHT_TRIGGER_TAPS = 3;
 const LIGHT_OWN_COMMAND_MS = 5_000;
+const IDLE_CONFIRM_MS = 10_000;
 const PAUSE_KOBRA_STATES = new Set(['pausing', 'paused', 'pause']);
 const RESUME_KOBRA_STATES = new Set(['resuming', 'resumed', 'printing']);
 
@@ -122,6 +121,7 @@ export interface BridgeEvents {
     layer: [layer: number, total: number];
     job: [phase: 'start' | 'end', jobId: string, filename: string, status: JobEndStatus | null];
     light_trigger: [];
+    interrupted: [];
 }
 
 interface LastUpload {
@@ -151,7 +151,7 @@ export function moonrakerThumbnails(filename: string, b64: string) {
 }
 
 export class PrinterBridge extends EventEmitter<BridgeEvents> {
-    readonly client: KobraMqttClient;
+    client: KobraMqttClient;
     private readonly log: Logger;
     readonly camera: CameraCache;
     private readonly s: PrinterLiveState;
@@ -159,7 +159,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private running = false;
     private offline = true;
-    private reconnectUntil = 0;
     private loopWake: (() => void) | null = null;
     private loopDone: Promise<void> | null = null;
 
@@ -175,6 +174,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private lastOwnLightAt = 0;
     private jobSync: Promise<void> | null = null;
     private jobsReconciled = false;
+    private jobActive = false;
+    private freeSince = 0;
+    private reportedFailure: { code: number; msg: string } | null = null;
     private peakPrintTimeSec = 0;
     private lastUpload: LastUpload | null = null;
     private printHold: { fileId: string; until: number } | null = null;
@@ -270,7 +272,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 error: (m) => this.log.error(m),
             },
         });
-        client.on('report', (suffix, payload) => this.onReport(suffix, payload));
+        client.on('report', (suffix, payload) => {
+            try {
+                this.onReport(suffix, payload);
+            } catch (e) {
+                this.log.warn(`Unreadable ${suffix} message ignored: ${(e as Error).message}`);
+            }
+        });
         client.on('disconnected', (reason) => {
             if (reason === 'requested' || !this.running) return;
             this.markOffline({ code: 'lost', ip: this.config.ip });
@@ -319,7 +327,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (this.running) return;
         this.running = true;
         this.offline = true;
-        this.openReconnectWindow();
         this.loopDone = this.pollLoop();
     }
 
@@ -343,10 +350,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             prev.password !== next.password ||
             prev.deviceId !== next.deviceId ||
             prev.modeId !== next.modeId;
+        if (reconnect) {
+            const old = this.client;
+            this.client = this.createClient();
+            await old.disconnect();
+        }
         if (reconnect && this.running) {
-            await this.client.disconnect();
             this.markOffline({ code: 'reconnecting' });
-            this.openReconnectWindow();
             this.wakeLoop();
         }
         this.publish();
@@ -354,18 +364,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private wakeLoop(): void {
         this.loopWake?.();
-    }
-
-    private openReconnectWindow(): void {
-        this.reconnectUntil = Date.now() + RECONNECT_WINDOW_MS;
-    }
-
-    private closeReconnectWindow(): void {
-        this.reconnectUntil = 0;
-        if (this.s.connectionError?.code === 'reconnecting') {
-            this.s.connectionError = { code: 'unreachable_ip', ip: this.config.ip };
-            this.publish();
-        }
     }
 
     private sleep(ms: number): Promise<void> {
@@ -387,6 +385,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.camera.stop();
         this.offline = true;
         this.jobsReconciled = false;
+        this.freeSince = 0;
         this.loggedFeatures = '';
         this.s.connected = false;
         if (wasConnected && error.code !== 'manual' && error.code !== 'reconnecting') {
@@ -414,34 +413,30 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private async pollLoop(): Promise<void> {
         const probeInterval = 10000;
+        let connectFailure = '';
         while (this.running) {
             if (this.paused) {
                 await this.sleep(probeInterval);
                 continue;
             }
             if (this.offline) {
-                if (Date.now() >= this.reconnectUntil) {
-                    if (this.reconnectUntil) {
-                        this.log.log('Reconnection window expired, waiting for a manual request');
-                        this.closeReconnectWindow();
+                if (!(await this.printerReachable())) {
+                    if (this.offline && this.s.connectionError?.code === 'reconnecting') {
+                        this.s.connectionError = { code: 'unreachable_ip', ip: this.config.ip };
+                        this.publish();
                     }
                     this.checkAlerts();
                     await this.sleep(probeInterval);
                     continue;
                 }
-                if (!(await this.printerReachable())) {
-                    this.checkAlerts();
-                    await this.sleep(probeInterval);
-                    continue;
-                }
                 try {
-                    this.log.log('Printer reachable — opening MQTT session…');
+                    if (!connectFailure) this.log.log('Printer reachable — opening MQTT session…');
                     await this.client.connect();
+                    connectFailure = '';
                     this.offline = false;
                     this.s.connected = true;
                     this.s.connectionError = null;
                     this.s.printState = 'standby';
-                    this.s.kobraState = 'free';
                     this.offlineSince = 0;
                     this.offlineAlerted = false;
                     this.publish();
@@ -453,7 +448,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     const err = mqttConnectionError(e);
                     this.s.connectionError = err;
                     this.publish();
-                    this.log.warn(`Connection failed: ${err.detail ?? err.code}`);
+                    const failure = err.detail ?? err.code;
+                    if (failure !== connectFailure) this.log.warn(`Connection failed: ${failure}`);
+                    connectFailure = failure;
+                    this.checkAlerts();
                     await this.sleep(probeInterval);
                     continue;
                 }
@@ -587,12 +585,20 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private onTemp(p: KobraMessage<Partial<Record<string, number>>>): void {
-        const d = p.data ?? {};
-        this.s.nozzleTemp = Number(d.curr_nozzle_temp ?? 0);
-        this.s.nozzleTarget = Number(d.target_nozzle_temp ?? 0);
-        this.s.bedTemp = Number(d.curr_hotbed_temp ?? 0);
-        this.s.bedTarget = Number(d.target_hotbed_temp ?? 0);
+        if (p.state === 'failed') return;
+        this.readTemp(p.data ?? {});
         this.publish();
+    }
+
+    private readTemp(d: Partial<Record<string, number>>): void {
+        const read = (value: unknown, current: number) => {
+            const n = Number(value ?? Number.NaN);
+            return Number.isFinite(n) ? n : current;
+        };
+        this.s.nozzleTemp = read(d.curr_nozzle_temp, this.s.nozzleTemp);
+        this.s.nozzleTarget = read(d.target_nozzle_temp, this.s.nozzleTarget);
+        this.s.bedTemp = read(d.curr_hotbed_temp, this.s.bedTemp);
+        this.s.bedTarget = read(d.target_hotbed_temp, this.s.bedTarget);
     }
 
     private applyKobraState(kobraState: string, fallback: 'printing' | 'standby'): void {
@@ -631,6 +637,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private onPrint(p: KobraMessage<KobraPrintData>): void {
         const d = p.data ?? {};
+        if (p.state === 'failed') {
+            if (d.filename) this.reportedFailure = { code: Number(p.code) || 0, msg: p.msg ?? '' };
+            return;
+        }
         const acknowledgement = p.state === 'updated';
         if (acknowledgement) {
             this.logUpdated(d);
@@ -643,14 +653,13 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (kobraState && !acknowledgement) this.applyKobraState(kobraState, 'printing');
 
-        if (kobraState === 'pause' || kobraState === 'paused') {
-            if (p.msg) {
-                const changed = this.s.pauseMsg !== p.msg;
-                this.s.errorCode = Number(p.code ?? 0);
+        if (!acknowledgement && (kobraState === 'pause' || kobraState === 'paused')) {
+            const code = Number(p.code) || 0;
+            if (p.msg && (this.s.pauseMsg !== p.msg || this.s.errorCode !== code)) {
+                this.s.errorCode = code;
                 this.s.pauseMsg = p.msg;
-                this.log.warn(`Printer paused: [${this.s.errorCode}] ${p.msg}`);
-                if (changed)
-                    this.emitEvent('print_paused', { code: this.s.errorCode, msg: p.msg, filename: this.s.filename });
+                this.log.warn(`Printer paused: [${code}] ${p.msg}`);
+                this.emitEvent('print_paused', { code, msg: p.msg, filename: this.s.filename });
             }
         } else if (['resuming', 'resumed', 'printing'].includes(kobraState)) {
             this.s.errorCode = 0;
@@ -661,8 +670,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.syncJob(kobraState, d.filename ?? this.s.filename);
 
         if (TERMINAL_PRINT_STATES.has(kobraState)) {
-            this.s.errorCode = 0;
-            this.s.pauseMsg = '';
             this.resetPrintFields();
         } else {
             this.s.filename = d.filename ?? this.s.filename;
@@ -697,7 +704,18 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private syncJob(kobraState: string, filename: string): void {
         if (!this.s.connected) return;
-        if (kobraState === 'printing') {
+        const paused = PAUSE_KOBRA_STATES.has(kobraState);
+        if (paused || ACTIVE_PRINT_STATES.has(kobraState)) {
+            this.jobActive = true;
+            this.reportedFailure = null;
+            if (kobraState === 'printing' && this.freeSince && filename && filename !== this.currentJobFilename) {
+                this.abandonJob();
+                this.s.filename = filename;
+                this.jobActive = true;
+            }
+            this.freeSince = 0;
+        }
+        if (paused || kobraState === 'printing') {
             this.jobsReconciled = true;
             if (this.currentJobId || this.jobSync || !filename) return;
             this.jobSync = this.beginJob(filename)
@@ -708,7 +726,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             return;
         }
         const terminal = TERMINAL_PRINT_STATES.has(kobraState);
-        if (!terminal && kobraState !== 'free') return;
+        const failed = kobraState === 'failed';
+        if (!terminal && !failed && kobraState !== 'free') return;
         if (this.currentJobId) {
             if (terminal) this.spoolmanReport(0.1);
             if (kobraState === 'finished') {
@@ -725,9 +744,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             } else if (terminal) {
                 this.log.log(`Print cancelled: ${this.currentJobFilename}`);
                 this.endJob('cancelled');
+            } else if (failed) {
+                this.abandonJob();
             } else if (!this.jobsReconciled) {
                 this.log.warn(`Printer idle after reconnection, job closed as error: ${this.currentJobFilename}`);
-                this.endJob('error');
+                this.abandonJob();
+            } else if (this.jobActive) {
+                this.freeSince ||= Date.now();
+                if (Date.now() - this.freeSince >= IDLE_CONFIRM_MS) this.abandonJob();
             }
             this.jobsReconciled = true;
             return;
@@ -738,12 +762,26 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.jobSync = this.gcode
             .closeOpenJobs(this.config.id, status)
             .then((n) => {
-                if (n) this.log.warn(`${n} job(s) left open while Kobralink was offline closed as ${status}`);
+                if (!n) return;
+                this.log.warn(`${n} job(s) left open while Kobralink was offline closed as ${status}`);
+                if (status !== 'completed') this.emit('interrupted');
             })
             .catch((e) => this.log.warn(`Job reconcile: ${(e as Error).message}`))
             .finally(() => {
                 this.jobSync = null;
             });
+    }
+
+    private abandonJob(): void {
+        if (!this.currentJobId) return;
+        this.log.warn(`Print ended without a final report, job closed as error: ${this.currentJobFilename}`);
+        if (this.reportedFailure) {
+            this.s.errorCode = this.reportedFailure.code;
+            this.s.pauseMsg = this.reportedFailure.msg;
+        }
+        this.spoolmanReport(0.1);
+        this.endJob('error');
+        this.resetPrintFields();
     }
 
     private endJob(status: 'completed' | 'cancelled' | 'error'): void {
@@ -752,6 +790,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (!jobId) return;
         this.currentJobId = '';
         this.currentJobFilename = '';
+        this.jobActive = false;
+        this.freeSince = 0;
+        this.reportedFailure = null;
         const usage = this.spoolUsageEntries();
         const printedSec = Math.round(Math.max(this.s.printDurationSec, this.peakPrintTimeSec));
         const durationSec = this.jobPrinted ? printedSec : 0;
@@ -826,6 +867,10 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private resetPrintFields(): void {
+        this.s.errorCode = 0;
+        this.s.pauseMsg = '';
+        this.s.skippedObjects = [];
+        this.s.skipTs = Date.now();
         this.suppliesUsageMm = 0;
         this.spoolUsage.clear();
         this.spoolReported.clear();
@@ -855,9 +900,11 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             if (open && open.filename === filename) {
                 this.currentJobId = open.id;
                 this.currentJobFilename = filename;
-                this.jobPausedAt = null;
+                const paused = this.s.printState === 'paused';
+                this.jobPausedAt = paused ? open.pausedAt : null;
                 this.jobPrinted = this.s.currLayer > 0 || this.s.printDurationSec > 0;
-                if (open.pausedAt)
+                this.restoreUsage(open.usageState);
+                if (open.pausedAt && !paused)
                     void this.gcode
                         .setJobPaused(open.id, null)
                         .catch((e) => this.log.warn(`Job pause: ${(e as Error).message}`));
@@ -924,12 +971,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         if (project.remain_time !== undefined) this.s.remainTimeSec = Number(project.remain_time) * 60;
         if (project.total_layers !== undefined) this.s.totalLayers = Number(project.total_layers);
         if (project.taskid !== undefined) this.s.taskId = String(project.taskid);
-        if (d.temp) {
-            this.s.nozzleTemp = Number(d.temp.curr_nozzle_temp ?? 0);
-            this.s.nozzleTarget = Number(d.temp.target_nozzle_temp ?? 0);
-            this.s.bedTemp = Number(d.temp.curr_hotbed_temp ?? 0);
-            this.s.bedTarget = Number(d.temp.target_hotbed_temp ?? 0);
-        }
+        if (d.temp) this.readTemp({ ...d.temp });
         if (d.urls) {
             const keys = Object.keys(d.urls).sort().join(',');
             if (keys !== this.knownUrlKeys) {
@@ -1095,6 +1137,29 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.spoolLastUsage = this.suppliesUsageMm;
         this.spoolBaselineMm = this.suppliesUsageMm;
         this.spoolLastSync.clear();
+        this.saveUsage();
+    }
+
+    private saveUsage(): void {
+        if (!this.currentJobId) return;
+        const state: UsageState = {
+            usage: [...this.spoolUsage],
+            reported: [...this.spoolReported].map(([name, slots]) => [name, [...slots]]),
+            last: this.spoolLastUsage,
+            baseline: this.spoolBaselineMm,
+        };
+        void this.gcode
+            .saveUsageState(this.currentJobId, JSON.stringify(state))
+            .catch((e) => this.log.warn(`Job usage: ${(e as Error).message}`));
+    }
+
+    private restoreUsage(raw: string | undefined): void {
+        if (!raw) return;
+        const state = JSON.parse(raw) as UsageState;
+        for (const [slot, mm] of state.usage) this.spoolUsage.set(slot, mm);
+        for (const [name, slots] of state.reported) this.spoolReported.set(name, new Map(slots));
+        this.spoolLastUsage = state.last;
+        this.spoolBaselineMm = state.baseline;
     }
 
     private activeSinks(): FilamentUsageSink[] {
@@ -1102,7 +1167,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private spoolmanAttribute(loaded: number, activity: Map<number, string>): void {
-        if (this.s.printState !== 'printing') return;
+        if (this.s.printState !== 'printing' || !this.currentJobId) return;
         const current = this.suppliesUsageMm;
         const delta = current - this.spoolLastUsage;
         this.spoolLastUsage = current;
@@ -1148,14 +1213,17 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             reported = new Map();
             this.spoolReported.set(sink.name, reported);
         }
+        let changed = false;
         for (const [slot, mm] of this.spoolmanUnreported(sink)) {
             const spoolId = map.get(slot);
             if (spoolId === undefined || mm < minMm) continue;
+            changed = true;
             reported.set(slot, (reported.get(slot) ?? 0) + mm);
             sink.useFilament(spoolId, mm, this.config.id)
                 .then(() => this.log.log(`${sink.name}: ${mm.toFixed(1)} mm → spool ${spoolId} (slot ${slot + 1})`))
                 .catch((e) => this.log.warn(`${sink.name}: report failed (spool ${spoolId}): ${(e as Error).message}`));
         }
+        if (changed) this.saveUsage();
     }
 
     private knownUrlKeys = '';
@@ -1165,6 +1233,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private printQueryLoggedFor = '';
     private paused = false;
 
+    private readonly fileQueue = new Map<string, Promise<unknown>>();
     private readonly fileWaiters = new Map<string, (m: KobraMessage<KobraFileData>) => void>();
     private readonly printerThumbs = new Map<string, string>();
 
@@ -1172,6 +1241,24 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         action: string,
         send: () => void,
         timeoutMs = 8000,
+        filename?: string,
+    ): Promise<KobraMessage<KobraFileData> | null> {
+        this.ensureConnected();
+        const turn = (this.fileQueue.get(action) ?? Promise.resolve()).then(() =>
+            this.sendFileAction(action, send, timeoutMs, filename),
+        );
+        this.fileQueue.set(
+            action,
+            turn.catch(() => null),
+        );
+        return turn;
+    }
+
+    private sendFileAction(
+        action: string,
+        send: () => void,
+        timeoutMs: number,
+        filename?: string,
     ): Promise<KobraMessage<KobraFileData> | null> {
         this.ensureConnected();
         return new Promise((resolve) => {
@@ -1180,6 +1267,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 resolve(null);
             }, timeoutMs);
             const done = (m: KobraMessage<KobraFileData>) => {
+                const answered = m.data?.filename || m.data?.file_details?.filename;
+                if (filename && answered && baseName(answered) !== baseName(filename)) return;
                 clearTimeout(timer);
                 this.fileWaiters.delete(action);
                 resolve(m);
@@ -1213,7 +1302,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         }
         if (res.state !== 'success' && res.code !== 200) {
             this.log.warn(`deleteBatch refused: state=${res.state} code=${res.code} msg=${res.msg ?? ''}`);
-            throw new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''));
+            throw this.refusal('file', res);
         }
         for (const f of filenames) {
             this.printerThumbs.delete(f);
@@ -1224,7 +1313,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     async printerFileThumbnail(filename: string): Promise<string> {
         const cached = this.printerThumbs.get(filename);
         if (cached !== undefined) return cached;
-        const res = await this.waitFileAction('fileDetails', () => this.client.requestFileDetails(filename), 5000);
+        const res = await this.waitFileAction(
+            'fileDetails',
+            () => this.client.requestFileDetails(filename),
+            5000,
+            filename,
+        );
         if (!res) throw new BridgeRequestError(m.api_thumbnail_unavailable());
         const thumb = res.data?.file_details?.thumbnail ?? res.data?.file_details?.png_image ?? '';
         this.printerThumbs.set(filename, thumb);
@@ -1281,7 +1375,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.ensureConnected();
         const res = await this.client.skipObjects([...new Set([...this.s.skippedObjects, ...names])]);
         if (!res) throw new BridgeRequestError(m.api_skip_no_response());
-        if (res.state === 'failed') throw new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''));
+        if (res.state === 'failed') throw this.refusal('skip', res);
     }
 
     async querySkip(): Promise<void> {
@@ -1289,7 +1383,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const prev = this.s.skipTs;
         void this.client.querySkipObjects();
         const deadline = Date.now() + 1500;
-        while (Date.now() < deadline && this.s.skipTs <= prev) await this.sleep(100);
+        while (Date.now() < deadline && this.s.skipTs <= prev) await delay(100);
     }
 
     requestFileObjects(filename: string): void {
@@ -1310,7 +1404,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                     return;
                 }
             }
-            await this.sleep(750);
+            await delay(750);
         }
         this.log.warn('Pre-print skip not confirmed');
         this.pendingPreprintSkip = [];
@@ -1495,33 +1589,42 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
                 ? { status: 1, target_temp: opts.targetTemp, duration: opts.duration, remain_time: opts.duration }
                 : { status: 0 };
         this.client.setDry(ids, drying);
-        const next: AceDrying = {
-            ...this.s.aceDrying,
+        const next = {
             status: action === 'start' ? 1 : 0,
             targetTemp: action === 'start' ? opts.targetTemp : 0,
             duration: action === 'start' ? opts.duration : 0,
             remainTime: action === 'start' ? opts.duration : 0,
         };
         for (const u of this.s.aceUnits) if (ids.includes(u.id)) u.drying = { ...u.drying, ...next };
-        this.s.aceDrying = next;
+        this.s.aceDrying = { ...this.s.aceDrying, ...next };
         this.publish();
+    }
+
+    private refusal(topic: string, res: KobraMessage): BridgeRequestError {
+        const refused = `${this.config.id}:${topic}:${res.action ?? ''}`;
+        return new BridgeRequestError(printerRefusedMessage(res.code, res.msg ?? ''), refused);
+    }
+
+    private expectAccepted(result: KobraMessage | null): void {
+        if (!result) throw new BridgeRequestError(m.api_command_no_response());
+        if (result.state === 'failed') throw this.refusal('print', result);
     }
 
     async pause(): Promise<void> {
         this.ensureConnected();
-        await this.client.pausePrint(this.s.taskId);
+        this.expectAccepted(await this.client.pausePrint(this.s.taskId));
     }
 
     async resume(): Promise<void> {
         this.ensureConnected();
-        await this.client.resumePrint(this.s.taskId);
+        this.expectAccepted(await this.client.resumePrint(this.s.taskId));
     }
 
     async cancel(reason: FailureReason | '' = ''): Promise<void> {
         this.ensureConnected();
         this.cancelReason = reason;
         try {
-            await this.client.stopPrint(this.s.taskId);
+            this.expectAccepted(await this.client.stopPrint(this.s.taskId));
         } catch (e) {
             this.cancelReason = '';
             throw e;
@@ -1581,9 +1684,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     async reconnectNow(): Promise<void> {
         this.paused = false;
+        this.s.manualOffline = false;
         await this.client.disconnect();
         this.markOffline({ code: 'reconnecting' });
-        this.openReconnectWindow();
         this.wakeLoop();
     }
 
@@ -1602,7 +1705,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.paused = false;
         this.s.manualOffline = false;
         this.publish();
-        this.openReconnectWindow();
         this.wakeLoop();
         this.log.log('Manual reconnection requested');
     }
@@ -1643,7 +1745,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.log.log(`Upload OK: ${JSON.stringify(result)}`);
         this.lastUpload = { filename: file.filename, url: '', md5: file.md5, size: file.sizeBytes };
 
-        this.s.thumbnail = '';
+        if (this.s.printState !== 'printing' && this.s.printState !== 'paused') this.s.thumbnail = '';
         this.client.requestFileDetails(file.filename);
     }
 
@@ -1697,9 +1799,6 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         const target = splitPrinterFilePath(path);
         if (!target) throw new BridgeRequestError(m.api_file_not_found());
         const filename = target.folder ? `/${target.folder}/${target.filename}` : target.filename;
-        this.s.fileReady = '';
-        this.s.skippedObjects = [];
-        this.s.skipTs = Date.now();
         const mapping = buildAutoAmsBoxMapping(this.loadedSlotsForPrint(), this.filamentMode);
         const payload: PrintStartPayload = {
             taskid: '-1',
@@ -1713,17 +1812,16 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
             task_settings: this.taskSettings([], { autoLeveling }),
         };
-        this.s.slicerTimeSec = 0;
-        this.s.thumbnail = this.printerThumbs.get(path.replace(/^\/+/, '')) ?? '';
         this.log.log(
             `print/start (printer file) → ${filename}  ams=${mapping.length} slots  task_settings=${JSON.stringify(payload.task_settings)}`,
         );
-        const result = await this.client.startPrint(payload);
-        if (!result) throw new BridgeRequestError(m.api_print_no_response());
-        if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            this.log.warn(`local print/start refused: ${JSON.stringify(result)}`);
-            throw new Error(printerRefusedMessage(result.code, result.msg ?? JSON.stringify(result.data)));
-        }
+        await this.requestStart(payload, () => {
+            this.s.fileReady = '';
+            this.s.skippedObjects = [];
+            this.s.skipTs = Date.now();
+            this.s.slicerTimeSec = 0;
+            this.s.thumbnail = this.printerThumbs.get(path.replace(/^\/+/, '')) ?? '';
+        });
         this.s.filename = filename;
         this.jobsReconciled = true;
         await this.jobSync;
@@ -1732,6 +1830,24 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         });
         await this.jobSync;
         this.publish();
+    }
+
+    private async requestStart(payload: PrintStartPayload, apply: () => void): Promise<void> {
+        const { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail } = this.s;
+        const { layerHeight, firstLayerHeight, jobOptions, currentJobId } = this;
+        apply();
+        const result = await this.client.startPrint(payload);
+        if (!result || result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
+            Object.assign(this.s, { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail });
+            Object.assign(this, { layerHeight, firstLayerHeight, jobOptions });
+            this.publish();
+            if (!result) throw new BridgeRequestError(m.api_print_no_response());
+            this.log.warn(`print/start refused: ${JSON.stringify(result)}`);
+            throw this.refusal('print', result);
+        }
+        if (!currentJobId || this.currentJobId !== currentJobId) return;
+        this.abandonJob();
+        apply();
     }
 
     private taskSettings(
@@ -1767,12 +1883,9 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private async startPrint(file: StoredFile, opts: StartPrintOptions): Promise<void> {
-        this.s.fileReady = '';
         const excluded = (opts.excludedObjects ?? []).filter((n) => file.objects.includes(n));
-        this.s.skippedObjects = excluded;
-        this.s.skipTs = Date.now();
         const mapping = this.amsMappingForPrint(file, opts.filamentAssignments);
-        const url = `${opts.serveBase}/serve/${encodeURIComponent(file.filename)}`;
+        const url = `${opts.serveBase}/serve/${file.id}/${encodeURIComponent(file.filename)}`;
         const payload: PrintStartPayload = {
             taskid: '-1',
             url,
@@ -1785,19 +1898,19 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             ams_settings: { use_ams: mapping.length > 0, ams_box_mapping: mapping },
             task_settings: this.taskSettings(excluded, opts),
         };
-        this.jobOptions = { timelapse: opts.timelapse, failureDetection: opts.failureDetection };
-        this.s.slicerTimeSec = file.estPrintTimeSec;
-        this.s.thumbnail = file.thumbnail ?? '';
-        this.layerHeight = file.layerHeight;
-        this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
         this.log.log(
             `print/start → ${file.filename}  ams=${mapping.length} slots  mode=${this.filamentMode}  task_settings=${JSON.stringify(payload.task_settings)}`,
         );
-        const result = await this.client.startPrint(payload);
-        if (!result) throw new BridgeRequestError(m.api_print_no_response());
-        if (result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            throw new BridgeRequestError(printerRefusedMessage(result.code, result.msg ?? JSON.stringify(result.data)));
-        }
+        await this.requestStart(payload, () => {
+            this.s.fileReady = '';
+            this.s.skippedObjects = excluded;
+            this.s.skipTs = Date.now();
+            this.jobOptions = { timelapse: opts.timelapse, failureDetection: opts.failureDetection };
+            this.s.slicerTimeSec = file.estPrintTimeSec;
+            this.s.thumbnail = file.thumbnail ?? '';
+            this.layerHeight = file.layerHeight;
+            this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
+        });
         this.s.filename = file.filename;
         this.jobsReconciled = true;
         await this.jobSync;
@@ -1825,7 +1938,29 @@ export interface StartPrintOptions {
 
 export class BridgeOfflineError extends Error {}
 
-export class BridgeRequestError extends Error {}
+export class BridgeRequestError extends Error {
+    constructor(
+        message: string,
+        readonly refused?: string,
+    ) {
+        super(message);
+    }
+}
+
+interface UsageState {
+    usage: [slot: number, mm: number][];
+    reported: [sink: string, slots: [slot: number, mm: number][]][];
+    last: number;
+    baseline: number;
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+function baseName(filename: string): string {
+    return filename.slice(filename.lastIndexOf('/') + 1);
+}
 
 function printerFiles(records: KobraFileRecord[], folder: string | null): PrinterFileDto[] {
     return records

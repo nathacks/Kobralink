@@ -1,5 +1,5 @@
 import { type AppSettings, homeAssistantApiSettingsSchema } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,12 +23,11 @@ export function HaApiCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
-    const values = useStore(form.store, (s) => s.values);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
+    const values = useSelector(form.store, (s) => s.values);
     const test = useMutation({
         mutationFn: () => api.homeAssistant.test({ url: values.url, token: values.token }),
         onSuccess: (r) => (r.ok ? toast.success(m.ha_api_test_ok()) : toast.error(r.message)),
-        onError: (e: Error) => toast.error(e.message),
     });
     return (
         <SettingsCard

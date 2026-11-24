@@ -1,4 +1,4 @@
-import { aceSlotStatus, type FilamentMode } from '@kobralink/shared';
+import { aceSlotStatus, type FilamentMode, type PrinterLiveState } from '@kobralink/shared';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Panel } from '@/components/printer/panel';
 import { useLiveState } from '@/hooks/use-printers';
@@ -13,8 +13,18 @@ import { ExternalSpoolForm } from './external-spool-form';
 import { SlotForm } from './slot-form';
 import { SlotSpool, SpoolTileBody } from './spool-art';
 
+const filamentState = (s: PrinterLiveState) => ({
+    connected: s.connected,
+    printState: s.printState,
+    filamentMode: s.filamentMode,
+    amsSlots: s.amsSlots,
+    amsLoadedSlot: s.amsLoadedSlot,
+    externalSpoolOnly: s.externalSpoolOnly,
+    aceUnits: s.aceUnits,
+});
+
 export function AmsCard({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
+    const state = useLiveState(printerId, filamentState);
     const loaded = state.amsSlots.find((s) => s.globalIndex === state.amsLoadedSlot);
     const status = loaded
         ? m.ams_loaded_type({ type: loaded.type || '?' })
@@ -47,7 +57,7 @@ export function AmsCard({ printerId, className }: { printerId: string; className
 }
 
 export function FilamentSlots({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
+    const state = useLiveState(printerId, filamentState);
     const slots = [...state.amsSlots].sort((a, b) => a.globalIndex - b.globalIndex);
     const boxIds = [...new Set(slots.map((s) => s.boxId))];
     const openDialog = confirmationDialogStore.actions.openDialog;

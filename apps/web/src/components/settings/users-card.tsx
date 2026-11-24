@@ -31,13 +31,11 @@ export function UsersCard() {
     const session = useQuery(sessionQuery);
     const me = session.data?.user.id;
     const invalidate = () => qc.invalidateQueries({ queryKey: ['users'] });
-    const onError = (e: Error) => toast.error(e.message);
     const setRole = useMutation({
         mutationFn: (v: { id: string; role: UserRole }) => api.users.update(v.id, { role: v.role }),
         onSuccess: invalidate,
-        onError,
     });
-    const remove = useMutation({ mutationFn: api.users.remove, onSuccess: invalidate, onError });
+    const remove = useMutation({ mutationFn: api.users.remove, onSuccess: invalidate });
     const openCreate = () =>
         confirmationDialogStore.actions.openDialog({
             title: m.users_add(),
@@ -132,7 +130,6 @@ function UserForm({ onSaved }: { onSaved: () => void }) {
             onSaved();
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: { name: '', email: '', password: '', role: 'operator' as UserRole },
@@ -213,7 +210,6 @@ function PasswordForm({ user }: { user: UserDto }) {
             toast.success(m.users_password_changed());
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: { password: '' },

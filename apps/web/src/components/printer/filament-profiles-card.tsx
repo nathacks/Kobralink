@@ -13,7 +13,6 @@ export function FilamentProfilesCard() {
     const user = useQuery(userProfilesQuery);
     const fileRef = useRef<HTMLInputElement>(null);
     const invalidate = () => qc.invalidateQueries({ queryKey: ['filament'] });
-    const onError = (e: Error) => toast.error(e.message);
 
     const importMut = useMutation({
         mutationFn: (files: File[]) => api.filament.importProfiles(files),
@@ -25,12 +24,10 @@ export function FilamentProfilesCard() {
             );
             void invalidate();
         },
-        onError,
     });
     const remove = useMutation({
         mutationFn: (p: { vendor: string; name: string }) => api.filament.deleteUserProfile(p.vendor, p.name),
         onSuccess: () => void invalidate(),
-        onError,
     });
 
     const pick = (list: FileList | null) => {

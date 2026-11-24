@@ -14,11 +14,10 @@ export function BedClearBanner({ printerId, name }: { printerId: string; name?: 
             if (started) toast.success(m.files_print_started({ name: started.filename }));
             else if (startsAt) toast.info(m.queue_starts_in({ seconds: secondsLeft(startsAt) }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId] });
-            void qc.invalidateQueries({ queryKey: ['printers'] });
+            void qc.invalidateQueries({ queryKey: ['printers'], exact: true });
             void qc.invalidateQueries({ queryKey: ['queue'] });
             void qc.invalidateQueries({ queryKey: ['history'] });
         },
-        onError: (e: Error) => toast.error(e.message),
     });
     return (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-2xl bg-chart-2/15 px-4 py-3 text-sm">

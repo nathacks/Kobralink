@@ -6,7 +6,7 @@ import { ApiKeysCard } from '@/components/slicer/api-keys-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHosts } from '@/hooks/use-hosts';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 
 export const Route = createFileRoute('/_app/settings/slicer')({ component: SlicerPage });
@@ -32,7 +32,7 @@ function CopyButton({ value }: { value: string }) {
 }
 
 function SlicerPage() {
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const hosts = useHosts();
     const steps = [
         [m.slicer_step_1_title(), m.slicer_step_1()],

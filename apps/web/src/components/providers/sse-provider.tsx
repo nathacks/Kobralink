@@ -96,6 +96,7 @@ function GlobalSubscriptions({ onOpen }: { onOpen?: (path: string) => void }) {
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'schedule'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'history'] });
             void qc.invalidateQueries({ queryKey: ['printers', event.printerId, 'maintenance'] });
+            void qc.invalidateQueries({ queryKey: ['history'] });
             void qc.invalidateQueries({ queryKey: ['timelapses'] });
         }
         if (event.type === 'maintenance_due') {

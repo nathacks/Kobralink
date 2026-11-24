@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { PrintReadyForm } from '@/components/printer/files/print-ready-form';
 import { api } from '@/lib/api';
+import { errorToast } from '@/lib/error-toast';
 import { parseFilename } from '@/lib/filename';
 import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -51,7 +52,7 @@ export async function openPrintReadyDialog(qc: QueryClient, printerId: string, f
                             invalidate();
                         })
                         .catch((e: Error) => {
-                            toast.error(e.message);
+                            errorToast(e);
                             throw e;
                         })
                 }

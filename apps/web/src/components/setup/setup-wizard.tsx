@@ -89,7 +89,6 @@ function AccountStep({ onNext }: StepProps) {
             await qc.invalidateQueries({ queryKey: setupQuery.queryKey });
             onNext();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: { name: '', email: '', password: '' } as LoginFormValues,
@@ -154,7 +153,6 @@ function PrefsStep({ onNext }: StepProps) {
             qc.setQueryData(appSettingsQuery.queryKey, next);
             onNext();
         },
-        onError: (e) => toast.error(e.message),
     });
     return (
         <div>
@@ -210,7 +208,6 @@ function PrinterStep({ onNext, printer }: StepProps & { printer: PrinterWithLive
         onSuccess: async () => {
             await qc.invalidateQueries({ queryKey: printersQuery.queryKey });
         },
-        onError: (e) => toast.error(e.message),
     });
     if (printer) {
         return (
@@ -294,7 +291,6 @@ function ProfileStep({ onNext, printer }: StepProps & { printer: PrinterWithLive
             await qc.invalidateQueries({ queryKey: printersQuery.queryKey });
             onNext();
         },
-        onError: (e) => toast.error(e.message),
     });
     return (
         <div>
@@ -317,7 +313,6 @@ function SpoolmanStep({ onNext }: StepProps) {
             return api.spoolman.health();
         },
         onSuccess: (health) => setReachable(health.reachable),
-        onError: (e) => toast.error(e.message),
     });
     return (
         <div>

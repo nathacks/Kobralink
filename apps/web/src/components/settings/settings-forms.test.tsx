@@ -193,7 +193,9 @@ describe('saving a settings card without edits keeps every stored value', () => 
             settings,
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
         await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
         await waitFor(() => expect(mocks.printerUpdate).toHaveBeenCalledOnce());
         const [id, body] = mocks.printerUpdate.mock.calls[0];
@@ -205,7 +207,7 @@ describe('saving a settings card without edits keeps every stored value', () => 
 function StoredPrinterForm({ id }: { id: string }) {
     const printer = usePrinter(id);
     if (!printer) return null;
-    return <PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />;
+    return <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />;
 }
 
 function switchAfter(label: string): HTMLElement {
@@ -259,7 +261,9 @@ describe('editing the new settings', () => {
             settings,
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
         expect(switchAfter(m.settings_queue_bed_clear()).getAttribute('aria-checked')).toBe('true');
         await userEvent.click(switchAfter(m.settings_queue_bed_clear()));
         await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
@@ -311,7 +315,9 @@ describe('editing the new settings', () => {
             settings: printerSettingsSchema.parse({}),
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
         expect(screen.getByRole('note').textContent).toBe(m.queue_mode_manual_confirm());
         expect(screen.queryByLabelText(m.settings_queue_delay())).toBeNull();
         await userEvent.click(switchAfter(m.settings_light_trigger()));
@@ -351,7 +357,7 @@ describe('editing the new settings', () => {
             live: null,
         } as unknown as PrinterWithLive;
         const without = await renderWithProviders(
-            <PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
         );
         expect(screen.queryByText(m.plug_title())).toBeNull();
         expect(screen.queryByText('http://192.168.1.50/cm?cmnd=Power%20On')).toBeNull();
@@ -361,9 +367,12 @@ describe('editing the new settings', () => {
             ['settings'],
             appSettingsSchema.parse({ homeAssistant: { url: 'http://ha.local:8123', token: 't' } }),
         );
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />, {
-            queryClient: qc,
-        });
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+            {
+                queryClient: qc,
+            },
+        );
         expect(screen.getByText(m.plug_title())).toBeTruthy();
         expect(screen.getByRole('combobox', { name: m.plug_switch() })).toBeTruthy();
         expect(screen.getByRole('combobox', { name: m.energy_sensor() })).toBeTruthy();
@@ -383,7 +392,9 @@ describe('editing the new settings', () => {
             settings: printerSettingsSchema.parse({}),
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
         expect(screen.queryByText(m.form_unsaved())).toBeNull();
         await userEvent.click(switchAfter(m.settings_light_trigger()));
         expect(await screen.findByText(m.form_unsaved())).toBeTruthy();
@@ -445,7 +456,9 @@ describe('flow calibration setting', () => {
             settings,
             live: null,
         } as unknown as PrinterWithLive;
-        await renderWithProviders(<PrinterSettingsForm printer={printer} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+        await renderWithProviders(
+            <PrinterSettingsForm printer={printer} live={null} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+        );
         const flow = switchAfter(m.settings_flow_calibration());
         expect(flow.getAttribute('aria-checked')).toBe('true');
         await userEvent.click(flow);
@@ -473,7 +486,12 @@ describe('print options the printer reports', () => {
 
     it('shows the three options while the features are unknown', async () => {
         await renderWithProviders(
-            <PrinterSettingsForm printer={printerWith({ features: null })} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+            <PrinterSettingsForm
+                printer={printerWith(null)}
+                live={{ manualOffline: false, features: null }}
+                onSaved={vi.fn()}
+                onDeleted={vi.fn()}
+            />,
         );
         expect(screen.getByText(m.settings_auto_leveling())).toBeTruthy();
         expect(screen.getByText(m.settings_vibration())).toBeTruthy();
@@ -483,7 +501,12 @@ describe('print options the printer reports', () => {
     it('hides the options the printer does not support and keeps their stored values', async () => {
         const live = { features: { auto_leveling_support: true, vibration_compensation_support: false } };
         await renderWithProviders(
-            <PrinterSettingsForm printer={printerWith(live)} onSaved={vi.fn()} onDeleted={vi.fn()} />,
+            <PrinterSettingsForm
+                printer={printerWith(live)}
+                live={live as never}
+                onSaved={vi.fn()}
+                onDeleted={vi.fn()}
+            />,
         );
         expect(screen.getByText(m.settings_auto_leveling())).toBeTruthy();
         expect(screen.queryByText(m.settings_vibration())).toBeNull();

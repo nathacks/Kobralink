@@ -72,6 +72,7 @@ describe('SseProvider notifications', () => {
                 JSON.stringify(['printers', 'p1', 'queue-status']),
                 JSON.stringify(['printers', 'p1', 'schedule']),
                 JSON.stringify(['printers', 'p1', 'history']),
+                JSON.stringify(['history']),
                 JSON.stringify(['printers', 'p1', 'maintenance']),
                 JSON.stringify(['timelapses']),
             ]),

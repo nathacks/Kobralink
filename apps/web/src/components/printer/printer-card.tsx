@@ -16,12 +16,13 @@ import {
     Settings,
     Video,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { FilamentSlots } from '@/components/printer/ams/ams-card';
 import { SpoolArt, SpoolProgress } from '@/components/printer/ams/spool-art';
 import { StatusBadge } from '@/components/printer/status-badge';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
+import type { PrinterCardActions } from '@/hooks/use-printer-card-actions';
 import { useExternalSpool } from '@/hooks/use-slot-spool';
 import { api, type PrinterWithLive } from '@/lib/api';
 import { parseFilename } from '@/lib/filename';
@@ -33,15 +34,7 @@ import { cn } from '@/lib/utils';
 const SNAPSHOT_INTERVAL_MS = 5_000;
 const CAMERA_RETRY_MS = 30_000;
 
-export interface PrinterCardActions {
-    onPause: () => void;
-    onResume: () => void;
-    onCancel: () => void;
-    onReconnect: () => void;
-    onLight: (on: boolean) => void;
-}
-
-export function PrinterCard({
+export const PrinterCard = memo(function PrinterCard({
     printer,
     canOperate,
     ...actions
@@ -162,15 +155,19 @@ export function PrinterCard({
                     {printing && live && canOperate && (
                         <>
                             {live.printState === 'printing' ? (
-                                <IconButton label={m.common_pause()} onClick={actions.onPause}>
+                                <IconButton label={m.common_pause()} onClick={() => actions.onPause(printer.id)}>
                                     <Pause />
                                 </IconButton>
                             ) : (
-                                <IconButton label={m.common_resume()} onClick={actions.onResume}>
+                                <IconButton label={m.common_resume()} onClick={() => actions.onResume(printer.id)}>
                                     <Play />
                                 </IconButton>
                             )}
-                            <IconButton label={m.common_cancel()} onClick={actions.onCancel} destructive>
+                            <IconButton
+                                label={m.common_cancel()}
+                                onClick={() => actions.onCancel(printer.id)}
+                                destructive
+                            >
                                 <Ban />
                             </IconButton>
                         </>
@@ -178,13 +175,13 @@ export function PrinterCard({
                     {live?.connected && canOperate && (
                         <IconButton
                             label={live.lightOn ? m.printers_light_off() : m.printers_light_on()}
-                            onClick={() => actions.onLight(!live.lightOn)}
+                            onClick={() => actions.onLight(printer.id, !live.lightOn)}
                             pressed={live.lightOn}
                         >
                             {live.lightOn ? <Lightbulb /> : <LightbulbOff />}
                         </IconButton>
                     )}
-                    <IconButton label={m.printers_reconnect()} onClick={actions.onReconnect}>
+                    <IconButton label={m.printers_reconnect()} onClick={() => actions.onReconnect(printer.id)}>
                         <RefreshCw />
                     </IconButton>
                     <Link
@@ -200,7 +197,7 @@ export function PrinterCard({
             </div>
         </article>
     );
-}
+});
 
 function CardMedia({
     printerId,

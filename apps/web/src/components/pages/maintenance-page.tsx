@@ -1,10 +1,10 @@
 import { MaintenanceCard } from '@/components/printer/maintenance-card';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 import { PageHeader } from './page-header';
 
 export function MaintenancePage() {
-    const printers = usePrinters();
+    const printers = usePrinterList();
     return (
         <div className="grid gap-4">
             <PageHeader title={m.nav_maintenance()} hint={m.maintenance_page_hint()} />

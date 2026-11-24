@@ -1,5 +1,5 @@
 import { APP_LOCALES, type AppLocale, type AppSettings, optionalUrl } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { z } from 'zod';
 import { FieldError } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export function GeneralCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
     return (
         <SettingsCard
             title={m.settings_general()}

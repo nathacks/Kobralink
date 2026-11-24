@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useStore } from '@tanstack/react-store';
+import { useSelector } from '@tanstack/react-store';
 import { ChevronsUpDown, Ellipsis, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cloneElement } from 'react';
 import { MOBILE_ITEMS, MORE_ITEMS, NAV_ITEMS, type NavItem, SETTINGS_ITEM } from '@/components/layout/nav-items';
@@ -62,7 +62,7 @@ function Avatar({ user, className }: { user: MenuUser; className?: string }) {
 }
 
 function DesktopSidebar({ user }: { user: MenuUser }) {
-    const collapsed = useStore(sidebarStore, (s) => s.collapsed);
+    const collapsed = useSelector(sidebarStore, (s) => s.collapsed);
     const toggleLabel = collapsed ? m.nav_expand() : m.nav_collapse();
     return (
         <aside

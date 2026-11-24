@@ -13,6 +13,7 @@ export interface StoredFile extends GcodeFileDto {
 }
 
 const ALLOWED_EXT = ['.gcode', '.bgcode'];
+const MAX_NAME_BYTES = 200;
 export const META_VERSION = 2;
 
 @Injectable()
@@ -81,7 +82,11 @@ export class GcodeService implements OnApplicationBootstrap {
     }
 
     static safeName(name: string): string {
-        return path.basename(name).replace(/[\\/:*?"<>|]/g, '_');
+        const safe = path.basename(name).replace(/[\\/:*?"<>|]/g, '_');
+        const ext = path.extname(safe);
+        let stem = safe.slice(0, safe.length - ext.length);
+        while (stem && Buffer.byteLength(stem + ext) > MAX_NAME_BYTES) stem = [...stem].slice(0, -1).join('');
+        return stem + ext;
     }
 
     filePath(id: string, filename: string): string {
@@ -264,6 +269,7 @@ export class GcodeService implements OnApplicationBootstrap {
                 durationSec,
                 filamentMm: Math.max(0, Math.round(filamentMm)),
                 spoolUsage: JSON.stringify(spoolUsage),
+                usageState: '',
                 errorCode: status === 'completed' ? 0 : Math.max(0, Math.round(failure.errorCode ?? 0)),
                 errorMsg: status === 'completed' ? '' : (failure.errorMsg ?? '').slice(0, 500),
                 ...(snapshot ? { snapshot } : {}),
@@ -309,6 +315,13 @@ export class GcodeService implements OnApplicationBootstrap {
 
     async setJobPaused(jobId: string, pausedAt: Date | null): Promise<void> {
         await this.prisma.client.printJob.updateMany({ where: { id: jobId, status: 'printing' }, data: { pausedAt } });
+    }
+
+    async saveUsageState(jobId: string, usageState: string): Promise<void> {
+        await this.prisma.client.printJob.updateMany({
+            where: { id: jobId, status: 'printing' },
+            data: { usageState },
+        });
     }
 
     async closeOpenJobs(printerId: string, status: 'completed' | 'cancelled' | 'error'): Promise<number> {

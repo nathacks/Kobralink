@@ -1,4 +1,5 @@
-import type { PrinterLiveState, PrinterSample } from '@kobralink/shared';
+import type { Printer, PrinterLiveState, PrinterSample } from '@kobralink/shared';
+import { replaceEqualDeep } from '@tanstack/react-query';
 import { createStore } from '@tanstack/react-store';
 import { api, type PrinterWithLive } from '@/lib/api';
 
@@ -35,13 +36,13 @@ export const printersStore = createStore(initialState, ({ setState, get }) => ({
     setPrinters: (list: PrinterWithLive[]) =>
         setState((s) => ({
             ...s,
-            printers: Object.fromEntries(list.map((p) => [p.id, p])),
+            printers: replaceEqualDeep(s.printers, Object.fromEntries(list.map((p) => [p.id, p]))),
             order: list.map((p) => p.id),
         })),
-    upsertPrinter: (printer: PrinterWithLive) =>
+    upsertPrinter: (printer: Printer | PrinterWithLive) =>
         setState((s) => ({
             ...s,
-            printers: { ...s.printers, [printer.id]: { ...s.printers[printer.id], ...printer } },
+            printers: { ...s.printers, [printer.id]: { ...(s.printers[printer.id] ?? { live: null }), ...printer } },
             order: s.order.includes(printer.id) ? s.order : [...s.order, printer.id],
         })),
     removePrinter: (id: string) =>
@@ -74,7 +75,9 @@ export const printersStore = createStore(initialState, ({ setState, get }) => ({
     setLiveState: (id: string, live: PrinterLiveState) =>
         setState((s) => {
             const current = s.printers[id];
-            const printers = current ? { ...s.printers, [id]: { ...current, live } } : s.printers;
+            const printers = current
+                ? { ...s.printers, [id]: { ...current, live: replaceEqualDeep(current.live, live) } }
+                : s.printers;
             const old = s.samples[id] ?? EMPTY_SAMPLES;
             const last = old[old.length - 1];
             if (last && live.updatedAt - last.t < 2000) return { ...s, printers };

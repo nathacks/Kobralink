@@ -77,6 +77,7 @@ export class ApiError extends Error {
         readonly status: number,
         message: string,
         readonly issues?: { path: string; message: string }[],
+        readonly refused?: string,
     ) {
         super(message);
     }
@@ -105,9 +106,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
             message?: string | string[];
             error?: string;
             issues?: { path: string; message: string }[];
+            refused?: string;
         } | null;
         const msg = Array.isArray(b?.message) ? b.message.join(', ') : (b?.message ?? b?.error ?? `HTTP ${res.status}`);
-        throw new ApiError(res.status, msg, b?.issues);
+        throw new ApiError(res.status, msg, b?.issues, b?.refused);
     }
     return body as T;
 }

@@ -1,10 +1,13 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { createQueryClient } from '@/lib/query-client';
 
 export function testQueryClient(): QueryClient {
-    return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const queryClient = createQueryClient();
+    queryClient.setDefaultOptions({ queries: { retry: false } });
+    return queryClient;
 }
 
 export async function renderWithProviders(

@@ -37,7 +37,6 @@ export function SpoolmanCard({ settings }: { settings: AppSettings }) {
             void qc.invalidateQueries({ queryKey: ['printers'] });
             toast.success(m.settings_saved());
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: { spoolmanUrl: settings.spoolmanUrl, spoolmanSyncRateSec: settings.spoolmanSyncRateSec },

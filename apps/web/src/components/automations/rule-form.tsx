@@ -8,6 +8,7 @@ import {
     type AutomationTrigger,
     automationRuleSchema,
     type MacroDto,
+    type Printer,
 } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -20,8 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { usePrinters } from '@/hooks/use-printers';
-import { api, type PrinterWithLive } from '@/lib/api';
+import { usePrinterList } from '@/hooks/use-printers';
+import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { macrosQuery, systemInfoQuery } from '@/lib/queries';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
@@ -120,7 +121,7 @@ export function openRuleForm(rule?: AutomationRuleDto, onSaved: () => void = () 
 
 export function RuleForm({ rule, onSaved }: { rule?: AutomationRuleDto; onSaved: () => void }) {
     const close = confirmationDialogStore.actions.closeDialog;
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const macros = useQuery(macrosQuery).data ?? [];
     const timeZone = useQuery(systemInfoQuery).data?.timeZone;
     const save = useMutation({
@@ -131,7 +132,6 @@ export function RuleForm({ rule, onSaved }: { rule?: AutomationRuleDto; onSaved:
             onSaved();
             close();
         },
-        onError: (e: Error) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: {
@@ -515,7 +515,7 @@ function Small({ title, ...props }: React.ComponentProps<'button'> & { title: st
 
 export function targetSummary(
     rule: Pick<AutomationRuleDto, 'printerId' | 'targetTags'>,
-    printers: Pick<PrinterWithLive, 'id' | 'name'>[],
+    printers: Pick<Printer, 'id' | 'name'>[],
 ): string {
     if (rule.printerId) return printers.find((p) => p.id === rule.printerId)?.name ?? rule.printerId;
     if (rule.targetTags.length) return `${m.automations_target_tags()} ${rule.targetTags.join(', ')}`;

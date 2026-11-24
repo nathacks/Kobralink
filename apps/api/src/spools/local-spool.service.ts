@@ -132,7 +132,11 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
     }
 
     async setAssignments(printerId: string, slotMap: Record<string, string | null>): Promise<Record<string, string>> {
-        const current = this.printerMap(printerId);
+        await this.printers.findOne(printerId);
+        const wanted = [...new Set(Object.values(slotMap).filter((v): v is string => Boolean(v)))];
+        const known = await this.prisma.client.localSpool.count({ where: { id: { in: wanted } } });
+        if (known !== wanted.length) throw new NotFoundException();
+        const current = new Map(this.printerMap(printerId));
         for (const [k, v] of Object.entries(slotMap)) {
             const slot = Number(k);
             if (!Number.isInteger(slot) || slot < 0) continue;
@@ -145,6 +149,7 @@ export class LocalSpoolService implements OnModuleInit, FilamentUsageSink {
                 this.prisma.client.localSpoolAssignment.create({ data: { printerId, slotIndex, spoolId } }),
             ),
         ]);
+        this.maps.set(printerId, current);
         this.log.log(`Local spools for ${printerId}: ${JSON.stringify(this.assignments(printerId))}`);
         return this.assignments(printerId);
     }

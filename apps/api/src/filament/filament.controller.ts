@@ -43,7 +43,9 @@ export class FilamentController {
     }
 
     @Post('filament/profiles/user')
-    @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 50 * 1024 * 1024, files: 200 } }))
+    @UseInterceptors(
+        AnyFilesInterceptor({ defParamCharset: 'utf8', limits: { fileSize: 50 * 1024 * 1024, files: 200 } }),
+    )
     async importProfiles(@UploadedFiles() files: MulterFile[] | undefined) {
         if (!files?.length) throw new BadRequestException(m.api_no_profile_files());
         try {

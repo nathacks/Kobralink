@@ -120,8 +120,6 @@ export const queueQuery = (id: string) =>
 
 export const allQueueQuery = queryOptions({ queryKey: ['queue'], queryFn: api.queue.all, refetchInterval: 15_000 });
 
-export const allFilesQuery = queryOptions({ queryKey: ['files'], queryFn: api.files.all });
-
 export const allHistoryQuery = (printerId?: string) =>
     queryOptions({ queryKey: ['history', printerId ?? ''], queryFn: () => api.files.historyAll(printerId) });
 

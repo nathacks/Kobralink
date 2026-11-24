@@ -126,6 +126,11 @@
         font-family: var(--font-sans);
     }
 
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+
     body {
         @apply text-foreground antialiased;
         background:

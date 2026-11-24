@@ -54,7 +54,6 @@ export function ExternalSpoolForm({
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'spools'] });
             onClose();
         },
-        onError: (e: Error) => toast.error(e.message),
     });
 
     if (spoolman.isPending || localAssign.isPending) {

@@ -14,14 +14,17 @@ import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 const isGcode = (f: File) => /\.(gcode|bgcode)$/i.test(f.name);
 
 export function useFileActions(printerId: string) {
-    const state = useLiveState(printerId);
-    const printer = usePrinter(printerId);
+    const { connected, printState } = useLiveState(printerId, ({ connected, printState }) => ({
+        connected,
+        printState,
+    }));
+    const settings = usePrinter(printerId, (p) => p?.settings);
     const qc = useQueryClient();
     const [uploadingCount, setUploadingCount] = useState(0);
     const openAlertDialog = alertConfirmationDialogStore.actions.openAlertDialog;
     const openDialog = confirmationDialogStore.actions.openDialog;
-    const busy = state.printState === 'printing' || state.printState === 'paused';
-    const canPrint = state.connected && !busy;
+    const busy = printState === 'printing' || printState === 'paused';
+    const canPrint = connected && !busy;
 
     const invalidate = () => {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'files'] });
@@ -34,7 +37,6 @@ export function useFileActions(printerId: string) {
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
             void qc.invalidateQueries({ queryKey: ['queue'] });
         },
-        onError: (e) => toast.error(e.message),
     });
     const print = useMutation({
         mutationFn: (input: StartPrintInput) => api.files.print(printerId, input),
@@ -42,7 +44,6 @@ export function useFileActions(printerId: string) {
             toast.success(m.files_print_started({ name: f.filename }));
             invalidate();
         },
-        onError: (e) => toast.error(e.message),
     });
     const schedule = useMutation({
         mutationFn: (input: SchedulePrintInput) => api.schedule.create(printerId, input),
@@ -50,17 +51,14 @@ export function useFileActions(printerId: string) {
             toast.success(m.schedule_added({ name: item.filename, date: formatDate(item.startAt) }));
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] });
         },
-        onError: (e) => toast.error(e.message),
     });
     const remove = useMutation({
         mutationFn: (fileId: string) => api.files.remove(printerId, fileId),
         onSuccess: invalidate,
-        onError: (e) => toast.error(e.message),
     });
     const upload = useMutation({
         mutationFn: (file: File) => api.files.upload(printerId, file, false),
         onSuccess: invalidate,
-        onError: (e) => toast.error(e.message),
     });
 
     const openPrintDialog = (f: GcodeFileDto, withQueue: boolean) =>
@@ -87,7 +85,7 @@ export function useFileActions(printerId: string) {
 
     const requestPrint = (f: GcodeFileDto) => {
         const go = () => openPrintDialog(f, false);
-        if (f.webUnverified && (printer?.settings.webUploadWarning ?? true)) {
+        if (f.webUnverified && (settings?.webUploadWarning ?? true)) {
             openAlertDialog({
                 title: m.files_web_warning_title(),
                 description: m.files_web_warning_hint({ name: f.filename }),
@@ -135,7 +133,7 @@ export function useFileActions(printerId: string) {
         }
         const single = uploaded[0];
         if (!single) return;
-        if (printer?.settings.printStartDialog ?? true) {
+        if (settings?.printStartDialog ?? true) {
             openPrintDialog(single, true);
         } else {
             toast.success(m.files_added({ name: single.filename }), {
@@ -145,7 +143,7 @@ export function useFileActions(printerId: string) {
     };
 
     return {
-        connected: state.connected,
+        connected,
         canPrint: canPrint && !print.isPending,
         isUploading: upload.isPending || uploadingCount > 0,
         uploadingCount,

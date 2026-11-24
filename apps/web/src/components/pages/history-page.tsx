@@ -2,14 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { HistoryList } from '@/components/printer/files/history-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 import { allHistoryQuery } from '@/lib/queries';
 import { PageHeader } from './page-header';
 import { ALL_PRINTERS, PrinterSelect } from './printer-select';
 
 export function HistoryPage() {
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const [printerId, setPrinterId] = useState(ALL_PRINTERS);
     const filter = printerId === ALL_PRINTERS ? undefined : printerId;
     const jobs = useQuery(allHistoryQuery(filter));

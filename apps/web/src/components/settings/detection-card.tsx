@@ -1,15 +1,14 @@
 import { type AppSettings, type FailureDetectionAction, failureDetectionSettingsSchema } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, ScanEye, Trash2, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { useSaveSettings } from '@/hooks/use-save-settings';
 import { api } from '@/lib/api';
 import { formatBytes } from '@/lib/format';
@@ -28,13 +27,12 @@ const ACTIONS: [FailureDetectionAction, () => string][] = [
 export function DetectionCard({ settings }: { settings: AppSettings }) {
     const qc = useQueryClient();
     const status = useQuery(detectionStatusQuery);
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const save = useSaveSettings();
     const refresh = () => void qc.invalidateQueries({ queryKey: ['detection'] });
     const download = useMutation({
         mutationFn: api.detection.download,
         onSuccess: refresh,
-        onError: (e) => toast.error(e.message),
     });
     const cancel = useMutation({ mutationFn: api.detection.cancelDownload, onSuccess: refresh });
     const remove = useMutation({
@@ -43,7 +41,6 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
             refresh();
             void qc.invalidateQueries({ queryKey: appSettingsQuery.queryKey });
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: settings.failureDetection,
@@ -54,7 +51,7 @@ export function DetectionCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
     const d = status.data;
     const model = d?.model;
     const ready = model?.state === 'ready';

@@ -1,7 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListOrdered, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { EmptyState } from '@/components/printer/panel';
 import { ScheduledRow } from '@/components/printer/queue-card';
 import { AutoStartCountdown } from '@/components/queue/auto-start-countdown';
@@ -9,7 +8,7 @@ import { BedClearBanner } from '@/components/queue/bed-clear-banner';
 import { moveInOrder, QueueItemRow } from '@/components/queue/queue-item-row';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList, usePrinters } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -22,7 +21,18 @@ type Tab = 'queued' | 'removal' | 'scheduled';
 
 export function QueuePage() {
     const qc = useQueryClient();
-    const printers = usePrinters();
+    const printers = usePrinterList();
+    const removalIds = usePrinters((list) =>
+        list
+            .filter(
+                (p) =>
+                    p.awaitingBedClear &&
+                    p.live?.connected &&
+                    p.live.printState !== 'printing' &&
+                    p.live.printState !== 'paused',
+            )
+            .map((p) => p.id),
+    );
     const [tab, setTab] = useState<Tab>('queued');
     const queue = useQuery(allQueueQuery);
     const schedules = useQueries({ queries: printers.map((p) => scheduleQuery(p.id)) });
@@ -32,28 +42,19 @@ export function QueuePage() {
         return at ? [{ printer: p, at }] : [];
     });
     const items = queue.data ?? [];
-    const removal = printers.filter(
-        (p) =>
-            p.awaitingBedClear &&
-            p.live?.connected &&
-            p.live.printState !== 'printing' &&
-            p.live.printState !== 'paused',
-    );
     const scheduled = printers.flatMap((p, i) => (schedules[i]?.data ?? []).map((s) => ({ printer: p, item: s })));
     const invalidate = () => void qc.invalidateQueries({ queryKey: ['queue'] });
-    const onError = (e: Error) => toast.error(e.message);
     const reorder = useMutation({
         mutationFn: (ids: string[]) => api.queue.reorder(ids),
         onSuccess: invalidate,
-        onError,
     });
-    const remove = useMutation({ mutationFn: (id: string) => api.queue.remove(id), onSuccess: invalidate, onError });
-    const clear = useMutation({ mutationFn: () => api.queue.clear(), onSuccess: invalidate, onError });
+    const remove = useMutation({ mutationFn: (id: string) => api.queue.remove(id), onSuccess: invalidate });
+    const clear = useMutation({ mutationFn: () => api.queue.clear(), onSuccess: invalidate });
     const removeScheduled = useMutation({
         mutationFn: ({ printerId, id }: { printerId: string; id: string }) => api.schedule.remove(printerId, id),
         onSuccess: (_r, v) => qc.invalidateQueries({ queryKey: ['printers', v.printerId, 'schedule'] }),
-        onError,
     });
+    const removal = printers.filter((p) => removalIds.includes(p.id));
     const tabs: { value: Tab; label: string; count: number }[] = [
         { value: 'queued', label: m.queue_tab_queued(), count: items.length },
         { value: 'removal', label: m.queue_tab_removal(), count: removal.length },

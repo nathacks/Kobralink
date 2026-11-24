@@ -1,8 +1,7 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { Flame } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useEffect } from 'react';
 import { fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,15 +23,10 @@ const NOZZLE_COLOR = 'var(--chart-1)';
 const BED_COLOR = 'var(--chart-2)';
 
 export function TemperatureCard({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
-    const samples = useSamples(printerId);
-    const ready = useSamplesReady(printerId);
-    const data = useMemo(() => samples.map((s) => ({ t: s.t, nozzle: s.nozzle, bed: s.bed })), [samples]);
+    const offline = useLiveState(printerId, (s) => !s.connected);
     const set = useMutation({
         mutationFn: (input: { nozzle?: number; bed?: number }) => api.control.temperature(printerId, input),
-        onError: (e) => toast.error(e.message),
     });
-    const offline = !state.connected;
 
     return (
         <Panel
@@ -53,45 +47,70 @@ export function TemperatureCard({ printerId, className }: { printerId: string; c
             <div className="@container flex flex-1 flex-col">
                 <div className="grid flex-1 grid-rows-[auto_1fr] gap-5 @2xl:grid-cols-[minmax(14rem,17rem)_1fr] @2xl:grid-rows-1">
                     <div className="grid content-start gap-3 @md:grid-cols-2 @2xl:grid-cols-1">
-                        <HeaterTile
-                            label={m.activity_nozzle()}
-                            color={NOZZLE_COLOR}
-                            current={state.nozzleTemp}
-                            target={state.nozzleTarget}
-                            max={320}
-                            onSet={(v) => set.mutate({ nozzle: v })}
-                            disabled={offline}
-                        />
-                        <HeaterTile
-                            label={m.activity_bed()}
-                            color={BED_COLOR}
-                            current={state.bedTemp}
-                            target={state.bedTarget}
-                            max={120}
-                            onSet={(v) => set.mutate({ bed: v })}
-                            disabled={offline}
-                        />
+                        <Heaters printerId={printerId} disabled={offline} onSet={set.mutate} />
                     </div>
                     <div className="min-h-56 min-w-0" data-testid="temperature-chart">
-                        {ready && data.length > 1 && (
-                            <TemperatureChart
-                                className="h-full min-h-56"
-                                data={data}
-                                series={[
-                                    {
-                                        key: 'nozzle',
-                                        label: m.activity_nozzle(),
-                                        color: NOZZLE_COLOR,
-                                        target: state.nozzleTarget,
-                                    },
-                                    { key: 'bed', label: m.activity_bed(), color: BED_COLOR, target: state.bedTarget },
-                                ]}
-                            />
-                        )}
+                        <TemperatureHistory printerId={printerId} />
                     </div>
                 </div>
             </div>
         </Panel>
+    );
+}
+
+function Heaters({
+    printerId,
+    disabled,
+    onSet,
+}: {
+    printerId: string;
+    disabled: boolean;
+    onSet: (input: { nozzle?: number; bed?: number }) => void;
+}) {
+    const state = useLiveState(printerId, ({ nozzleTemp, nozzleTarget, bedTemp, bedTarget }) => ({
+        nozzleTemp,
+        nozzleTarget,
+        bedTemp,
+        bedTarget,
+    }));
+    return (
+        <>
+            <HeaterTile
+                label={m.activity_nozzle()}
+                color={NOZZLE_COLOR}
+                current={state.nozzleTemp}
+                target={state.nozzleTarget}
+                max={320}
+                onSet={(v) => onSet({ nozzle: v })}
+                disabled={disabled}
+            />
+            <HeaterTile
+                label={m.activity_bed()}
+                color={BED_COLOR}
+                current={state.bedTemp}
+                target={state.bedTarget}
+                max={120}
+                onSet={(v) => onSet({ bed: v })}
+                disabled={disabled}
+            />
+        </>
+    );
+}
+
+function TemperatureHistory({ printerId }: { printerId: string }) {
+    const samples = useSamples(printerId);
+    const ready = useSamplesReady(printerId);
+    const targets = useLiveState(printerId, (s) => ({ nozzle: s.nozzleTarget, bed: s.bedTarget }));
+    if (!ready || samples.length < 2) return null;
+    return (
+        <TemperatureChart
+            className="h-full min-h-56"
+            data={samples}
+            series={[
+                { key: 'nozzle', label: m.activity_nozzle(), color: NOZZLE_COLOR, target: targets.nozzle },
+                { key: 'bed', label: m.activity_bed(), color: BED_COLOR, target: targets.bed },
+            ]}
+        />
     );
 }
 

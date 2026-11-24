@@ -24,13 +24,11 @@ export function SpoolsCard() {
     const [archived, setArchived] = useState(false);
     const spools = useQuery(spoolsQuery(archived));
     const invalidate = () => qc.invalidateQueries({ queryKey: ['spools'] });
-    const onError = (e: Error) => toast.error(e.message);
     const update = useMutation({
         mutationFn: (v: { id: string; archived: boolean }) => api.spools.update(v.id, { archived: v.archived }),
         onSuccess: invalidate,
-        onError,
     });
-    const remove = useMutation({ mutationFn: api.spools.remove, onSuccess: invalidate, onError });
+    const remove = useMutation({ mutationFn: api.spools.remove, onSuccess: invalidate });
     const open = (spool?: LocalSpoolDto) =>
         confirmationDialogStore.actions.openDialog({
             title: spool ? m.spools_edit() : m.spools_add(),
@@ -159,7 +157,6 @@ function SpoolForm({ spool, onSaved }: { spool?: LocalSpoolDto; onSaved: () => v
             onSaved();
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: {

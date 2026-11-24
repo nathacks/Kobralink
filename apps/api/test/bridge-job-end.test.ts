@@ -114,7 +114,7 @@ describe('job end', () => {
 
     it('labels a print cancelled from Kobralink with the reason given', async () => {
         const h = harness();
-        const stopPrint = mock(async () => undefined);
+        const stopPrint = mock(async () => ({ state: 'done', code: 200 }));
         (h.bridge as unknown as { client: { stopPrint: typeof stopPrint } }).client = {
             connected: true,
             stopPrint,

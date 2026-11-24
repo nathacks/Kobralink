@@ -28,8 +28,9 @@ vi.mock('@/lib/api', () => ({
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
-    useLiveState: () => live as unknown as PrinterLiveState,
-    usePrinter: () => printer,
+    useLiveState: (_id: string, select: (s: PrinterLiveState) => unknown) =>
+        select(live as unknown as PrinterLiveState),
+    usePrinter: (_id: string, select: (p: typeof printer) => unknown) => select(printer),
 }));
 
 beforeEach(() => {

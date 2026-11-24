@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { FilesCard } from '@/components/printer/files/files-card';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 import { PageHeader } from './page-header';
 import { PrinterSelect } from './printer-select';
 
 export function FilesPage() {
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const [chosen, setChosen] = useState('');
     const printerId = printers.some((p) => p.id === chosen) ? chosen : (printers[0]?.id ?? '');
     return (

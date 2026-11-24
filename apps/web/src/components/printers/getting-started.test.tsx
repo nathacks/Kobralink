@@ -9,7 +9,7 @@ import { GettingStarted, START_DISMISSED_KEY, startItems } from './getting-start
 
 const holder = vi.hoisted(() => ({ printers: [] as PrinterWithLive[] }));
 
-vi.mock('@/hooks/use-printers', () => ({ usePrinters: () => holder.printers }));
+vi.mock('@/hooks/use-printers', () => ({ usePrinterList: () => holder.printers }));
 
 const blank = appSettingsSchema.parse({});
 const printer = (profile = {}) =>

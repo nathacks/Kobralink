@@ -20,8 +20,19 @@ import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 
 export function PrintCard({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
-    const clock = usePrintClock(state);
+    const state = useLiveState(printerId, (s) => ({
+        connected: s.connected,
+        printState: s.printState,
+        kobraState: s.kobraState,
+        currLayer: s.currLayer,
+        totalLayers: s.totalLayers,
+        pct: Math.round(s.progress * 100),
+        filename: s.filename,
+        thumbnail: s.thumbnail,
+        fileReady: s.fileReady,
+        errorCode: s.errorCode,
+        pauseMsg: s.pauseMsg,
+    }));
     const openDialog = confirmationDialogStore.actions.openDialog;
 
     const pause = usePrinterAction(printerId, api.control.pause, m.print_pause_requested);
@@ -29,7 +40,6 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
     const cancel = useMutation({
         mutationFn: (reason: FailureReason | '') => api.control.cancel(printerId, reason),
         onSuccess: () => toast.success(m.print_cancel_requested()),
-        onError: (e: Error) => toast.error(e.message),
     });
 
     const printing = state.printState === 'printing';
@@ -42,9 +52,6 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
     const qc = useQueryClient();
     const clearReady = useMutation({ mutationFn: () => api.control.clearFileReady(printerId) });
 
-    const pct = Math.round(state.progress * 100);
-    const remaining =
-        clock.remainSec || (state.slicerTimeSec ? Math.max(0, state.slicerTimeSec - clock.elapsedSec) : 0);
     const thumbnail = liveFile?.thumbnail || state.thumbnail;
     const title = active && state.filename ? parseFilename(state.filename) : null;
     const openPreview = liveFile
@@ -84,7 +91,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                                 </p>
                             )}
                         </div>
-                        {!calibrating && <span className="text-3xl font-semibold tabular-nums">{pct}%</span>}
+                        {!calibrating && <span className="text-3xl font-semibold tabular-nums">{state.pct}%</span>}
                     </div>
                     {calibrating ? (
                         <p className="text-sm text-primary-foreground/80">
@@ -96,21 +103,17 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
                             aria-label={m.print_title()}
                             aria-valuemin={0}
                             aria-valuemax={100}
-                            aria-valuenow={pct}
+                            aria-valuenow={state.pct}
                             className="h-2 overflow-hidden rounded-full bg-primary-foreground/20"
                         >
                             <div
                                 className="h-full rounded-full bg-primary-foreground transition-[width] duration-500"
-                                style={{ width: `${pct}%` }}
+                                style={{ width: `${state.pct}%` }}
                             />
                         </div>
                     )}
                     <dl className="grid grid-cols-3 gap-2">
-                        <Kv
-                            k={m.print_elapsed()}
-                            v={calibrating ? '—' : formatDuration(clock.elapsedSec, { zero: true, units: 2 })}
-                        />
-                        <Kv k={m.print_remaining()} v={formatDuration(remaining, { zero: true, units: 2 })} />
+                        <PrintTimes printerId={printerId} />
                         {liveFile ? (
                             <LayerKv printerId={printerId} file={liveFile} currLayer={state.currLayer} />
                         ) : (
@@ -210,6 +213,30 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
     );
 }
 
+function PrintTimes({ printerId }: { printerId: string }) {
+    const state = useLiveState(printerId, (s) => ({
+        printState: s.printState,
+        kobraState: s.kobraState,
+        currLayer: s.currLayer,
+        printTimeAt: s.printTimeAt,
+        printDurationSec: s.printDurationSec,
+        remainTimeSec: s.remainTimeSec,
+        slicerTimeSec: s.slicerTimeSec,
+    }));
+    const clock = usePrintClock(state);
+    const remaining =
+        clock.remainSec || (state.slicerTimeSec ? Math.max(0, state.slicerTimeSec - clock.elapsedSec) : 0);
+    return (
+        <>
+            <Kv
+                k={m.print_elapsed()}
+                v={isCalibrating(state) ? '—' : formatDuration(clock.elapsedSec, { zero: true, units: 2 })}
+            />
+            <Kv k={m.print_remaining()} v={formatDuration(remaining, { zero: true, units: 2 })} />
+        </>
+    );
+}
+
 function LayerKv({ printerId, file, currLayer }: { printerId: string; file: GcodeFileDto; currLayer: number }) {
     const status = useParsedGcode(printerId, file);
     const total = status.kind === 'ready' ? status.data.layers.length : undefined;
@@ -243,7 +270,7 @@ function PreviewTile({ thumbnail, onOpen }: { thumbnail: string; onOpen?: () => 
             )}
         >
             {body}
-            <span className="absolute right-1 bottom-1 rounded-full bg-primary-foreground px-1.5 text-[10px] font-semibold text-primary">
+            <span className="absolute right-1 bottom-1 rounded-full bg-card px-1.5 text-[10px] font-semibold text-primary-strong">
                 3D
             </span>
         </button>

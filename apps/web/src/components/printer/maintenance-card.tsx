@@ -47,11 +47,9 @@ export function MaintenanceCard({ printerId, className }: { printerId: string; c
     const qc = useQueryClient();
     const tasks = useQuery(maintenanceQuery(printerId));
     const invalidate = () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'maintenance'] });
-    const onError = (e: Error) => toast.error(e.message);
     const remove = useMutation({
         mutationFn: (id: string) => api.maintenance.remove(printerId, id),
         onSuccess: invalidate,
-        onError,
     });
     const openForm = (task?: MaintenanceTaskDto) =>
         confirmationDialogStore.actions.openDialog({
@@ -93,7 +91,6 @@ export function MaintenanceCard({ printerId, className }: { printerId: string; c
             toast.success(m.maintenance_saved());
             void invalidate();
         },
-        onError,
     });
 
     return (
@@ -281,7 +278,6 @@ export function TaskForm({
             onSaved();
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: {
@@ -415,7 +411,6 @@ export function DoneForm({
             onSaved();
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: { note: '' },

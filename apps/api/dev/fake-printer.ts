@@ -15,6 +15,7 @@ const CONNECT = 1;
 const PUBLISH = 3;
 const SUBSCRIBE = 8;
 const PINGREQ = 12;
+const PAUSE_REASON = { code: 11842, msg: 'filament jam' };
 
 const IDENTITY = {
     ip: HOST,
@@ -60,6 +61,7 @@ interface Reply {
     data?: unknown;
     state?: string;
     code?: number;
+    msg?: string;
 }
 
 export interface FakePrinterOptions {
@@ -325,7 +327,26 @@ export class FakePrinter {
         const usage = Math.round((this.elapsedSec / TOTAL_SEC) * TOTAL_FILAMENT_MM);
         return {
             state: this.state,
+            ...(this.state === 'paused' ? PAUSE_REASON : {}),
             data: { ...this.project(), supplies_usage: usage, settings: { print_speed_mode: this.speedMode } },
+        };
+    }
+
+    private updatedReply(): Reply {
+        const { state: _, ...project } = this.project();
+        return {
+            state: 'updated',
+            data: {
+                ...project,
+                settings: {
+                    fan_speed_pct: this.fan,
+                    print_speed_mode: this.speedMode,
+                    target_hotbed_temp: this.temp.target_hotbed_temp,
+                    target_nozzle_temp: this.temp.target_nozzle_temp,
+                    z_comp: 0,
+                },
+            },
+            msg: 'done',
         };
     }
 
@@ -358,7 +379,7 @@ export class FakePrinter {
             case 'print/update':
                 this.speedMode = d.settings?.print_speed_mode ?? this.speedMode;
                 this.setTargets(d.settings?.target_nozzle_temp, d.settings?.target_hotbed_temp);
-                return this.printReply();
+                return this.updatedReply();
             case 'tempature/set':
                 this.setTargets(
                     d.type === 1 ? undefined : d.target_nozzle_temp,

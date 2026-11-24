@@ -28,8 +28,9 @@ vi.mock('@/lib/api', () => ({
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
-    useLiveState: () => ({ connected: true, printState: 'standby' }) as unknown as PrinterLiveState,
-    usePrinter: () => ({ settings: { webUploadWarning: false } }),
+    useLiveState: (_id: string, select: (s: PrinterLiveState) => unknown) =>
+        select({ connected: true, printState: 'standby' } as unknown as PrinterLiveState),
+    usePrinter: (_id: string, select: (p: unknown) => unknown) => select({ settings: { webUploadWarning: false } }),
 }));
 
 const file = { id: 'f1', filename: 'bracket.gcode', webUnverified: false } as unknown as GcodeFileDto;

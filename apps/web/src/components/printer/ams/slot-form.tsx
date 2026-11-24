@@ -63,9 +63,9 @@ function SlotFormInner({
     onClose?: () => void;
     onBack?: () => void;
 }) {
-    const printer = usePrinter(printerId);
-    const live = printer?.live;
-    const visibleVendors = printer?.settings.visibleVendors ?? [];
+    const visibleVendors = usePrinter(printerId, (p) => p?.settings.visibleVendors) ?? [];
+    const loaded = usePrinter(printerId, (p) => p?.live?.amsLoadedSlot === slot.globalIndex);
+    const busy = usePrinter(printerId, (p) => p?.live?.printState === 'printing');
     const qc = useQueryClient();
     const profiles = useQuery(filamentProfilesQuery);
     const spoolman = useQuery(spoolmanStatusQuery(printerId));
@@ -75,9 +75,6 @@ function SlotFormInner({
     const localSpools = useQuery(spoolsQuery());
     const localAssign = useQuery(spoolAssignmentsQuery(printerId));
     const currentLocal = localAssign.data?.slotSpools[String(slot.globalIndex)] ?? '';
-    const loaded = live?.amsLoadedSlot === slot.globalIndex;
-    const busy = live?.printState === 'printing';
-    const onError = (e: Error) => toast.error(e.message);
     const save = useMutation({
         mutationFn: async (v: AmsSlotFormValues & { profile: string; spoolId: number; localSpoolId: string }) => {
             const [vendor = '', name = ''] = v.profile ? v.profile.split('|||') : [];
@@ -106,7 +103,6 @@ function SlotFormInner({
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'spools'] });
             onClose();
         },
-        onError,
     });
     const feed = useMutation({
         mutationFn: (type: 1 | 2) => api.ams.feed(printerId, { slotIndex: slot.globalIndex, type }),
@@ -114,7 +110,6 @@ function SlotFormInner({
             toast.success(type === 1 ? m.slot_loading() : m.slot_unloading());
             onClose();
         },
-        onError,
     });
     const form = useForm({
         defaultValues: {

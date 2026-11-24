@@ -1,19 +1,38 @@
-import type { PrinterLiveState } from '@kobralink/shared';
+import type { Printer, PrinterLiveState } from '@kobralink/shared';
 import { shallow, useSelector } from '@tanstack/react-store';
 import { useEffect } from 'react';
-import { EMPTY_SAMPLES, printersStore } from '@/stores/printers';
+import type { PrinterWithLive } from '@/lib/api';
+import { EMPTY_SAMPLES, type PrintersState, printersStore } from '@/stores/printers';
 
-export const usePrinters = () =>
-    useSelector(printersStore, (s) => s.order.map((id) => s.printers[id]).filter(Boolean), { compare: shallow });
+const all = (s: PrintersState) => s.order.map((id) => s.printers[id]).filter(Boolean);
 
-export const usePrinter = (id: string | null | undefined) =>
-    useSelector(printersStore, (s) => (id ? s.printers[id] : undefined));
+const sameIgnoringLive = (a: PrinterWithLive[], b: PrinterWithLive[]) =>
+    a.length === b.length && a.every((p, i) => p === b[i] || shallow({ ...p, live: null }, { ...b[i], live: null }));
 
-export const useLiveState = (id: string): PrinterLiveState => {
-    const live = useSelector(printersStore, (s) => s.printers[id]?.live);
-    if (!live) throw new Error(`No live state for printer ${id}`);
-    return live;
-};
+export const usePrinters = <T = PrinterWithLive[]>(
+    select: (printers: PrinterWithLive[]) => T = (printers) => printers as T,
+): T => useSelector(printersStore, (s) => select(all(s)), { compare: shallow });
+
+export const usePrinterList = (): Printer[] => useSelector(printersStore, all, { compare: sameIgnoringLive });
+
+export const usePrinter = <T = PrinterWithLive | undefined>(
+    id: string | null | undefined,
+    select: (printer: PrinterWithLive | undefined) => T = (printer) => printer as T,
+): T => useSelector(printersStore, (s) => select(id ? s.printers[id] : undefined), { compare: shallow });
+
+export const useLiveState = <T = PrinterLiveState>(
+    id: string,
+    select: (live: PrinterLiveState) => T = (live) => live as T,
+): T =>
+    useSelector(
+        printersStore,
+        (s) => {
+            const live = s.printers[id]?.live;
+            if (!live) throw new Error(`No live state for printer ${id}`);
+            return select(live);
+        },
+        { compare: shallow },
+    );
 
 export const useSamples = (id: string) => {
     useEffect(() => printersStore.actions.loadSamples(id), [id]);

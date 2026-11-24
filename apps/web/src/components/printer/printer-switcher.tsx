@@ -9,13 +9,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinter, usePrinterList } from '@/hooks/use-printers';
 import { m } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export function PrinterSwitcher() {
     const navigate = useNavigate();
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const { printerId: selectedId } = useParams({ strict: false });
     const current = printers.find((p) => p.id === selectedId);
 
@@ -37,12 +37,7 @@ export function PrinterSwitcher() {
                         className="rounded-xl"
                         onSelect={() => navigate({ to: '/printers/$printerId', params: { printerId: p.id } })}
                     >
-                        <span
-                            className={cn(
-                                'size-2 shrink-0 rounded-full',
-                                p.live?.connected ? 'bg-primary' : 'bg-muted-foreground/50',
-                            )}
-                        />
+                        <ConnectionDot printerId={p.id} />
                         <span className="min-w-0 flex-1 truncate">{p.name}</span>
                         {p.id === selectedId && <Check className="size-4" />}
                     </DropdownMenuItem>
@@ -50,4 +45,9 @@ export function PrinterSwitcher() {
             </DropdownMenuContent>
         </DropdownMenu>
     );
+}
+
+function ConnectionDot({ printerId }: { printerId: string }) {
+    const connected = usePrinter(printerId, (p) => p?.live?.connected);
+    return <span className={cn('size-2 shrink-0 rounded-full', connected ? 'bg-primary' : 'bg-muted-foreground/50')} />;
 }

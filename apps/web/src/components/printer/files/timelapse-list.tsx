@@ -1,7 +1,6 @@
 import type { TimelapseDto } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Film, Play, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatBytes, formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -16,7 +15,6 @@ export function TimelapseList({ printerId }: { printerId: string }) {
     const remove = useMutation({
         mutationFn: api.timelapses.remove,
         onSuccess: () => qc.invalidateQueries({ queryKey: ['timelapses'] }),
-        onError: (e) => toast.error(e.message),
     });
     const items = list.data ?? [];
     if (!items.length) {

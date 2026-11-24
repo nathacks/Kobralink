@@ -140,8 +140,14 @@ export function PrintReadyForm({
     onQueue?: (result: PrintReadyResult, target: QueueTarget) => void;
     onSchedule?: (result: PrintReadyResult, startAt: string) => Promise<unknown>;
 }) {
-    const state = useLiveState(printerId);
-    const printer = usePrinter(printerId);
+    const state = useLiveState(printerId, ({ connected, printState, filamentMode, amsSlots, features }) => ({
+        connected,
+        printState,
+        filamentMode,
+        amsSlots,
+        features,
+    }));
+    const settings = usePrinter(printerId, (p) => p?.settings);
     const cost = useCostEstimate(printerId);
     const slotInfos = useQuery(filamentSlotsQuery(printerId));
     const objects = useQuery(fileObjectsQuery(printerId, file.id));
@@ -169,13 +175,11 @@ export function PrintReadyForm({
     const [assignments, setAssignments] = useState<Record<number, number>>(() => defaultAssignments(channels, usable));
     const [excluded, setExcluded] = useState<string[]>([]);
     const [showObjects, setShowObjects] = useState(false);
-    const [autoLeveling, setAutoLeveling] = useState(printer?.settings.autoLeveling ?? true);
-    const [vibrationCompensation, setVibrationCompensation] = useState(
-        printer?.settings.vibrationCompensation ?? false,
-    );
-    const [flowCalibration, setFlowCalibration] = useState(printer?.settings.flowCalibration ?? true);
-    const [timelapse, setTimelapse] = useState(printer?.settings.timelapseEnabled ?? false);
-    const [failureDetection, setFailureDetection] = useState(printer?.settings.failureDetection ?? true);
+    const [autoLeveling, setAutoLeveling] = useState(settings?.autoLeveling ?? true);
+    const [vibrationCompensation, setVibrationCompensation] = useState(settings?.vibrationCompensation ?? false);
+    const [flowCalibration, setFlowCalibration] = useState(settings?.flowCalibration ?? true);
+    const [timelapse, setTimelapse] = useState(settings?.timelapseEnabled ?? false);
+    const [failureDetection, setFailureDetection] = useState(settings?.failureDetection ?? true);
     const [pending, setPending] = useState(false);
     const [editing, setEditing] = useState<AmsSlot | null>(null);
     const [scheduling, setScheduling] = useState(false);
@@ -552,7 +556,7 @@ export function PrintReadyForm({
                                 <SelectContent>
                                     <SelectItem value="this">{m.queue_target_this()}</SelectItem>
                                     <SelectItem value="any">{m.queue_target_any()}</SelectItem>
-                                    {(printer?.settings.profile.tags ?? []).map((tag) => (
+                                    {(settings?.profile.tags ?? []).map((tag) => (
                                         <SelectItem key={tag} value={`tag:${tag}`}>
                                             {m.queue_target_tag({ tag })}
                                         </SelectItem>

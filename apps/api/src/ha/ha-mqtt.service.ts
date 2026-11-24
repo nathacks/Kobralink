@@ -368,14 +368,13 @@ export class HaMqttService implements OnModuleInit, OnModuleDestroy {
         if (!entry) return;
         const bridge = entry.bridge;
         const cmd = mtch[2];
-        try {
+        const run = async () => {
             if (cmd === 'light') bridge.setLight(payload.trim().toUpperCase() === 'ON');
-            else if (cmd === 'pause') void bridge.pause();
-            else if (cmd === 'resume') void bridge.resume();
-            else if (cmd === 'cancel') void bridge.cancel();
-        } catch (e) {
-            this.log.warn(`HA command ${cmd} failed: ${(e as Error).message}`);
-        }
+            else if (cmd === 'pause') await bridge.pause();
+            else if (cmd === 'resume') await bridge.resume();
+            else if (cmd === 'cancel') await bridge.cancel();
+        };
+        void run().catch((e) => this.log.warn(`HA command ${cmd} failed: ${(e as Error).message}`));
     }
 }
 

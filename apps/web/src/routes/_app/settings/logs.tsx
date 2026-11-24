@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Download, Pause, Play, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useSse, useSseStatus } from '@/components/providers/sse-provider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatTime } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -38,37 +38,49 @@ const LEVEL_CLASS: Record<string, string> = {
 };
 const MAX = 2000;
 
+const LogRow = memo(function LogRow({ entry }: { entry: LogEntry }) {
+    return (
+        <div
+            className={cn(
+                'flex flex-wrap gap-x-3 whitespace-pre-wrap break-all md:flex-nowrap',
+                LEVEL_CLASS[entry.level],
+            )}
+        >
+            <span className="shrink-0 tabular-nums text-muted-foreground">{formatTime(entry.ts)}</span>
+            <span className="shrink-0 uppercase text-muted-foreground md:w-16">{entry.level}</span>
+            <span className="shrink-0 text-muted-foreground">[{entry.context}]</span>
+            <span className="basis-full md:basis-auto">{entry.message}</span>
+        </div>
+    );
+});
+
 function LogsPage() {
     const [entries, setEntries] = useState<LogEntry[]>([]);
     const [paused, setPaused] = useState(false);
     const [filter, setFilter] = useState('');
     const [levels, setLevels] = useState<Set<string>>(new Set(['error', 'warn', 'log']));
     const [source, setSource] = useState('all');
-    const printers = usePrinters();
-    const pending = useRef<LogEntry[]>([]);
+    const printers = usePrinterList();
+    const [pending, setPending] = useState<LogEntry[]>([]);
     const seq = useRef(0);
     const bottomRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
     const tag = (items: Omit<LogEntry, 'id'>[]): LogEntry[] => items.map((e) => ({ ...e, id: seq.current++ }));
     const push = (items: LogEntry[]) => {
-        if (paused) {
-            pending.current.push(...items);
-            return;
-        }
-        setEntries((cur) => [...cur, ...items].slice(-MAX));
+        (paused ? setPending : setEntries)((cur) => [...cur, ...items].slice(-MAX));
     };
     useSse<Omit<LogEntry, 'id'>[]>('logs', 'snapshot', (items) => setEntries(tag(items).slice(-MAX)));
     useSse<Omit<LogEntry, 'id'>>('logs', 'log', (entry) => push(tag([entry])));
     const connected = useSseStatus() === 'open';
 
-    useEffect(() => {
-        if (!paused && pending.current.length) {
-            const items = pending.current;
-            pending.current = [];
-            setEntries((cur) => [...cur, ...items].slice(-MAX));
+    const togglePause = () => {
+        if (paused) {
+            setEntries((cur) => [...cur, ...pending].slice(-MAX));
+            setPending([]);
         }
-    }, [paused]);
+        setPaused(!paused);
+    };
 
     const matchesSource = (e: LogEntry) =>
         source === 'all' ? true : source === 'system' ? !e.printerId : e.printerId === source;
@@ -140,13 +152,13 @@ function LogsPage() {
                         variant="secondary"
                         size="sm"
                         className="rounded-full"
-                        onClick={() => setPaused((p) => !p)}
+                        onClick={togglePause}
                         title={paused ? m.logs_resume_scroll() : m.logs_pause_scroll()}
                     >
                         {paused ? <Play /> : <Pause />}
                         {paused
-                            ? pending.current.length
-                                ? m.logs_resume_pending({ count: pending.current.length })
+                            ? pending.length
+                                ? m.logs_resume_pending({ count: pending.length })
                                 : m.common_resume()
                             : m.common_pause()}
                     </Button>
@@ -178,20 +190,7 @@ function LogsPage() {
                 {visible.length === 0 ? (
                     <p className="p-2 text-muted-foreground">{m.logs_empty()}</p>
                 ) : (
-                    visible.map((e) => (
-                        <div
-                            key={e.id}
-                            className={cn(
-                                'flex flex-wrap gap-x-3 whitespace-pre-wrap break-all md:flex-nowrap',
-                                LEVEL_CLASS[e.level],
-                            )}
-                        >
-                            <span className="shrink-0 tabular-nums text-muted-foreground">{formatTime(e.ts)}</span>
-                            <span className="shrink-0 uppercase text-muted-foreground md:w-16">{e.level}</span>
-                            <span className="shrink-0 text-muted-foreground">[{e.context}]</span>
-                            <span className="basis-full md:basis-auto">{e.message}</span>
-                        </div>
-                    ))
+                    visible.map((e) => <LogRow key={e.id} entry={e} />)
                 )}
                 <div ref={bottomRef} />
             </div>

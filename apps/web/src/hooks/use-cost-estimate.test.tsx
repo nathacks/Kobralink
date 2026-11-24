@@ -26,7 +26,8 @@ vi.mock('@/lib/queries', () => ({
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
-    usePrinter: () => ({ settings: { profile: { powerW: mocks.powerW } } }),
+    usePrinter: (_id: string, select: (p: unknown) => unknown) =>
+        select({ settings: { profile: { powerW: mocks.powerW } } }),
 }));
 
 const file = (material: string, usedG: number, slotIndex = 0) =>

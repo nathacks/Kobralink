@@ -353,6 +353,7 @@ describe('bed clear', () => {
 
     it('marks a rejected print as failed and puts it back first', async () => {
         attach('p1');
+        await db.client.printer.update({ where: { id: 'p1' }, data: { awaitingBedClear: true } });
         await seedJob(db.client, 'p1', { fileId: 'f3', filename: 'f3.gcode', startedAt: new Date() });
         await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
         expect(await svc.confirmBedClear('p1', 'bad')).toEqual({ started: null, startsAt: null });
@@ -387,6 +388,35 @@ describe('bed clear', () => {
             svc.detach('p1');
             await db.client.queueItem.deleteMany();
         }
+    });
+
+    it('rejects a print once when the button is pressed twice', async () => {
+        attach('p1');
+        await db.client.printer.update({ where: { id: 'p1' }, data: { awaitingBedClear: true } });
+        await seedJob(db.client, 'p1', { fileId: 'f3', filename: 'f3.gcode', startedAt: new Date() });
+        await Promise.all([svc.confirmBedClear('p1', 'bad'), svc.confirmBedClear('p1', 'bad')]);
+        expect(await svc.list()).toHaveLength(1);
+    });
+
+    it('holds when a print ended while the printer was disconnected', async () => {
+        const p1 = attach('p1', { queueAutoStart: true, queueBedClearConfirm: false });
+        await p1.state('printing');
+        await p1.state('offline', { connected: false });
+        await p1.state('free');
+        expect((await svc.status('p1')).awaitingBedClear).toBe(true);
+        await svc.add('f1', [], false, {}, { printerId: 'p1', targetTags: [] }, false);
+        expect(printStoredFile).not.toHaveBeenCalled();
+    });
+
+    it('holds when a print ended while Kobralink was stopped, or was cancelled after a restart in pause', async () => {
+        const p1 = attach('p1');
+        p1.emitter.emit('interrupted');
+        await new Promise((r) => setTimeout(r, 10));
+        expect((await svc.status('p1')).awaitingBedClear).toBe(true);
+        await db.client.printer.updateMany({ data: { awaitingBedClear: false } });
+        await p1.state('paused', { printState: 'paused' });
+        await p1.state('stoped');
+        expect((await svc.status('p1')).awaitingBedClear).toBe(true);
     });
 
     it('ignores an ended state when no print was seen', async () => {

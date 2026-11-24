@@ -24,7 +24,17 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [mode, setMode] = useState<SceneMode>('solid');
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
-    const live = usePrinter(printerId)?.live;
+    const live = usePrinter(
+        printerId,
+        (p) =>
+            p?.live && {
+                filename: p.live.filename,
+                printState: p.live.printState,
+                currLayer: p.live.currLayer,
+                amsSlots: p.live.amsSlots,
+                filamentMode: p.live.filamentMode,
+            },
+    );
     const cost = useCostEstimate(printerId);
     const printingThis = Boolean(
         live && live.filename === file.filename && (live.printState === 'printing' || live.printState === 'paused'),

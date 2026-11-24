@@ -8,7 +8,7 @@ import { BedClearBanner } from '@/components/queue/bed-clear-banner';
 import { moveInOrder, QueueItemRow } from '@/components/queue/queue-item-row';
 import { queueModeText } from '@/components/queue/queue-mode';
 import { Button } from '@/components/ui/button';
-import { useLiveState, usePrinter, usePrinters } from '@/hooks/use-printers';
+import { useLiveState, usePrinter, usePrinterList } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { formatDate, formatDuration } from '@/lib/format';
 import { m } from '@/lib/i18n';
@@ -17,9 +17,12 @@ import { cn } from '@/lib/utils';
 import { alertConfirmationDialogStore } from '@/stores/alert-confirmation-dialog';
 
 export function QueueCard({ printerId, className }: { printerId: string; className?: string }) {
-    const state = useLiveState(printerId);
-    const printer = usePrinter(printerId);
-    const printers = usePrinters();
+    const idle = useLiveState(
+        printerId,
+        (s) => s.connected && s.printState !== 'printing' && s.printState !== 'paused',
+    );
+    const settings = usePrinter(printerId, (p) => p?.settings);
+    const printers = usePrinterList();
     const qc = useQueryClient();
     const queue = useQuery(queueQuery(printerId));
     const all = useQuery(allQueueQuery);
@@ -27,7 +30,6 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
     const schedule = useQuery(scheduleQuery(printerId));
     const items = queue.data ?? [];
     const scheduled = schedule.data ?? [];
-    const idle = state.connected && state.printState !== 'printing' && state.printState !== 'paused';
     const maintenance = Boolean(status.data?.maintenance);
     const invalidate = () => {
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'queue'] });
@@ -35,11 +37,9 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
         void qc.invalidateQueries({ queryKey: ['printers', printerId, 'files'] });
         void qc.invalidateQueries({ queryKey: ['queue'] });
     };
-    const onError = (e: Error) => toast.error(e.message);
     const removeScheduled = useMutation({
         mutationFn: (id: string) => api.schedule.remove(printerId, id),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'schedule'] }),
-        onError,
     });
     const start = useMutation({
         mutationFn: () => api.queue.start(printerId),
@@ -47,23 +47,20 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
             toast.success(m.files_print_started({ name: item.filename }));
             invalidate();
         },
-        onError,
     });
-    const remove = useMutation({ mutationFn: (id: string) => api.queue.remove(id), onSuccess: invalidate, onError });
-    const clear = useMutation({ mutationFn: () => api.queue.clear(printerId), onSuccess: invalidate, onError });
+    const remove = useMutation({ mutationFn: (id: string) => api.queue.remove(id), onSuccess: invalidate });
+    const clear = useMutation({ mutationFn: () => api.queue.clear(printerId), onSuccess: invalidate });
     const reorder = useMutation({
         mutationFn: (ids: string[]) => api.queue.reorder(ids),
         onSuccess: invalidate,
-        onError,
     });
     const toggleMaintenance = useMutation({
         mutationFn: () => api.queue.maintenance(printerId, !maintenance),
         onSuccess: (next) => {
             qc.setQueryData(queueStatusQuery(printerId).queryKey, next);
             invalidate();
-            void qc.invalidateQueries({ queryKey: ['printers'] });
+            void qc.invalidateQueries({ queryKey: ['printers'], exact: true });
         },
-        onError,
     });
     const move = (index: number, dir: -1 | 1) => {
         const neighbour = items[index + dir];
@@ -147,7 +144,7 @@ export function QueueCard({ printerId, className }: { printerId: string; classNa
                             </ul>
                         </div>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                            <span>{printer ? queueModeText(printer.settings) : null}</span>
+                            <span>{settings ? queueModeText(settings) : null}</span>
                             <Button
                                 size="sm"
                                 className="rounded-full"

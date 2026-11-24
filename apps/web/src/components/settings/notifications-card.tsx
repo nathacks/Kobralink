@@ -1,5 +1,5 @@
 import { type AppSettings, notificationEventsSchema, notificationSettingsSchema, optionalUrl } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { BellRing } from 'lucide-react';
 import { useState } from 'react';
@@ -50,7 +50,6 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
                 new Notification(m.notify_test_title(), { body: m.notify_test_body() });
             }
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: settings.notifications,
@@ -61,7 +60,7 @@ export function NotificationsCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
     const text = (
         name: 'webhookUrl' | 'discordUrl' | 'telegramToken' | 'telegramChatId' | 'ntfyUrl',
         label: string,

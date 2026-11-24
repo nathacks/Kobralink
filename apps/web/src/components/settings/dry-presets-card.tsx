@@ -1,5 +1,5 @@
 import { type AppSettings, aceDryPresetSchema, DEFAULT_DRY_PRESETS } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { Plus, X } from 'lucide-react';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
@@ -20,7 +20,7 @@ export function DryPresetsCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
     return (
         <SettingsCard
             title={m.dry_presets_title()}

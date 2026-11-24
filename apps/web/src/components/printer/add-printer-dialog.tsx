@@ -41,9 +41,8 @@ function AddPrinterForm() {
         onSuccess: (p) => {
             toast.success(m.add_printer_added({ name: p.name, port: p.httpPort }));
             closeDialog();
-            void qc.invalidateQueries({ queryKey: ['printers'] });
+            void qc.invalidateQueries({ queryKey: ['printers'], exact: true });
         },
-        onError: (e) => toast.error(e.message),
     });
 
     const form = useForm({

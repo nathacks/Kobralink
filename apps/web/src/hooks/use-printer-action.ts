@@ -5,6 +5,5 @@ export function usePrinterAction(printerId: string, fn: (id: string) => Promise<
     return useMutation({
         mutationFn: () => fn(printerId),
         onSuccess: () => toast.success(ok()),
-        onError: (e) => toast.error(e.message),
     });
 }

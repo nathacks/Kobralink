@@ -1,4 +1,6 @@
 import {
+    type Printer,
+    type PrinterLiveState,
     type PrinterProfile,
     type PrinterSettingsFormValues,
     printerSettingsFormSchema,
@@ -19,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { api, type PrinterWithLive } from '@/lib/api';
+import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { appSettingsQuery, filamentVendorsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
@@ -45,10 +47,12 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 
 export function PrinterSettingsForm({
     printer,
+    live,
     onSaved,
     onDeleted,
 }: {
-    printer: PrinterWithLive;
+    printer: Printer;
+    live: Pick<PrinterLiveState, 'manualOffline' | 'features'> | null | undefined;
     onSaved: () => void;
     onDeleted: () => void;
 }) {
@@ -61,25 +65,22 @@ export function PrinterSettingsForm({
                 settings: value.settings,
             }),
         onSuccess: (updated) => {
-            printersStore.actions.upsertPrinter({ ...printer, ...updated });
+            printersStore.actions.upsertPrinter(updated);
             toast.success(m.settings_saved());
             onSaved();
         },
-        onError: (e) => toast.error(e.message),
     });
     const connect = useMutation({
         mutationFn: () =>
-            printer.live?.manualOffline ? api.printers.connect(printer.id) : api.printers.disconnect(printer.id),
+            live?.manualOffline ? api.printers.connect(printer.id) : api.printers.disconnect(printer.id),
         onSuccess: () => {
-            toast.success(printer.live?.manualOffline ? m.printers_reconnect_requested() : m.settings_mqtt_closed());
+            toast.success(live?.manualOffline ? m.printers_reconnect_requested() : m.settings_mqtt_closed());
             onSaved();
         },
-        onError: (e) => toast.error(e.message),
     });
     const restart = useMutation({
         mutationFn: () => api.printers.reconnect(printer.id),
         onSuccess: () => toast.success(m.settings_mqtt_restarted()),
-        onError: (e) => toast.error(e.message),
     });
     const refresh = useMutation({
         mutationFn: () => api.printers.refreshCredentials(printer.id),
@@ -87,7 +88,6 @@ export function PrinterSettingsForm({
             toast.success(m.settings_credentials_refreshed());
             onSaved();
         },
-        onError: (e) => toast.error(e.message),
     });
     const appSettings = useQuery(appSettingsQuery).data;
     const haConfigured = Boolean(appSettings?.homeAssistant?.url && appSettings.homeAssistant.token);
@@ -99,7 +99,6 @@ export function PrinterSettingsForm({
             onSaved();
             onDeleted();
         },
-        onError: (e) => toast.error(e.message),
     });
 
     const form = useForm({
@@ -243,19 +242,19 @@ export function PrinterSettingsForm({
                             size="sm"
                             className="rounded-full"
                             onClick={() => restart.mutate()}
-                            disabled={restart.isPending || printer.live?.manualOffline}
+                            disabled={restart.isPending || live?.manualOffline}
                         >
                             {m.settings_restart_mqtt()}
                         </Button>
                         <Button
                             type="button"
-                            variant={printer.live?.manualOffline ? 'default' : 'outline'}
+                            variant={live?.manualOffline ? 'default' : 'outline'}
                             size="sm"
                             className="rounded-full"
                             onClick={() => connect.mutate()}
                             disabled={connect.isPending}
                         >
-                            {printer.live?.manualOffline ? m.settings_reconnect() : m.settings_disconnect()}
+                            {live?.manualOffline ? m.settings_reconnect() : m.settings_disconnect()}
                         </Button>
                     </div>
                 </CardContent>
@@ -266,7 +265,7 @@ export function PrinterSettingsForm({
                     <CardTitle>{m.settings_print()}</CardTitle>
                 </CardHeader>
                 <CardContent className="divide-y">
-                    {supportsPrintOption(printer.live?.features, 'autoLeveling') && (
+                    {supportsPrintOption(live?.features, 'autoLeveling') && (
                         <form.Field name="settings.autoLeveling">
                             {(field) => (
                                 <Row label={m.settings_auto_leveling()} hint={m.settings_auto_leveling_hint()}>
@@ -275,7 +274,7 @@ export function PrinterSettingsForm({
                             )}
                         </form.Field>
                     )}
-                    {supportsPrintOption(printer.live?.features, 'vibrationCompensation') && (
+                    {supportsPrintOption(live?.features, 'vibrationCompensation') && (
                         <form.Field name="settings.vibrationCompensation">
                             {(field) => (
                                 <Row label={m.settings_vibration()}>
@@ -284,7 +283,7 @@ export function PrinterSettingsForm({
                             )}
                         </form.Field>
                     )}
-                    {supportsPrintOption(printer.live?.features, 'flowCalibration') && (
+                    {supportsPrintOption(live?.features, 'flowCalibration') && (
                         <form.Field name="settings.flowCalibration">
                             {(field) => (
                                 <Row label={m.settings_flow_calibration()} hint={m.settings_flow_calibration_hint()}>

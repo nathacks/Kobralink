@@ -16,6 +16,5 @@ export function useSaveSettings(onDone?: (next: AppSettings) => void) {
             toast.success(m.settings_saved());
             onDone?.(next);
         },
-        onError: (e) => toast.error(e.message),
     });
 }

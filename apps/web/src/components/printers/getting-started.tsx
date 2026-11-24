@@ -1,13 +1,12 @@
-import type { AppSettings } from '@kobralink/shared';
+import type { AppSettings, Printer } from '@kobralink/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Link, type LinkProps } from '@tanstack/react-router';
 import { Check, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { useCanOperate } from '@/hooks/use-role';
-import type { PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { appSettingsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
@@ -21,7 +20,7 @@ export interface StartItem {
     link: LinkProps;
 }
 
-export function startItems(printers: PrinterWithLive[], settings: AppSettings): StartItem[] {
+export function startItems(printers: Printer[], settings: AppSettings): StartItem[] {
     const first = printers[0];
     const profiled = printers.some((p) => {
         const profile = p.settings.profile;
@@ -66,7 +65,7 @@ function readHidden(): boolean {
 }
 
 export function GettingStarted() {
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const settings = useQuery(appSettingsQuery).data;
     const canOperate = useCanOperate();
     const [hidden, setHidden] = useState(readHidden);

@@ -32,7 +32,10 @@ vi.mock('@/lib/api', () => ({
     }),
 }));
 
-vi.mock('@/hooks/use-printers', () => ({ usePrinters: () => state.printers }));
+vi.mock('@/hooks/use-printers', () => ({
+    usePrinterList: () => state.printers,
+    usePrinters: (select: (printers: unknown[]) => unknown) => select(state.printers),
+}));
 
 vi.mock('@/components/printer/files/files-card', () => ({
     FilesCard: ({ printerId }: { printerId: string }) => <div>files of {printerId}</div>,

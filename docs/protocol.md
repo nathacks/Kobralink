@@ -134,7 +134,12 @@ shows (`supportsPrintOption` in `packages/shared/src/features.ts`).
 An `updated` print report (Kobra 4) carries the print fields plus `settings` (`fan_speed_pct`, `print_speed_mode`,
 `target_hotbed_temp`, `target_nozzle_temp`, `z_comp`). It comes every time the part fan or a target changes, so several
 times a minute, and once more right after a cancel, with the targets at 0. It is not a state: Kobralink keeps the
-current one, reads the fields while a print runs and ignores it otherwise.
+current one, reads the fields while a print runs and ignores it otherwise. Its `code`/`msg` (200, `done`) acknowledge the
+change: they are never a pause reason.
+
+A `failed` print report is either a refused command or a failed print, so Kobralink never ends a print on it: `info`
+decides (`failed`, or `free` for 10 s after a print). When the report names a file, its `code`/`msg` become the failure
+reason.
 
 Logged, not used yet: `aux_fan_speed_pct` and `box_fan_level` in `info` (when they change). Ignored today: `status/report`, `video/report`,
 `axis/report` (beyond refusals), `ota`, `event`, `extfilbox`, `aiSettings`, `calibration`, `properties`.

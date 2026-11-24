@@ -27,16 +27,13 @@ export function AceControls({
     disabled: boolean;
     busy: boolean;
 }) {
-    const onError = (e: Error) => toast.error(e.message);
     const autoFeed = useMutation({
         mutationFn: (input: { aceId: number; on: boolean }) => api.ams.autoFeed(printerId, input),
-        onError,
     });
     const dry = useMutation({
         mutationFn: (input: { action: 'start' | 'stop'; targetTemp?: number; duration?: number }) =>
             api.ams.dry(printerId, input),
         onSuccess: (_, v) => toast.success(v.action === 'start' ? m.ace_dry_started() : m.ace_dry_stopped()),
-        onError,
     });
     const drying =
         units.find((u) => u.drying.status === ACE_DRYING_ON)?.drying ??
@@ -58,12 +55,10 @@ export function AceControls({
             setScheduling(false);
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'dry-schedule'] });
         },
-        onError,
     });
     const removeSchedule = useMutation({
         mutationFn: (id: string) => api.drySchedule.remove(printerId, id),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['printers', printerId, 'dry-schedule'] }),
-        onError,
     });
 
     const form = useForm({

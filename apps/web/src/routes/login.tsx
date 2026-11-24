@@ -2,7 +2,6 @@ import { type LoginFormValues, loginFormSchema } from '@kobralink/shared';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { FieldError, fieldInvalid } from '@/components/form/field-error';
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,6 @@ function LoginPage() {
             await qc.query({ ...sessionQuery, staleTime: 0 });
             await navigate({ to: target ?? '/printers', replace: true });
         },
-        onError: (e) => toast.error(e.message),
     });
 
     const form = useForm({

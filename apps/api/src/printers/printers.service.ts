@@ -9,6 +9,7 @@ import {
 } from '@kobralink/shared';
 import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type { BridgePrinterConfig } from '../bridge/printer-bridge';
+import { loadEnv } from '../config/env';
 import type { Printer } from '../generated/prisma/client';
 import { m, protocolErrorMessage } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
@@ -76,8 +77,13 @@ export class PrintersService {
             (await this.prisma.client.printer.findMany({ select: { httpPort: true } })).map((p) => p.httpPort),
         );
         let port = FIRST_MOONRAKER_PORT;
+        used.add(loadEnv().port);
         while (used.has(port)) port++;
         return port;
+    }
+
+    private refuseApiPort(port: number): void {
+        if (port === loadEnv().port) throw new ConflictException(m.api_port_in_use({ port, name: 'Kobralink' }));
     }
 
     private async credentials(ip: string) {
@@ -98,6 +104,7 @@ export class PrintersService {
         });
         if (existing) throw new ConflictException(m.api_printer_exists({ name: existing.name }));
         const httpPort = input.httpPort ?? (await this.nextFreePort());
+        this.refuseApiPort(httpPort);
         const clash = await this.prisma.client.printer.findUnique({ where: { httpPort } });
         if (clash) throw new ConflictException(m.api_port_in_use({ port: httpPort, name: clash.name }));
         return this.prisma.client.printer.create({
@@ -118,6 +125,7 @@ export class PrintersService {
     async update(id: string, input: UpdatePrinterInput): Promise<Printer> {
         const current = await this.findOne(id);
         if (input.httpPort && input.httpPort !== current.httpPort) {
+            this.refuseApiPort(input.httpPort);
             const clash = await this.prisma.client.printer.findUnique({
                 where: { httpPort: input.httpPort },
             });

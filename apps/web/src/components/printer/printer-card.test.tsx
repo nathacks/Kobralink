@@ -93,15 +93,15 @@ describe('PrinterCard', () => {
         await renderWithProviders(<PrinterCard printer={printer(printing)} canOperate {...handlers} />);
         await userEvent.click(screen.getByRole('button', { name: 'Pause' }));
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-        expect(handlers.onPause).toHaveBeenCalledOnce();
-        expect(handlers.onCancel).toHaveBeenCalledOnce();
+        expect(handlers.onPause).toHaveBeenCalledExactlyOnceWith('p1');
+        expect(handlers.onCancel).toHaveBeenCalledExactlyOnceWith('p1');
     });
 
     it('toggles the light', async () => {
         const handlers = actions();
         await renderWithProviders(<PrinterCard printer={printer(printing)} canOperate {...handlers} />);
         await userEvent.click(screen.getByRole('button', { name: 'Turn light off' }));
-        expect(handlers.onLight).toHaveBeenCalledWith(false);
+        expect(handlers.onLight).toHaveBeenCalledWith('p1', false);
     });
 
     it('hides print controls from viewers', async () => {

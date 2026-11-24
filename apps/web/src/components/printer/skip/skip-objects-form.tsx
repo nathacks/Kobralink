@@ -15,11 +15,9 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
     const state = useQuery(skipStateQuery(printerId));
     const [selected, setSelected] = useState<string[]>([]);
     const close = confirmationDialogStore.actions.closeDialog;
-    const onError = (e: Error) => toast.error(e.message);
     const refresh = useMutation({
         mutationFn: () => api.skip.query(printerId),
         onSuccess: (r) => qc.setQueryData(skipStateQuery(printerId).queryKey, r),
-        onError,
     });
     const apply = useMutation({
         mutationFn: (names: string[]) => api.skip.apply(printerId, names),
@@ -28,7 +26,6 @@ export function SkipObjectsForm({ printerId }: { printerId: string }) {
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'skip'] });
             close();
         },
-        onError,
     });
     const objects = state.data?.objects ?? [];
     const skipped = state.data?.skipped ?? [];

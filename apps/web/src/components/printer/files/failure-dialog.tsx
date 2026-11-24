@@ -25,10 +25,10 @@ export function FailureDialog({ printerId, job }: { printerId: string; job: Prin
         onSuccess: () => {
             toast.success(m.history_failure_saved());
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'history'] });
+            void qc.invalidateQueries({ queryKey: ['history'] });
             void qc.invalidateQueries({ queryKey: ['stats'] });
             close();
         },
-        onError: (e: Error) => toast.error(e.message),
     });
     return (
         <form

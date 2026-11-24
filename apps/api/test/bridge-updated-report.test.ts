@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { type BridgePrinterConfig, PrinterBridge } from '../src/bridge/printer-bridge';
+import { type BridgeDomainEvent, type BridgePrinterConfig, PrinterBridge } from '../src/bridge/printer-bridge';
 import type { GcodeService } from '../src/gcode/gcode.service';
 
 function harness() {
@@ -27,17 +27,27 @@ function harness() {
     const internals = bridge as unknown as {
         s: { connected: boolean };
         onReport: (suffix: string, payload: Record<string, unknown>) => void;
-        log: { log: (m: string) => void };
+        log: { log: (m: string) => void; warn: (m: string) => void };
     };
     internals.s.connected = true;
     internals.log.log = () => undefined;
+    const warnings: string[] = [];
+    internals.log.warn = (m) => warnings.push(m);
     const jobs: unknown[][] = [];
     bridge.on('job', (...args: unknown[]) => jobs.push(args));
-    const report = async (state: string, data: Record<string, unknown>) => {
-        internals.onReport('print/report', { action: 'update', state, data });
+    const pauses: unknown[] = [];
+    bridge.on('event', (ev: BridgeDomainEvent) => {
+        if (ev.type === 'print_paused') pauses.push(ev.data?.code);
+    });
+    const report = async (
+        state: string,
+        data: Record<string, unknown>,
+        reason: { code?: number; msg?: string } = {},
+    ) => {
+        internals.onReport('print/report', { action: 'update', state, data, ...reason });
         await new Promise((r) => setTimeout(r, 0));
     };
-    return { bridge, report, jobs };
+    return { bridge, report, jobs, pauses, warnings };
 }
 
 const settings = (fan: number, nozzle = 230, bed = 70) => ({
@@ -59,6 +69,9 @@ const updated = (fan: number, nozzle = 230, bed = 70) => ({
     taskid: '-1',
     settings: settings(fan, nozzle, bed),
 });
+
+const jam = { code: 11842, msg: 'filament jam' };
+const done = { code: 200, msg: 'done' };
 
 describe('updated print reports', () => {
     it('leave a cancelled print cancelled, with its fields cleared', async () => {
@@ -124,5 +137,40 @@ describe('updated print reports', () => {
         await h.report('updated', updated(40));
         await h.report('updated', { ...updated(0), settings: { ...settings(0), fan_speed_pct: 'fast' } });
         expect(h.bridge.snapshot().fanSpeed).toBe(40);
+    });
+
+    it('keep the pause reason when they acknowledge a change during the pause', async () => {
+        const h = harness();
+        await h.report('printing', { filename: 'part.gcode', print_time: 10, curr_layer: 79 });
+        await h.report('paused', { filename: 'part.gcode' }, jam);
+        await h.report('updated', updated(0, 205), done);
+        await h.report('paused', { filename: 'part.gcode' }, jam);
+        const s = h.bridge.snapshot();
+        expect(s.errorCode).toBe(11842);
+        expect(s.pauseMsg).toBe('filament jam');
+        expect(h.pauses).toEqual([11842]);
+    });
+});
+
+describe('pause reasons', () => {
+    it('are logged and notified once while paused', async () => {
+        const h = harness();
+        await h.report('printing', { filename: 'part.gcode', print_time: 10, curr_layer: 79 });
+        for (let i = 0; i < 3; i++) await h.report('paused', { filename: 'part.gcode' }, jam);
+        expect(h.pauses).toEqual([11842]);
+        expect(h.warnings).toEqual(['Printer paused: [11842] filament jam']);
+    });
+
+    it('are notified again when they change, and cleared on resume', async () => {
+        const h = harness();
+        await h.report('printing', { filename: 'part.gcode', print_time: 10, curr_layer: 79 });
+        await h.report('paused', { filename: 'part.gcode' }, jam);
+        await h.report('paused', { filename: 'part.gcode' }, { ...jam, code: 11518 });
+        await h.report('paused', { filename: 'part.gcode' }, { code: 10402, msg: 'out of filament' });
+        expect(h.pauses).toEqual([11842, 11518, 10402]);
+        await h.report('printing', { filename: 'part.gcode', print_time: 10, curr_layer: 79 });
+        const s = h.bridge.snapshot();
+        expect(s.errorCode).toBe(0);
+        expect(s.pauseMsg).toBe('');
     });
 });

@@ -12,14 +12,15 @@ const row = {
     startAt: new Date(),
     options: JSON.stringify({ excludedObjects: ['cube'], timelapse: true }),
     createdAt: new Date(),
+    printer: { awaitingBedClear: false, maintenance: false },
     file: { id: 'f1', filename: 'bracket.gcode', thumbnail: null, estPrintTimeSec: 600 },
 };
 
-function harness(snapshot: { connected: boolean; printState: string }) {
+function harness(snapshot: { connected: boolean; printState: string }, hold: Partial<typeof row.printer> = {}) {
     const prisma = {
         client: {
             scheduledPrint: {
-                findUnique: mock(async () => row),
+                findUnique: mock(async () => ({ ...row, printer: { ...row.printer, ...hold } })),
                 delete: mock(async () => row),
                 findMany: mock(async () => []),
             },
@@ -74,6 +75,15 @@ describe('scheduled prints', () => {
             result: 'queued',
             error: '',
         });
+    });
+
+    it('queues the file while the bed is not cleared or the printer is in maintenance', async () => {
+        for (const hold of [{ awaitingBedClear: true }, { maintenance: true }]) {
+            const h = harness({ connected: true, printState: 'standby' }, hold);
+            await h.service.fire('s1');
+            expect(h.printStoredFile).not.toHaveBeenCalled();
+            expect(h.queue.add).toHaveBeenCalledTimes(1);
+        }
     });
 
     it('reports a failed start', async () => {

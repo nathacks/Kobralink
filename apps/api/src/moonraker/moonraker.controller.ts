@@ -259,7 +259,7 @@ export class MoonrakerController {
 
     @Post(['server/files/upload', 'api/files/local', 'api/files/*path'])
     @HttpCode(201)
-    @UseInterceptors(AnyFilesInterceptor({ limits: { files: 1 } }))
+    @UseInterceptors(AnyFilesInterceptor({ defParamCharset: 'utf8', limits: { files: 1 } }))
     async upload(
         @UploadedFiles() files: MulterFile[] | undefined,
         @Body() body: Record<string, string>,
@@ -309,6 +309,13 @@ export class MoonrakerController {
             },
             result: { item: { path: name, root: 'gcodes' }, action: 'create_file' },
         };
+    }
+
+    @Get('serve/:id/:filename')
+    async serveById(@Param('id') id: string, @Res() res: Response) {
+        const file = await this.gcode.get(id);
+        if (!file) throw new NotFoundException();
+        res.sendFile(file.path);
     }
 
     @Get('serve/:filename')

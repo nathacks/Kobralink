@@ -40,8 +40,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
-    useLiveState: () => mocks.live as unknown as PrinterLiveState,
-    usePrinter: () => mocks.printer,
+    useLiveState: (_id: string, select: (s: PrinterLiveState) => unknown) =>
+        select(mocks.live as unknown as PrinterLiveState),
+    usePrinter: (_id: string, select: (p: typeof mocks.printer) => unknown) => select(mocks.printer),
 }));
 
 const file = {

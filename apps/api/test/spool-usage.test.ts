@@ -24,6 +24,7 @@ function harness(syncRateSec = 0): Harness {
         getByFilename: async () => null,
         findOpenJob: async () => null,
         startJob: async () => 'job-1',
+        saveUsageState: async () => undefined,
         finishJob: async () => undefined,
     } as unknown as GcodeService;
     const config = {
@@ -131,6 +132,7 @@ describe('job usage priced from Spoolman', () => {
             getByFilename: async () => null,
             findOpenJob: async () => null,
             startJob: async () => 'job-1',
+            saveUsageState: async () => undefined,
             finishJob: async (...args: unknown[]) => {
                 finished.push(args);
             },

@@ -20,25 +20,30 @@ interface AppHeaderProps {
 export function AppHeader({ user }: AppHeaderProps) {
     const { printerId } = useParams({ strict: false });
     const onPrintersHome = useLocation({ select: (l) => l.pathname === '/printers' || l.pathname === '/printers/' });
-    const printers = usePrinters();
     const pinned = usePinnedPrinter();
+    const { total, online, printing, pinnedState } = usePrinters((list) => {
+        const live = list.find((p) => p.id === pinned)?.live;
+        return {
+            total: list.length,
+            online: list.filter((p) => p.live?.connected).length,
+            printing: list.filter((p) => p.live?.printState === 'printing').length,
+            pinnedState: live?.printState === 'printing' ? 'printing' : live?.connected ? 'online' : 'offline',
+        };
+    });
 
-    const online = printers.filter((p) => p.live?.connected).length ?? 0;
-    const printing = printers.filter((p) => p.live?.printState === 'printing').length ?? 0;
     const firstName = (user.name || user.email.split('@')[0]).split(' ')[0];
 
-    const current = pinned ? printers.find((p) => p.id === pinned) : undefined;
     const subtitle = pinned
-        ? current?.live?.printState === 'printing'
+        ? pinnedState === 'printing'
             ? m.header_pinned_printing()
-            : current?.live?.connected
+            : pinnedState === 'online'
               ? m.header_pinned_online()
               : m.header_pinned_offline()
-        : !printers.length
+        : !total
           ? m.header_no_printers()
           : printing
-            ? m.header_printing({ printing, online, total: printers.length })
-            : m.header_online({ online, total: printers.length });
+            ? m.header_printing({ printing, online, total })
+            : m.header_online({ online, total });
 
     return (
         <header className={`flex flex-wrap items-center gap-4 px-2 pt-2 ${isDesktop ? 'app-drag' : ''}`}>

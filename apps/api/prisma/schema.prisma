@@ -224,6 +224,7 @@ model PrintJob {
   estimatedSec   Int         @default(0)
   filamentMm     Float       @default(0)
   spoolUsage     String      @default("[]")
+  usageState     String      @default("")
   errorCode      Int         @default(0)
   errorMsg       String      @default("")
   failureReason  String      @default("")

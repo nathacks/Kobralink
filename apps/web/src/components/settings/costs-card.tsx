@@ -1,5 +1,5 @@
 import type { AppSettings } from '@kobralink/shared';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import { Input } from '@/components/ui/input';
 import { useSaveSettings } from '@/hooks/use-save-settings';
 import { m } from '@/lib/i18n';
@@ -22,7 +22,7 @@ export function CostsCard({ settings }: { settings: AppSettings }) {
                 .then(() => formApi.reset(value))
                 .catch(() => undefined),
     });
-    const changed = useStore(form.store, (s) => !s.isDefaultValue);
+    const changed = useSelector(form.store, (s) => !s.isDefaultValue);
     const num = (name: CostField, label: string, hint: string, step: number, id: string) => (
         <form.Field name={name}>
             {(field) => (

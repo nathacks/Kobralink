@@ -41,7 +41,7 @@ vi.mock('@/lib/api', () => ({
 }));
 vi.mock('@/hooks/use-role', () => ({ useCanOperate: () => state.canOperate }));
 vi.mock('@/hooks/use-printers', () => ({
-    usePrinters: () => [
+    usePrinterList: () => [
         { id: 'p1', name: 'Kobra 4', settings: { profile: { tags: ['farm'] } } },
         { id: 'p2', name: 'Kobra X', settings: { profile: { tags: [] } } },
     ],

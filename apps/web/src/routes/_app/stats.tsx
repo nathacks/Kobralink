@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { StatsBody } from '@/components/stats/stats-body';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
 import { statsQuery } from '@/lib/queries';
@@ -26,7 +26,7 @@ const RANGES = [7, 30, 90, 365, 0];
 function StatsPage() {
     const { printer, days = 30 } = Route.useSearch();
     const navigate = Route.useNavigate();
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const stats = useQuery(statsQuery(printer, days));
     const set = (patch: { printer?: string; days?: number }) =>
         navigate({ search: (s) => ({ ...s, ...patch }), replace: true });

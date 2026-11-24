@@ -129,12 +129,10 @@ export function MacrosEditor({ embedded = false }: { embedded?: boolean }) {
     const qc = useQueryClient();
     const macros = useQuery(macrosQuery);
     const invalidate = () => qc.invalidateQueries({ queryKey: ['macros'] });
-    const onError = (e: Error) => toast.error(e.message);
-    const remove = useMutation({ mutationFn: api.macros.remove, onSuccess: invalidate, onError });
+    const remove = useMutation({ mutationFn: api.macros.remove, onSuccess: invalidate });
     const reorder = useMutation({
         mutationFn: api.macros.reorder,
         onSuccess: (next) => qc.setQueryData(macrosQuery.queryKey, next),
-        onError,
     });
     const list = macros.data ?? [];
     const move = (i: number, dir: -1 | 1) => {
@@ -235,7 +233,6 @@ function MacroForm({ macro, onSaved }: { macro?: MacroDto; onSaved: () => void }
             onSaved();
             close();
         },
-        onError: (e) => toast.error(e.message),
     });
     const form = useForm({
         defaultValues: {

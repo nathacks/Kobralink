@@ -162,11 +162,17 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
                 this.log.warn(`Queue: light trigger failed: ${(e as Error).message}`),
             );
         };
+        const onInterrupted = () =>
+            void this.setAwaiting(bridge.id, true)
+                .then(() => this.notifyNext(bridge, watch, true))
+                .catch((e) => this.log.warn(`Queue: ${(e as Error).message}`));
         bridge.on('state', onState);
         bridge.on('light_trigger', onLight);
+        bridge.on('interrupted', onInterrupted);
         this.detached.set(bridge.id, () => {
             bridge.off('state', onState);
             bridge.off('light_trigger', onLight);
+            bridge.off('interrupted', onInterrupted);
         });
     }
 
@@ -185,7 +191,7 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         const prev = w.lastKobraState;
         w.lastKobraState = s.kobraState;
         if (prev === s.kobraState) return;
-        if (ACTIVE_PRINT_STATES.has(s.kobraState)) {
+        if (ACTIVE_PRINT_STATES.has(s.kobraState) || s.printState === 'paused') {
             w.active = true;
             w.armed = false;
             w.notified = false;
@@ -193,7 +199,8 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
             await this.setAwaiting(bridge.id, false);
             return;
         }
-        if (ENDED_STATES.has(s.kobraState)) {
+        const lost = w.active && s.kobraState === 'free' && s.connected;
+        if (lost || ENDED_STATES.has(s.kobraState)) {
             const ended = w.active || s.kobraState === 'finished';
             w.active = false;
             if (!ended) return;
@@ -246,10 +253,11 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         return true;
     }
 
-    private async setAwaiting(printerId: string, awaiting: boolean): Promise<void> {
-        await this.prisma.client.printer
+    private async setAwaiting(printerId: string, awaiting: boolean): Promise<boolean> {
+        const done = await this.prisma.client.printer
             .updateMany({ where: { id: printerId, awaitingBedClear: !awaiting }, data: { awaitingBedClear: awaiting } })
             .catch(() => null);
+        return Boolean(done?.count);
     }
 
     private recentlyStarted(printerId: string): boolean {
@@ -396,7 +404,8 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
         outcome: 'good' | 'bad' = 'good',
         immediate = false,
     ): Promise<BedClearResultDto> {
-        await this.setAwaiting(printerId, false);
+        const held = await this.setAwaiting(printerId, false);
+        if (outcome === 'bad' && !held) return { started: null, startsAt: null };
         if (outcome === 'bad') await this.reject(printerId);
         this.emit('bed_cleared', printerId, outcome);
         const bridge = this.bridges.get(printerId);

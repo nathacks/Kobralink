@@ -10,7 +10,8 @@ import {
     type ReorderQueueInput,
     reorderQueueSchema,
 } from '@kobralink/shared';
-import { BadGatewayException, Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { badGateway } from '../common/bad-gateway';
 import { ZodPipe } from '../common/zod.pipe';
 import { QueueService } from './queue.service';
 
@@ -78,7 +79,7 @@ export class QueueController {
         try {
             return await this.queue.startNext(id);
         } catch (e) {
-            throw new BadGatewayException((e as Error).message);
+            throw badGateway(e);
         }
     }
 
@@ -87,7 +88,7 @@ export class QueueController {
         try {
             return await this.queue.confirmBedClear(id, body.outcome ?? 'good');
         } catch (e) {
-            throw new BadGatewayException((e as Error).message);
+            throw badGateway(e);
         }
     }
 

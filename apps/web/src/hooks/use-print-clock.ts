@@ -1,7 +1,12 @@
 import { isCalibrating, type PrinterLiveState } from '@kobralink/shared';
 import { useEffect, useState } from 'react';
 
-export function usePrintClock(state: PrinterLiveState): { elapsedSec: number; remainSec: number } {
+type ClockState = Pick<
+    PrinterLiveState,
+    'printState' | 'kobraState' | 'currLayer' | 'printTimeAt' | 'printDurationSec' | 'remainTimeSec'
+>;
+
+export function usePrintClock(state: ClockState): { elapsedSec: number; remainSec: number } {
     const running = state.printState === 'printing' && state.printTimeAt > 0 && !isCalibrating(state);
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {

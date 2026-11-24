@@ -57,9 +57,10 @@ vi.mock('@/lib/api', () => ({
 }));
 
 vi.mock('@/hooks/use-printers', () => ({
-    useLiveState: () => ({ connected: true, printState: 'standby', kobraState: 'free' }) as PrinterLiveState,
-    usePrinter: () => printer,
-    usePrinters: () => [{ id: 'p1', name: 'Kobra 4' }],
+    useLiveState: (_id: string, select: (s: PrinterLiveState) => unknown) =>
+        select({ connected: true, printState: 'standby', kobraState: 'free' } as PrinterLiveState),
+    usePrinter: (_id: string, select: (p: typeof printer) => unknown) => select(printer),
+    usePrinterList: () => [{ id: 'p1', name: 'Kobra 4' }],
 }));
 
 const scheduled = {

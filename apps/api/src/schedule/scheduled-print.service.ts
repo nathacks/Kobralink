@@ -56,7 +56,10 @@ export class ScheduledPrintService implements OnModuleInit {
 
     async fire(id: string): Promise<void> {
         this.timers.delete(id);
-        const row = await this.prisma.client.scheduledPrint.findUnique({ where: { id }, include: { file: true } });
+        const row = await this.prisma.client.scheduledPrint.findUnique({
+            where: { id },
+            include: { file: true, printer: true },
+        });
         if (!row) return;
         await this.prisma.client.scheduledPrint.delete({ where: { id } }).catch(() => null);
         let bridge: PrinterBridge;
@@ -68,7 +71,7 @@ export class ScheduledPrintService implements OnModuleInit {
         const options = parseOptions(row.options);
         const s = bridge.snapshot();
         const idle = s.connected && s.printState !== 'printing' && s.printState !== 'paused';
-        if (!idle) {
+        if (!idle || row.printer.awaitingBedClear || row.printer.maintenance) {
             const { excludedObjects, ...queued } = options;
             await this.queue
                 .add(
@@ -80,7 +83,9 @@ export class ScheduledPrintService implements OnModuleInit {
                     false,
                 )
                 .catch(() => null);
-            this.log.warn(`Scheduled print ${row.file.filename} queued: printer busy or offline`);
+            this.log.warn(
+                `Scheduled print ${row.file.filename} queued: printer busy, offline, in maintenance or waiting for its bed`,
+            );
             this.notify(bridge, row.file.filename, 'queued');
             return;
         }

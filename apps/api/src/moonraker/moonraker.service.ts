@@ -1,4 +1,4 @@
-import type { AmsSlot } from '@kobralink/shared';
+import { type AmsSlot, type SetTemperatureInput, setTemperatureSchema } from '@kobralink/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { loadEnv } from '../config/env';
@@ -439,18 +439,27 @@ export class MoonrakerService {
     }
 
     async execGcodeScript(script: string): Promise<string> {
-        const s = (script ?? '').trim().toUpperCase();
-        if (!s) return 'ok';
+        for (const line of (script ?? '').split('\n')) await this.execGcodeLine(line);
+        return 'ok';
+    }
+
+    private async execGcodeLine(line: string): Promise<void> {
+        const s = line.trim().toUpperCase();
+        if (!s) return;
         const bridge = this.bridge;
         const macroName = s.split(/\s+/)[0] ?? '';
         const macro = await this.macros.findByName(macroName);
         if (macro) {
             await this.macros.run(bridge, macro).catch(() => undefined);
-            return 'ok';
+            return;
         }
-        const marlinTemp = (line: string) => {
-            const m = /S(\d+)/.exec(line);
+        const marlinTemp = (text: string) => {
+            const m = /S(\d+)/.exec(text);
             return m ? Number(m[1]) : undefined;
+        };
+        const heat = (input: SetTemperatureInput) => {
+            const { success, data } = setTemperatureSchema.safeParse(input);
+            if (success) bridge.setTemperature(data.nozzle, data.bed);
         };
         try {
             if (s === 'PAUSE' || s === 'M25') await bridge.pause();
@@ -458,21 +467,20 @@ export class MoonrakerService {
             else if (['CANCEL_PRINT', 'M0', 'M1', 'M524', 'ABORT'].includes(s)) await bridge.cancel();
             else if (s.startsWith('M104 ')) {
                 const t = marlinTemp(s);
-                if (t !== undefined) bridge.setTemperature(t, undefined);
+                if (t !== undefined) heat({ nozzle: t });
             } else if (s.startsWith('M140 ')) {
                 const t = marlinTemp(s);
-                if (t !== undefined) bridge.setTemperature(undefined, t);
+                if (t !== undefined) heat({ bed: t });
             } else if (s.startsWith('SET_HEATER_TEMPERATURE')) {
                 const heater = /HEATER=(\S+)/.exec(s)?.[1]?.toLowerCase();
                 const target = /TARGET=([\d.]+)/.exec(s)?.[1];
                 if (heater && target !== undefined) {
                     const t = Math.round(Number(target));
-                    if (heater === 'extruder') bridge.setTemperature(t, undefined);
-                    else if (heater === 'heater_bed' || heater === 'bed') bridge.setTemperature(undefined, t);
+                    if (heater === 'extruder') heat({ nozzle: t });
+                    else if (heater === 'heater_bed' || heater === 'bed') heat({ bed: t });
                 }
             }
         } catch {}
-        return 'ok';
     }
 
     uiUrl(): string {

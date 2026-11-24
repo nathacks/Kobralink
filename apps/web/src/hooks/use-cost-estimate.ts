@@ -17,7 +17,7 @@ export type CostEstimator = (
 
 export function useCostEstimate(printerId: string): { estimate: CostEstimator; currency: string } {
     const settings = useQuery(appSettingsQuery).data;
-    const powerW = usePrinter(printerId)?.settings.profile.powerW ?? null;
+    const powerW = usePrinter(printerId, (p) => p?.settings.profile.powerW ?? null);
     const spoolman = useQuery(spoolmanStatusQuery(printerId)).data;
     const spools = useQuery(spoolmanSpoolsQuery(Boolean(spoolman?.configured))).data;
     const slots: SpoolPriceSlot[] = Object.entries(spoolman?.slotSpools ?? {}).flatMap(([key, id]) => {

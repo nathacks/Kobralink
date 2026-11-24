@@ -1,5 +1,5 @@
+import type { Printer } from '@kobralink/shared';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { PrinterWithLive } from '@/lib/api';
 import { m } from '@/lib/i18n';
 
 export const ALL_PRINTERS = '__all';
@@ -10,7 +10,7 @@ export function PrinterSelect({
     onChange,
     allowAll = false,
 }: {
-    printers: PrinterWithLive[];
+    printers: Printer[];
     value: string;
     onChange: (id: string) => void;
     allowAll?: boolean;

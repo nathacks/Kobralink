@@ -48,7 +48,6 @@ export function PrinterFilesGrid({
             setSelected([]);
             void qc.invalidateQueries({ queryKey: ['printers', printerId, 'printer-files'] });
         },
-        onError: (e) => toast.error(e.message),
     });
     const all = files.data?.files ?? [];
     const matches = (f: PrinterFileDto) => f.filename.toLowerCase().includes(search.toLowerCase());
@@ -59,7 +58,6 @@ export function PrinterFilesGrid({
         mutationFn: (f: PrinterFileDto) =>
             api.printerFiles.print(printerId, { filename: printerFilePath(f), sizeBytes: f.sizeBytes }),
         onSuccess: (_, f) => toast.success(m.files_print_started({ name: f.filename })),
-        onError: (e) => toast.error(e.message),
     });
     const [lastSearch, setLastSearch] = useState(search);
     if (search !== lastSearch) {

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Timer } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { m } from '@/lib/i18n';
@@ -29,15 +28,15 @@ export function AutoStartCountdown({
     useEffect(() => {
         if (left > 0) return;
         const timer = setTimeout(() => {
-            void qc.invalidateQueries({ queryKey: ['printers'] });
+            void qc.invalidateQueries({ queryKey: ['printers', printerId] });
+            void qc.invalidateQueries({ queryKey: ['printers'], exact: true });
             void qc.invalidateQueries({ queryKey: ['queue'] });
         }, 1500);
         return () => clearTimeout(timer);
-    }, [left, qc]);
+    }, [left, qc, printerId]);
     const cancel = useMutation({
         mutationFn: () => api.queue.cancelAutoStart(printerId),
         onSuccess: (status) => qc.setQueryData(['printers', printerId, 'queue-status'], status),
-        onError: (e: Error) => toast.error(e.message),
     });
     const text = m.queue_starts_in({ seconds: left });
     return (

@@ -171,7 +171,18 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
         });
 
         await new Promise<void>((resolve, reject) => {
-            client.subscribe(this.subscribeTopic, { qos: 0 }, (err) => (err ? reject(err) : resolve()));
+            const done = (err?: Error | null) => {
+                clearTimeout(timer);
+                client.off('close', onClose);
+                if (!err) return resolve();
+                if (this.client === client) this.client = null;
+                client.end(true);
+                reject(err);
+            };
+            const onClose = () => done(new Error('MQTT connection closed while subscribing'));
+            const timer = setTimeout(() => done(new Error('No answer to the MQTT subscription')), timeoutMs);
+            client.once('close', onClose);
+            client.subscribe(this.subscribeTopic, { qos: 0 }, (err) => done(err));
         });
         this.log.info(`MQTT connected to ${this.opts.host}:${this.opts.port ?? 9883}`);
         this.emit('connected');

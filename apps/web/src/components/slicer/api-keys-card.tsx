@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useHosts } from '@/hooks/use-hosts';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { useCanOperate, useIsAdmin } from '@/hooks/use-role';
 import { useSaveSettings } from '@/hooks/use-save-settings';
 import { authClient } from '@/lib/auth-client';
@@ -71,7 +71,7 @@ export function ApiKeysCard() {
     const settings = useQuery(appSettingsQuery);
     const save = useSaveSettings();
     const keys = useQuery({ queryKey: apiKeysQueryKey, queryFn: listKeys, enabled: canOperate });
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const [primary] = useHosts();
     const [name, setName] = useState('');
     const [printerId, setPrinterId] = useState('');
@@ -95,7 +95,6 @@ export function ApiKeysCard() {
             });
             void qc.invalidateQueries({ queryKey: apiKeysQueryKey });
         },
-        onError: (e) => toast.error(e.message),
     });
 
     const remove = useMutation({
@@ -104,7 +103,6 @@ export function ApiKeysCard() {
             if (res.error) throw new Error(res.error.message ?? res.error.statusText);
         },
         onSuccess: () => void qc.invalidateQueries({ queryKey: apiKeysQueryKey }),
-        onError: (e) => toast.error(e.message),
     });
 
     const required = settings.data?.moonrakerApiKey ?? false;

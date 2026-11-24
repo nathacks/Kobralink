@@ -1,4 +1,4 @@
-import type { AutomationRuleDto, MacroDto } from '@kobralink/shared';
+import type { AutomationRuleDto, MacroDto, Printer } from '@kobralink/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Play, Plus, Trash2, Workflow } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,9 +20,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { usePrinters } from '@/hooks/use-printers';
+import { usePrinterList } from '@/hooks/use-printers';
 import { useCanOperate } from '@/hooks/use-role';
-import { api, type PrinterWithLive } from '@/lib/api';
+import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { m } from '@/lib/i18n';
 import { automationsQuery, macrosQuery } from '@/lib/queries';
@@ -34,29 +34,25 @@ export function AutomationsPage() {
     const qc = useQueryClient();
     const rules = useQuery(automationsQuery);
     const macros = useQuery(macrosQuery).data ?? [];
-    const printers = usePrinters();
+    const printers = usePrinterList();
     const canOperate = useCanOperate();
     const invalidate = () => void qc.invalidateQueries({ queryKey: ['automations'] });
-    const onError = (e: Error) => toast.error(e.message);
     const toggle = useMutation({
         mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => api.automations.setEnabled(id, enabled),
         onSuccess: invalidate,
-        onError,
     });
     const remove = useMutation({
         mutationFn: (id: string) => api.automations.remove(id),
         onSuccess: invalidate,
-        onError,
     });
     const run = useMutation({
-        mutationFn: ({ rule, printer }: { rule: AutomationRuleDto; printer: PrinterWithLive }) =>
+        mutationFn: ({ rule, printer }: { rule: AutomationRuleDto; printer: Printer }) =>
             api.automations.run(rule.id, printer.id),
         onSuccess: (done, { printer }) => {
             if (done.lastError) toast.error(m.automations_last_error({ error: done.lastError }));
             else toast.success(m.automations_ran({ printer: printer.name }));
             invalidate();
         },
-        onError,
     });
     const list = rules.data ?? [];
 
@@ -114,11 +110,11 @@ export function RuleCard({
 }: {
     rule: AutomationRuleDto;
     macros: MacroDto[];
-    printers: PrinterWithLive[];
+    printers: Printer[];
     canOperate: boolean;
     onToggle: (enabled: boolean) => void;
     onEdit: () => void;
-    onRun: (printer: PrinterWithLive) => void;
+    onRun: (printer: Printer) => void;
     onRemove: () => void;
 }) {
     const targets = targetedPrinters(rule, printers);
