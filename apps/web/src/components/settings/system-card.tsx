@@ -160,7 +160,7 @@ export function SystemCard() {
 
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
     return (
-        <div className="flex justify-between gap-4">
+        <div data-setting className="flex justify-between gap-4">
             <dt className="whitespace-nowrap text-muted-foreground">{k}</dt>
             <dd className={mono ? 'truncate font-mono text-xs' : 'text-right'} title={v}>
                 {v}

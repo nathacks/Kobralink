@@ -79,6 +79,12 @@ export const powerStatusQuery = (id: string, enabled: boolean) =>
         retry: false,
     });
 
+export const mcpInfoQuery = queryOptions({ queryKey: ['mcp'], queryFn: api.mcp.info });
+
+export const mcpToolsQuery = queryOptions({ queryKey: ['mcp', 'tools'], queryFn: api.mcp.tools });
+
+export const mcpConnectionsQuery = queryOptions({ queryKey: ['mcp', 'connections'], queryFn: api.mcp.connections });
+
 export const appSettingsQuery = queryOptions({ queryKey: ['settings'], queryFn: api.settings.get });
 
 export const spoolmanStatusQuery = (id: string) =>

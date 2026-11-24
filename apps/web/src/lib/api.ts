@@ -31,6 +31,9 @@ import type {
     MaintenanceLogDto,
     MaintenanceTaskDto,
     MaintenanceTaskInput,
+    McpConnectionDto,
+    McpInfoDto,
+    McpToolDto,
     MoveAxisInput,
     PowerState,
     Printer,
@@ -181,6 +184,12 @@ export const api = {
             ),
     },
 
+    mcp: {
+        info: () => request<McpInfoDto>('/api/v1/mcp'),
+        tools: () => request<McpToolDto[]>('/api/v1/mcp/tools'),
+        connections: () => request<McpConnectionDto[]>('/api/v1/mcp/connections'),
+        disconnect: (id: string) => request<void>(`/api/v1/mcp/connections/${id}`, { method: 'DELETE' }),
+    },
     settings: {
         get: () => request<AppSettings>('/api/v1/settings'),
         update: (input: UpdateAppSettingsInput) =>

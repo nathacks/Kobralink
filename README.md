@@ -82,6 +82,7 @@ To pin a version, set `KOBRALINK_IMAGE=nathacks/kobralink:<version>` in `.env`.
 
 Behind a reverse proxy (HTTPS): set `KOBRALINK_BIND=127.0.0.1` and
 `BETTER_AUTH_URL=https://kobralink.example.com`. Moonraker ports stay direct (OrcaSlicer needs HTTP + WebSocket).
+Ready-made HTTPS with Caddy: [`infra/README.md`](infra/README.md#https-with-caddy-mcp-oauth).
 More details (backup, healthcheck, local build from source): [`infra/README.md`](infra/README.md).
 
 More than 16 printers: the app assigns ports without limit (`7125`, `7126`, … up to `65535`), but the compose
@@ -129,7 +130,7 @@ integration with `http://<bridge-ip>:7125/api/camera/stream` as the MJPEG URL an
 By default the Moonraker ports are **unauthenticated** (trusted LAN), like Moonraker itself. The dashboard
 on `:7100` is protected by email + password.
 
-To lock the Moonraker ports, open **OrcaSlicer → API keys** in the dashboard, enable *Require an API key*
+To lock the Moonraker ports, open **Settings → OrcaSlicer → API keys** in the dashboard, enable *Require an API key*
 and generate a key per printer and client — a key only unlocks the printer it was created for, so pasting
 it in OrcaSlicer targets that printer. Clients send it as an `X-Api-Key` header (OrcaSlicer's "API Key / Password"
 field, Fluidd, Obico, Home Assistant), as `Authorization: Bearer`, or as `?api_key=` in the URL (camera `<img>`
@@ -141,6 +142,31 @@ the printer's Moonraker port), which shows the print thumbnail as a camera entit
 the thumbnail on port `7125`: for the second printer onward, set its **Thumbnail Port** option (integration
 options) to the printer's port (`7126`, …), otherwise it shows the first printer's thumbnail. The built-in MQTT
 discovery has no such limit.
+
+## MCP server (Claude, ChatGPT, …)
+
+Kobralink is also an [MCP](https://modelcontextprotocol.io) server: an AI assistant can watch and control the printers
+through 56 tools (20 read, 36 control). It is **off by default**: an admin turns it on in **Settings → MCP (AI)**.
+
+| Client | How to connect |
+| ------ | -------------- |
+| Claude Code, Cursor, any client with headers (LAN is fine) | Create an MCP key in **Settings → MCP (AI)**, then `claude mcp add --transport http kobralink http://<ip>:7100/api/mcp --header "Authorization: Bearer kl_mcp_..."` |
+| claude.ai, ChatGPT (cloud) | Public HTTPS address ([`docker-compose.https.yml`](infra/README.md#https-with-caddy-mcp-oauth)), then add `https://<domain>/api/mcp` as a connector and sign in with your Kobralink account (OAuth 2.1, PKCE, dynamic client registration) |
+
+- **Access**: each key or connected app is *read only* or *control*. The role of its owner is checked on every request,
+  so a viewer never controls anything. Keys and apps are revoked on the same page, with immediate effect.
+- **Permissions**: every tool is listed on the page with *Allow / Ask / Deny* (admins only; sensitive tools start on *Ask*).
+  With *Ask*, the assistant asks you a yes/no question in the chat (MCP elicitation) and the tool only runs on yes.
+  Claude Code declares support for it; an app that cannot ask gets a refusal, set the tool to *Allow* and rely on the
+  app's own tool approval there. The answer comes from the AI app, Kobralink cannot prove who clicked. *Deny* hides the
+  tool. This covers the MCP server only: a program on your network can still use the Moonraker ports, lock them with an
+  API key.
+- **Locks enforced by the server**: moving axes, feeding filament, drying, starting a print or cutting the power is refused
+  while the printer prints or is paused. Starting a print requires `bedIsClear: true`; the server cannot check that
+  the bed really is empty, so keep tool approval on in your AI client.
+- **Not exposed**: users, keys, settings, backups, file deletion, raw G-code. Send G-code files with the dashboard or the
+  Moonraker upload, the assistant can then print them.
+- Every control call is written to the log with the key or app, the tool and the printer.
 
 ## How it works
 

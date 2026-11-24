@@ -72,7 +72,7 @@ export function Field({
 
 export function SwitchRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
     return (
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1">
+        <div data-setting className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1">
             <div>
                 <div className="text-sm font-medium">{label}</div>
                 {hint && <p className="text-xs text-muted-foreground">{hint}</p>}

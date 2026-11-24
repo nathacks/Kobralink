@@ -1,6 +1,7 @@
 import type { LinkProps } from '@tanstack/react-router';
 import {
     Bell,
+    Bot,
     Cable,
     type LucideIcon,
     Plug,
@@ -26,6 +27,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     { to: '/settings/detection', icon: ScanEye, label: m.settings_tab_detection },
     { to: '/settings/integrations', icon: Plug, label: m.settings_tab_integrations },
     { to: '/settings/slicer', icon: Cable, label: m.settings_tab_slicer },
+    { to: '/settings/mcp', icon: Bot, label: m.mcp_tab },
     { to: '/settings/macros', icon: Zap, label: m.settings_tab_macros },
     { to: '/settings/users', icon: Users, label: m.settings_tab_users, adminOnly: true },
     { to: '/settings/system', icon: Server, label: m.settings_tab_system },

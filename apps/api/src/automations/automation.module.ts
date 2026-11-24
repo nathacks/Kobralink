@@ -5,5 +5,6 @@ import { AutomationService } from './automation.service';
 @Module({
     controllers: [AutomationController],
     providers: [AutomationService],
+    exports: [AutomationService],
 })
 export class AutomationModule {}

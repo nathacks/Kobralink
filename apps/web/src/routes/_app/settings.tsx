@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
+import { SettingsSearch } from '@/components/settings/settings-search';
 import { visibleSections } from '@/components/settings/settings-sections';
 import { useIsAdmin } from '@/hooks/use-role';
 import { m } from '@/lib/i18n';
@@ -13,7 +14,10 @@ function SettingsLayout() {
     const sections = visibleSections(useIsAdmin());
     return (
         <div className="space-y-4">
-            <h2 className="px-2 text-xl font-medium">{m.nav_settings()}</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-2">
+                <h2 className="text-xl font-medium">{m.nav_settings()}</h2>
+                <SettingsSearch />
+            </div>
             <div className="grid gap-4 md:grid-cols-[13rem_minmax(0,1fr)] lg:grid-cols-[15rem_minmax(0,1fr)]">
                 <nav
                     aria-label={m.nav_settings()}

@@ -23,30 +23,34 @@ export function SaveBar({
         );
     }
     return (
-        <div
-            role="status"
-            className="sticky bottom-24 z-20 flex items-center gap-1 rounded-full bg-primary py-2 pr-2 pl-5 text-primary-foreground shadow-lg ring-4 ring-primary/25 duration-200 animate-in fade-in slide-in-from-bottom-2 md:bottom-4"
-        >
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{m.form_unsaved()}</span>
-            {extra && <span className="hidden shrink-0 md:inline-flex">{extra}</span>}
-            {onDiscard && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="shrink-0 rounded-full px-3 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                    disabled={submitting}
-                    onClick={onDiscard}
-                >
-                    {m.form_discard()}
-                </Button>
-            )}
-            <Button
-                type="submit"
-                className="shrink-0 rounded-full bg-background px-5 text-foreground shadow-sm hover:bg-background/90"
-                disabled={submitting}
+        <>
+            {extra && <div className="flex flex-wrap items-center gap-2">{extra}</div>}
+            <div
+                role="status"
+                className="sticky bottom-24 z-20 flex min-w-0 items-center gap-1 rounded-full bg-primary p-2 text-primary-foreground shadow-lg ring-4 ring-primary/25 duration-200 animate-in fade-in slide-in-from-bottom-2 md:bottom-4"
             >
-                {m.common_save()}
-            </Button>
-        </div>
+                <span className="min-w-0 flex-1 truncate pl-3 text-sm font-medium max-sm:sr-only">
+                    {m.form_unsaved()}
+                </span>
+                {onDiscard && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="rounded-full px-4 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground max-sm:flex-1"
+                        disabled={submitting}
+                        onClick={onDiscard}
+                    >
+                        {m.form_discard()}
+                    </Button>
+                )}
+                <Button
+                    type="submit"
+                    className="rounded-full bg-background px-5 text-foreground shadow-sm hover:bg-background/90 max-sm:flex-1"
+                    disabled={submitting}
+                >
+                    {m.common_save()}
+                </Button>
+            </div>
+        </>
     );
 }

@@ -1,14 +1,41 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { apiKey } from '@better-auth/api-key';
-import { canOperate, type UserRole } from '@kobralink/shared';
+import { mcp } from '@better-auth/mcp';
+import { canOperate, MCP_KEY_CONFIG, MCP_OFFLINE_SCOPE, MCP_PATH, MCP_SCOPES, type UserRole } from '@kobralink/shared';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
+import { jwt } from 'better-auth/plugins';
 import { loadEnv } from '../config/env';
 import { m } from '../i18n/locale';
 import { getPrisma } from '../prisma/prisma.service';
 
 export const internalSignup = new AsyncLocalStorage<boolean>();
+
+const apiKeyOptions = {
+    defaultKeyLength: 40,
+    apiKeyHeaders: 'x-api-key',
+    enableMetadata: true,
+    rateLimit: { enabled: false },
+    keyExpiration: { defaultExpiresIn: null },
+};
+
+function oauthPlugins(resource: string) {
+    return [
+        jwt({ disableSettingJwtHeader: true }),
+        mcp({
+            loginPage: '/login',
+            consentPage: '/oauth/consent',
+            resource,
+            scopes: [MCP_SCOPES.read, MCP_SCOPES.control, MCP_OFFLINE_SCOPE],
+            allowDynamicClientRegistration: true,
+            allowUnauthenticatedClientRegistration: true,
+            clientRegistrationDefaultApplicationType: 'infer',
+            clientPrivileges: ({ action }) => action === 'read',
+            resourcePrivileges: () => false,
+        }),
+    ];
+}
 
 export function createAuth() {
     const env = loadEnv();
@@ -29,6 +56,7 @@ export function createAuth() {
             minPasswordLength: 8,
             autoSignIn: true,
         },
+        disabledPaths: ['/token'],
         trustedOrigins: [env.baseUrl, ...env.extraOrigins],
         session: {
             expiresIn: 60 * 60 * 24 * 30,
@@ -43,17 +71,24 @@ export function createAuth() {
             },
         },
         plugins: [
-            apiKey({
-                defaultPrefix: 'kl_',
-                defaultKeyLength: 40,
-                apiKeyHeaders: 'x-api-key',
-                enableMetadata: true,
-                rateLimit: { enabled: false },
-                keyExpiration: { defaultExpiresIn: null },
-            }),
+            apiKey([
+                { ...apiKeyOptions, configId: 'default', defaultPrefix: 'kl_' },
+                {
+                    ...apiKeyOptions,
+                    configId: MCP_KEY_CONFIG,
+                    defaultPrefix: 'kl_mcp_',
+                    startingCharactersConfig: { charactersLength: 11 },
+                },
+            ]),
+            ...(env.oauthAvailable ? oauthPlugins(`${env.baseUrl}${MCP_PATH}`) : []),
         ],
         hooks: {
             before: createAuthMiddleware(async (ctx) => {
+                if (ctx.path.startsWith('/oauth2/')) {
+                    const row = await prisma.appSetting.findUnique({ where: { key: 'mcpEnabled' } });
+                    if (row?.value !== 'true') throw new APIError('FORBIDDEN', { message: m.api_mcp_disabled() });
+                    return;
+                }
                 if (!ctx.path.startsWith('/api-key/')) return;
                 const session = await getSessionFromCtx(ctx);
                 if (!session) return;

@@ -40,18 +40,20 @@ function printerIdOf(metadata: unknown): string | null {
 }
 
 async function listKeys() {
-    const res = await authClient.apiKey.list();
+    const res = await authClient.apiKey.list({ query: { configId: 'default' } });
     if (res.error) throw new Error(res.error.message ?? res.error.statusText);
     return res.data.apiKeys;
 }
 
-function CopyKeyButton({ value }: { value: string }) {
+type ListedKey = Awaited<ReturnType<typeof listKeys>>[number];
+
+export function CopyKeyButton({ value, copied = m.api_keys_copied() }: { value: string; copied?: string }) {
     const [done, setDone] = useState(false);
     const copy = async () => {
         try {
             await navigator.clipboard.writeText(value);
             setDone(true);
-            toast.success(m.slicer_keys_copied());
+            toast.success(copied);
             setTimeout(() => setDone(false), 1500);
         } catch (e) {
             toast.error((e as Error).message);
@@ -61,6 +63,63 @@ function CopyKeyButton({ value }: { value: string }) {
         <Button size="sm" className="rounded-full" onClick={copy}>
             {done ? <Check /> : <Copy />} {m.slicer_copy()}
         </Button>
+    );
+}
+
+export function ApiKeyList({
+    keys,
+    badge,
+    pending,
+    onRevoke,
+}: {
+    keys: ListedKey[];
+    badge: (key: ListedKey) => string;
+    pending: boolean;
+    onRevoke: (id: string) => Promise<unknown>;
+}) {
+    if (keys.length === 0) return null;
+    return (
+        <ul className="space-y-2">
+            {keys.map((k) => (
+                <li key={k.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-secondary/50 px-4 py-3">
+                    <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary-strong">
+                        <KeyRound className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-x-3">
+                            <span className="font-medium">{k.name ?? '—'}</span>
+                            <span className="text-xs text-primary-strong">{badge(k)}</span>
+                            <code className="font-mono text-xs text-muted-foreground">
+                                {k.start ? `${k.start}…` : ''}
+                            </code>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {m.api_keys_created_at({ date: formatDate(String(k.createdAt)) })}
+                            {' · '}
+                            {k.lastRequest
+                                ? m.api_keys_last_used({ date: formatDate(String(k.lastRequest)) })
+                                : m.api_keys_never_used()}
+                        </p>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full text-destructive hover:text-destructive"
+                        disabled={pending}
+                        onClick={() =>
+                            alertConfirmationDialogStore.actions.openAlertDialog({
+                                title: m.api_keys_delete_title(),
+                                description: m.api_keys_delete_hint(),
+                                actionLabel: m.api_keys_revoke(),
+                                onAction: () => onRevoke(k.id),
+                            })
+                        }
+                    >
+                        <Trash2 /> {m.api_keys_revoke()}
+                    </Button>
+                </li>
+            ))}
+        </ul>
     );
 }
 
@@ -114,12 +173,16 @@ export function ApiKeysCard() {
                 <CardDescription>{m.slicer_keys_hint()}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/50 px-4 py-3">
+                <div
+                    data-setting
+                    className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/50 px-4 py-3"
+                >
                     <div>
                         <div className="text-sm font-medium">{m.slicer_keys_require()}</div>
                         <p className="text-xs text-muted-foreground">{m.slicer_keys_require_hint()}</p>
                     </div>
                     <Switch
+                        aria-label={m.slicer_keys_require()}
                         checked={required}
                         disabled={!isAdmin || save.isPending || settings.isPending}
                         onCheckedChange={(v) => save.mutate({ moonrakerApiKey: v })}
@@ -135,7 +198,7 @@ export function ApiKeysCard() {
                                 if (name.trim() && printerId) create.mutate({ name: name.trim(), printerId });
                             }}
                         >
-                            <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+                            <div data-setting className="flex min-w-48 flex-1 flex-col gap-1.5">
                                 <Label htmlFor="api-key-printer">{m.slicer_keys_printer()}</Label>
                                 <Select value={printerId} onValueChange={setPrinterId}>
                                     <SelectTrigger id="api-key-printer" className="h-9 w-full rounded-full px-4">
@@ -150,8 +213,8 @@ export function ApiKeysCard() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="flex min-w-48 flex-1 flex-col gap-1.5">
-                                <Label htmlFor="api-key-name">{m.slicer_keys_name()}</Label>
+                            <div data-setting className="flex min-w-48 flex-1 flex-col gap-1.5">
+                                <Label htmlFor="api-key-name">{m.api_keys_name()}</Label>
                                 <Input
                                     id="api-key-name"
                                     className="rounded-full px-4"
@@ -166,63 +229,19 @@ export function ApiKeysCard() {
                                 className="rounded-full"
                                 disabled={!name.trim() || !printerId || create.isPending}
                             >
-                                <KeyRound /> {m.slicer_keys_create()}
+                                <KeyRound /> {m.api_keys_create()}
                             </Button>
                         </form>
 
                         {keys.data && keys.data.length === 0 && (
                             <p className="text-sm text-muted-foreground">{m.slicer_keys_empty()}</p>
                         )}
-                        {keys.data && keys.data.length > 0 && (
-                            <ul className="space-y-2">
-                                {keys.data.map((k) => (
-                                    <li
-                                        key={k.id}
-                                        className="flex flex-wrap items-center gap-3 rounded-2xl bg-secondary/50 px-4 py-3"
-                                    >
-                                        <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary-strong">
-                                            <KeyRound className="size-5" />
-                                        </span>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-baseline gap-x-3">
-                                                <span className="font-medium">{k.name ?? '—'}</span>
-                                                <span className="text-xs text-primary-strong">
-                                                    {printerName(printerIdOf(k.metadata))}
-                                                </span>
-                                                <code className="font-mono text-xs text-muted-foreground">
-                                                    {k.start ? `${k.start}…` : ''}
-                                                </code>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {m.slicer_keys_created_at({ date: formatDate(String(k.createdAt)) })}
-                                                {' · '}
-                                                {k.lastRequest
-                                                    ? m.slicer_keys_last_used({
-                                                          date: formatDate(String(k.lastRequest)),
-                                                      })
-                                                    : m.slicer_keys_never_used()}
-                                            </p>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="rounded-full text-destructive hover:text-destructive"
-                                            disabled={remove.isPending}
-                                            onClick={() =>
-                                                alertConfirmationDialogStore.actions.openAlertDialog({
-                                                    title: m.slicer_keys_delete_title(),
-                                                    description: m.slicer_keys_delete_hint(),
-                                                    actionLabel: m.slicer_keys_revoke(),
-                                                    onAction: () => remove.mutateAsync(k.id),
-                                                })
-                                            }
-                                        >
-                                            <Trash2 /> {m.slicer_keys_revoke()}
-                                        </Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+                        <ApiKeyList
+                            keys={keys.data ?? []}
+                            badge={(k) => printerName(printerIdOf(k.metadata))}
+                            pending={remove.isPending}
+                            onRevoke={(id) => remove.mutateAsync(id)}
+                        />
                         {required && <p className="text-xs text-muted-foreground">{m.slicer_keys_camera_hint()}</p>}
                     </>
                 )}
@@ -231,7 +250,7 @@ export function ApiKeysCard() {
             <Dialog open={created !== null} onOpenChange={(open) => !open && setCreated(null)}>
                 <DialogContent className="rounded-3xl">
                     <DialogHeader>
-                        <DialogTitle>{m.slicer_keys_created_title()}</DialogTitle>
+                        <DialogTitle>{m.api_keys_created_title()}</DialogTitle>
                         <DialogDescription>
                             {m.slicer_keys_created_hint({ printer: created?.printerName ?? '' })}
                         </DialogDescription>
@@ -247,7 +266,7 @@ export function ApiKeysCard() {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">{m.slicer_keys_created_key()}</p>
+                            <p className="text-xs text-muted-foreground">{m.api_keys_created_key()}</p>
                             <div className="flex items-center gap-2">
                                 <code className="block min-w-0 flex-1 break-all rounded-2xl bg-secondary/50 px-4 py-3 font-mono text-sm text-primary-strong">
                                     {created?.key}

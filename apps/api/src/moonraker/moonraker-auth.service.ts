@@ -55,7 +55,7 @@ export class MoonrakerAuthService {
         if (cached !== undefined && cached.exp > Date.now()) return this.matches(cached.printerId, printerId);
         let scope: string | null = null;
         try {
-            const res = await this.auth.api.verifyApiKey({ body: { key } });
+            const res = await this.auth.api.verifyApiKey({ body: { key, configId: 'default' } });
             if (!res.valid) return false;
             const meta = res.key?.metadata as { printerId?: unknown } | null | undefined;
             scope = typeof meta?.printerId === 'string' && meta.printerId ? meta.printerId : null;

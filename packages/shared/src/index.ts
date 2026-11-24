@@ -11,6 +11,7 @@ export * from './forms';
 export * from './home-assistant';
 export * from './macros';
 export * from './maintenance';
+export * from './mcp';
 export * from './patch';
 export * from './printer';
 export * from './printer-errors';

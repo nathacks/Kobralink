@@ -180,7 +180,7 @@ export class SystemService {
     }
 }
 
-function readVersion(): string {
+export function readVersion(): string {
     if (process.env.KOBRALINK_VERSION) return process.env.KOBRALINK_VERSION;
     for (const dir of [path.resolve(__dirname, '..', '..'), path.resolve(__dirname, '..', '..', '..')]) {
         try {

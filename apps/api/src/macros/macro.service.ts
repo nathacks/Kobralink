@@ -5,8 +5,8 @@ import type { Macro } from '../generated/prisma/client';
 import { m } from '../i18n/locale';
 import { PrismaService } from '../prisma/prisma.service';
 
-const AXIS_ID: Record<'x' | 'y' | 'z', number> = { x: 1, y: 2, z: 3 };
-const HOME_AXIS_ID: Record<'all' | 'xy' | 'z', number> = { all: 5, xy: 4, z: 3 };
+export const AXIS_ID: Record<'x' | 'y' | 'z', number> = { x: 1, y: 2, z: 3 };
+export const HOME_AXIS_ID: Record<'all' | 'xy' | 'z', number> = { all: 5, xy: 4, z: 3 };
 
 @Injectable()
 export class MacroService {

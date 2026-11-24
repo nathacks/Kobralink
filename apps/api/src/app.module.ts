@@ -17,6 +17,7 @@ import { HaMqttModule } from './ha/ha-mqtt.module';
 import { HomeAssistantModule } from './home-assistant/home-assistant.module';
 import { MacroModule } from './macros/macro.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
+import { McpModule } from './mcp/mcp.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
@@ -54,6 +55,7 @@ const env = loadEnv();
         DryScheduleModule,
         ScheduledPrintModule,
         AutomationModule,
+        McpModule,
         UsersModule,
         SystemModule,
         ...(env.webDir

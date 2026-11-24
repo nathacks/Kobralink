@@ -1,0 +1,21 @@
+services:
+  kobralink:
+    environment:
+      BETTER_AUTH_URL: https://${KOBRALINK_DOMAIN:?set KOBRALINK_DOMAIN in .env}
+      KOBRALINK_TRUSTED_PROXIES: ${KOBRALINK_TRUSTED_PROXIES:-172.16.0.0/12}
+
+  caddy:
+    image: caddy:2
+    container_name: kobralink-caddy
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${KOBRALINK_DOMAIN} --to kobralink:7100
+    depends_on:
+      - kobralink
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+
+volumes:
+  caddy-data:

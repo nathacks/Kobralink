@@ -17,12 +17,14 @@
         "bundle": "bunx prisma generate && bunx nest build && bun scripts/bundle.ts"
     },
     "dependencies": {
-        "@better-auth/api-key": "^1.7.5",
+        "@better-auth/api-key": "^1.7.28",
+        "@better-auth/mcp": "^1.7.28",
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
         "@kobralink/i18n": "workspace:*",
         "@kobralink/kobra-protocol": "workspace:*",
         "@kobralink/shared": "workspace:*",
         "@libsql/client": "^0.17.0",
+        "@modelcontextprotocol/server": "^2.4.0",
         "@nestjs/common": "^11.1.6",
         "@nestjs/core": "^11.1.6",
         "@nestjs/platform-express": "^11.1.6",

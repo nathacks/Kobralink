@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Check, Copy, ExternalLink, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ApiKeysCard } from '@/components/slicer/api-keys-card';
+import { ApiKeysCard } from '@/components/settings/api-keys-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHosts } from '@/hooks/use-hosts';

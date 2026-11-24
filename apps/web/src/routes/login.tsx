@@ -9,33 +9,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
 import { m } from '@/lib/i18n';
+import { oauthSearch, resumeOAuth } from '@/lib/oauth-request';
 import { setupQuery } from '@/lib/queries';
 import { sessionQuery } from '@/lib/session';
 
 const searchSchema = z.object({ redirect: z.string().optional() });
 
+const validateSearch = (search: Record<string, unknown>) => ({ ...searchSchema.parse(search), ...oauthSearch(search) });
+
 export const Route = createFileRoute('/login')({
-    validateSearch: searchSchema,
+    validateSearch,
     beforeLoad: async ({ context, search }) => {
         const status = await context.queryClient.fetchQuery(setupQuery);
         if (status.needsSetup) throw redirect({ to: '/setup' });
         const session = await context.queryClient.query({ ...sessionQuery, staleTime: 'static' });
-        if (session) throw redirect({ to: search.redirect ?? '/printers' });
+        if (session && !search.oauth) throw redirect({ to: search.redirect ?? '/printers' });
     },
     component: LoginPage,
 });
 
 function LoginPage() {
-    const { redirect: target } = Route.useSearch();
+    const { redirect: target, oauth } = Route.useSearch();
     const navigate = useNavigate();
     const qc = useQueryClient();
 
     const submit = useMutation({
         mutationFn: async ({ email, password }: LoginFormValues) => {
+            if (oauth) return resumeOAuth('/sign-in/email', { email, password }, oauth);
             const res = await authClient.signIn.email({ email, password });
             if (res.error) throw new Error(res.error.message ?? m.login_failed());
         },
         onSuccess: async () => {
+            if (oauth) return;
             qc.removeQueries({ queryKey: ['session'] });
             await qc.query({ ...sessionQuery, staleTime: 0 });
             await navigate({ to: target ?? '/printers', replace: true });

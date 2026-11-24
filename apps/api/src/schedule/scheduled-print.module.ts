@@ -5,5 +5,6 @@ import { ScheduledPrintService } from './scheduled-print.service';
 @Module({
     controllers: [ScheduledPrintController],
     providers: [ScheduledPrintService],
+    exports: [ScheduledPrintService],
 })
 export class ScheduledPrintModule {}

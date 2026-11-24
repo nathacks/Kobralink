@@ -10,6 +10,7 @@ export interface KobralinkEnv {
     port: number;
 
     baseUrl: string;
+    oauthAvailable: boolean;
     authSecret: string;
 
     webDir: string | null;
@@ -32,6 +33,11 @@ function csv(value: string | undefined): string[] {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+}
+
+export function supportsOAuth(baseUrl: string): boolean {
+    const url = new URL(baseUrl);
+    return url.protocol === 'https:' || ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
 }
 
 function apiRoot(): string {
@@ -72,6 +78,7 @@ export function loadEnv(): KobralinkEnv {
         databaseUrl: process.env.DATABASE_URL ?? `file:${path.join(dataDir, 'kobralink.db')}`,
         port,
         baseUrl,
+        oauthAvailable: supportsOAuth(baseUrl),
         authSecret: ensureSecret(dataDir),
         webDir,
         certsDir: process.env.KOBRALINK_CERTS_DIR ?? path.join(root, 'certs'),

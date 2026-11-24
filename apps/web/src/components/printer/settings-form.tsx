@@ -35,7 +35,7 @@ const SLOT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7];
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
     return (
-        <div className="flex items-center justify-between gap-4 py-2">
+        <div data-setting className="flex items-center justify-between gap-4 py-2">
             <div>
                 <Label>{label}</Label>
                 {hint && <p className="text-xs text-muted-foreground">{hint}</p>}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { homeAssistantApiSettingsSchema } from './home-assistant';
+import { mcpModeSchema } from './mcp';
 import { patchSchema } from './patch';
 
 export const notificationEventsSchema = z.object({
@@ -85,6 +86,8 @@ export const appSettingsSchema = z.object({
     verboseHttpLog: z.boolean().default(false),
     updateCheck: z.boolean().default(true),
     moonrakerApiKey: z.boolean().default(false),
+    mcpEnabled: z.boolean().default(false),
+    mcpTools: z.record(z.string().max(64), mcpModeSchema).default({}),
     notifications: notificationSettingsSchema.default(notificationSettingsSchema.parse({})),
     haMqtt: haMqttSettingsSchema.default(haMqttSettingsSchema.parse({})),
     homeAssistant: homeAssistantApiSettingsSchema.default(homeAssistantApiSettingsSchema.parse({})),

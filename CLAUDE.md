@@ -63,6 +63,17 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   dans `prediction.ts`). Opt-in global (`settings.failureDetection`) + switch par imprimante ; une image toutes les
   `intervalSec` pendant l'impression, événement `alert_print_failure`, action `notify|pause|cancel`.
   `onnxruntime-node` est externe dans le bundle Electron (binaires des autres plateformes supprimés).
+- Serveur MCP : `apps/api/src/mcp/` sur `POST /api/mcp` (SDK `@modelcontextprotocol/server` v2), réglage
+  `mcpEnabled` (off par défaut, admin). Deux auth : clés API `configId: 'mcp'` (préfixe `kl_mcp_`, `metadata.access`, jamais
+  acceptées par Moonraker) et OAuth 2.1 (`@better-auth/mcp` + `jwt`, seulement si `BETTER_AUTH_URL` est en HTTPS ou localhost ;
+  DCR ouvert, consentement sur `/oauth/consent`, tables `oauth_*`). `mcp-read.tools.ts` (20) et `mcp-control.tools.ts` (36) ;
+  les verrous « imprimante occupée » et `bedIsClear` sont imposés ici car l'API REST ne les a pas. Les réponses passent par
+  `toToolJson` (retire caméra, IP, identifiants, miniatures). Autorisations par outil : `settings.mcpTools`
+  (`allow|ask|deny`, défaut `ask` si `destructive`), appliquées dans `McpService.call` ; `ask` = question oui/non dans le chat par
+  elicitation (`inputRequired`, `requestState` signé lié à l'appel, texte dans `mcp-question.service.ts`), refus si le client ne sait
+  pas demander ; rien à valider dans le dashboard. Protocole 2026 sans session, clients 2025 = une session en mémoire par
+  `initialize` (max 50, liée à la clé). Tout nouvel outil = l'ajouter à
+  `MCP_TOOL_NAMES` (shared), une clé `mcp_tool_<nom>` dans les 7 langues et les compteurs de `mcp-http.test.ts`.
 - i18n : UI en fr, en, de, es, it, zh-cn, pt-br. Toute chaîne visible passe par `m.xxx()` (Paraglide) — web : `import { m } from '@/lib/i18n'`
   (locale persistée en localStorage, dayjs synchronisé) ; API : `import { m } from '../i18n/locale'` (locale par requête via
   `AsyncLocalStorage`, lue dans `Accept-Language`, fallback `en`). Ajouter une clé = l'ajouter dans **tous** les `messages/*.json`.
