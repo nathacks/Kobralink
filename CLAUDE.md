@@ -48,7 +48,7 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
 - L'API principale (:7100) : `/api/auth/*` (Better Auth), `/api/v1/*` (protégé), sert `apps/web/dist`.
   Un module Nest par domaine (`printers`, `core` = contrôle, `filament`/`spools`/`spoolman`, `queue`, `macros`, `timelapse`,
   `detection`, `notifications`, `ha` = discovery MQTT Home Assistant, `home-assistant` = API HA (énergie, prise), `maintenance`,
-  `automations`, `schedule`, `stats`, `system`, `users`, `settings`).
+  `automations`, `schedule`, `stats`, `metrics` (Prometheus, clé API en Bearer), `system`, `users`, `settings`).
 - Live state UI : SSE `/api/v1/printers/:id/events` → `usePrinterEvents` écrit dans le cache Query ;
   `patchLiveState` fait l'optimistic update local avant confirmation MQTT.
 - Macros = liste d'actions JSON (`macroActionSchema` dans `packages/shared/src/macros.ts`), pas du GCode ;

@@ -18,6 +18,7 @@ import { HomeAssistantModule } from './home-assistant/home-assistant.module';
 import { MacroModule } from './macros/macro.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { McpModule } from './mcp/mcp.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
@@ -58,6 +59,7 @@ const env = loadEnv();
         McpModule,
         UsersModule,
         SystemModule,
+        MetricsModule,
         ...(env.webDir
             ? [
                   ServeStaticModule.forRoot({
