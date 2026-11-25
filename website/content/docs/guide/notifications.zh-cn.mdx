@@ -1,0 +1,64 @@
+---
+title: 通知
+description: Discord、Telegram、ntfy、Webhook、浏览器和网页推送。
+---
+
+在**设置 → 通知**中配置，然后使用**发送测试**。
+
+## 渠道
+
+| 渠道 | 需要填写 |
+| --- | --- |
+| Discord | 频道的 Webhook URL |
+| Telegram | 机器人令牌和聊天 ID |
+| ntfy | 完整的主题 URL，公共或自建服务器 |
+| Webhook | 任何接受 JSON `POST` 的 URL |
+| 浏览器 | 无。标签页在后台时显示 |
+| 网页推送 | 无。在每台设备上开启 |
+
+### 网页推送
+
+推送通知在浏览器关闭时也能收到。它需要 **HTTPS**（或 localhost），参见 [HTTPS](/zh-cn/docs/administration/https)。在 iPhone 上，
+请先把 Kobralink 添加到主屏幕。桌面应用中不可用。
+
+### Webhook 内容
+
+```json
+{
+    "id": "0b5c…",
+    "type": "print_finished",
+    "printerId": "…",
+    "printerName": "工作间 Kobra",
+    "title": "工作间 Kobra — 打印完成",
+    "body": "part.gcode 已完成，用时 2 h 05 min。",
+    "ts": 1764000000000,
+    "url": "https://kobralink.example.com/printers/…",
+    "data": {}
+}
+```
+
+只有设置了 Kobralink 地址时才会有 `url`。`data` 取决于事件。
+
+## 事件
+
+| 事件 | 默认 | `type` |
+| --- | --- | --- |
+| 打印开始 | 关 | `print_started` |
+| 打印完成 | 开 | `print_finished` |
+| 打印取消 | 开 | `print_cancelled` |
+| 已暂停 | 开 | `print_paused` |
+| 打印机离线 | 关 | `printer_offline` |
+| 打印机恢复在线 | 关 | `printer_online` |
+| 烘干完成 | 开 | `drying_done` |
+| 警报 | 开 | `alert_nozzle_temp`、`alert_bed_temp`、`alert_offline`、`alert_spool_low` |
+| 检测到打印失败（AI） | 开 | `alert_print_failure` |
+| 队列：下一个文件就绪 | 开 | `queue_next`、`queue_filament` |
+| 定时打印 | 开 | `scheduled_print` |
+| 维护到期 | 开 | `maintenance_due` |
+| 自动化消息 | 开 | `automation` |
+
+## 链接
+
+在**设置 → 常规**中设置 **Kobralink 地址**后，通知会链接到对应页面。消息语言也在那里设置。
+
+警报阈值按打印机设置，参见[警报](/zh-cn/docs/administration/printer-settings#alerts)。

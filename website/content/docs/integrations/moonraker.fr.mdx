@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Connecter Mainsail, Fluidd, Obico et les autres clients Moonraker.
+---
+
+Chaque imprimante a son propre serveur Moonraker sur son propre port (`7125`, `7126`, …), en HTTP et en WebSocket
+(`/websocket`). Le port est affiché sur la page de l'imprimante et peut être changé dans ses paramètres.
+
+Ouvrir le port dans un navigateur mène à la page de l'imprimante dans Kobralink.
+
+## Authentification
+
+Par défaut les ports Moonraker sont **ouverts au réseau local**, comme Moonraker lui-même. Pour les verrouiller, voir
+[Verrouiller les ports Moonraker](/fr/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Ce qui est pris en charge
+
+| Fonction | Prise en charge |
+| --- | --- |
+| Objets de l'imprimante : lecture et abonnement | Oui |
+| Envoi, et envoi avec impression | Oui, `.gcode` et `.bgcode`. Les envois façon OctoPrint marchent aussi |
+| Démarrer, mettre en pause, reprendre, annuler | Oui |
+| Fichiers : liste, métadonnées, miniatures | Oui |
+| Historique des impressions | Oui |
+| File de tâches | Oui, reliée à la [file Kobralink](/fr/docs/guide/queue). Pause et saut ne font rien |
+| Webcams | Oui, une webcam annoncée automatiquement |
+| Slots de filament | Oui, lus par OrcaSlicer |
+| Scripts G-code | Un petit sous-ensemble, voir ci-dessous |
+
+## Scripts G-code [#g-code-scripts]
+
+| Commande | Effet |
+| --- | --- |
+| `PAUSE`, `M25` | Pause |
+| `RESUME`, `M24` | Reprise |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Annulation |
+| `M104 S<temp>` | Consigne de la buse |
+| `M140 S<temp>` | Consigne du plateau |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Consigne de la buse ou du plateau |
+| Le nom d'une [macro](/fr/docs/guide/macros) | Lance la macro |
+
+Toute autre commande répond `ok` et **ne fait rien** : l'imprimante n'accepte pas de G-code brut en LAN.
+
+## Valeurs à connaître
+
+- `gcode_move.speed_factor` reflète le mode de vitesse : Calme 0,5, Standard 1,0, Sport 1,3.
+- `motion_report.live_velocity` vaut toujours 0.
+- La position n'est pas fournie par l'imprimante. Z est estimé à partir des couches.
+
+## Clients
+
+**Mainsail** n'a pas de champ de clé API et ne peut pas se connecter quand une clé est exigée. **Fluidd**, **Obico**,
+**OrcaSlicer** et **Home Assistant** savent en envoyer une.

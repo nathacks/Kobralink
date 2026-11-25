@@ -1,0 +1,52 @@
+---
+title: Automatisations
+description: Des règles qui agissent sur vos imprimantes quand quelque chose se passe.
+---
+
+Une règle dit **quand** quelque chose se passe, **sur** quelles imprimantes, **puis** quoi faire. Gérez-les dans la page
+**Automatisations**.
+
+## Déclencheurs
+
+| Déclencheur | Quand |
+| --- | --- |
+| Une impression se termine | L'impression s'est terminée normalement |
+| Une impression est annulée ou échoue | L'impression s'est arrêtée avant la fin |
+| Le plateau est vidé | Vous l'avez confirmé, ou utilisé le déclencheur lumineux |
+| Une bobine est presque vide | L'alerte de bobine presque vide de l'imprimante se déclenche |
+| Chaque jour à une heure | Heure du serveur, `HH:MM` |
+
+Le déclencheur de bobine a besoin d'un seuil dans les [alertes](/fr/docs/administration/printer-settings#alerts) de
+l'imprimante. Le déclencheur horaire utilise le fuseau horaire du serveur, défini par `TZ` avec Docker.
+
+## Cibles
+
+Toutes les imprimantes, une imprimante, ou les imprimantes qui portent tous les tags indiqués.
+
+## Actions
+
+Une règle a de 1 à 10 actions, exécutées dans l'ordre :
+
+| Action | Remarques |
+| --- | --- |
+| Lancer une macro | |
+| Lumière | Allumée ou éteinte |
+| Filament (ACE) | Charger ou décharger un slot ; échoue sur une imprimante sans ACE |
+| Prise connectée | Allumée ou éteinte |
+| Notifier | Message de 200 caractères au maximum |
+| Attendre | 1 à 3600 s |
+
+Si une action échoue, la règle s'arrête là. L'erreur est affichée sur la règle.
+
+**Éteindre la prise** est refusé pendant une impression en cours ou en pause. Sinon, Kobralink attend que la buse refroidisse
+sous 50 °C, et abandonne après 30 minutes.
+
+## Exemples
+
+| Objectif | Quand | Puis |
+| --- | --- | --- |
+| Couper après l'impression | Une impression se termine | Prise connectée : éteinte |
+| Éteindre la lumière la nuit | Chaque jour à 23:00 | Lumière : éteinte |
+| Prévenir l'atelier | Une impression est annulée ou échoue | Notifier : « Vérifier l'imprimante » |
+
+**Lancer maintenant** teste une règle sur une imprimante. La règle affiche sa dernière exécution.

@@ -1,0 +1,62 @@
+---
+title: Filament
+description: Slots, ACE units, drying, profiles and spools.
+---
+
+## Slots
+
+The **Filaments** card shows what the printer reports. Three wirings are detected automatically:
+
+| Mode | Slots |
+| --- | --- |
+| Toolhead (buffer) | The slots of the toolhead |
+| Direct ACE | Four slots per ACE unit |
+| Toolhead + ACE (hub) | Three toolhead slots, plus the slots of the ACE units plugged into the fourth |
+
+Without an ACE, choose the **external spool** loaded on the printer's own holder; its usage is deducted from it.
+
+Click a slot to set its material and colour (written to the printer's screen), its OrcaSlicer profile and its spool, and
+to load or unload the filament. Filament read from an RFID tag is recognised.
+
+## Drying
+
+Start a cycle from the ACE section of the card: 30–80 °C for 10 to 1440 minutes. Your ACE may refuse the highest temperatures.
+You can also schedule a cycle for later.
+
+Presets are edited in the **Filament** page. The defaults are:
+
+| Preset | Temperature | Duration |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Auto feed** turns the automatic refill of an ACE unit on or off.
+
+## OrcaSlicer profiles
+
+Each slot can carry an OrcaSlicer profile, sent to OrcaSlicer as brand and preset name when it syncs filaments. Without a choice,
+Kobralink picks one from the material.
+
+To add your own profiles, open **Filament** and import a ZIP or `.json` files from OrcaSlicer. They are marked with a ★. To
+shorten the list, choose the visible brands in the printer settings.
+
+## Spools
+
+Two ways to track filament:
+
+| | Spoolman | Local inventory |
+| --- | --- | --- |
+| Where spools live | In [Spoolman](/en/docs/integrations/spoolman) | In Kobralink |
+| Prices | From Spoolman | Default price per kg |
+| Use it when | You want one source shared with other tools | You do not run Spoolman |
+
+The local inventory is used as long as no Spoolman URL is set. Add spools with their material, colour and initial net
+weight; the remaining weight is estimated from the usage the printer reports.
+
+Assign a spool to a slot in the slot dialog. From then on, its usage is deducted while printing, the print dialog warns
+when it is too short, and the queue takes it into account.
+
+A low-spool alert is sent below the threshold set in the printer settings (*Spool almost empty*, off by default).

@@ -1,0 +1,57 @@
+---
+title: Desktop-App
+description: Kobralink unter macOS, Windows oder Linux installieren.
+---
+
+Die Desktop-App führt die Bridge auf Ihrem Computer aus und zeigt das Dashboard in einem eigenen Fenster. Laden Sie sie aus den
+[GitHub-Releases](https://github.com/NatHacks/Kobralink/releases/latest) herunter.
+
+| System | Datei |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` oder `Kobralink-<version>-amd64.deb` |
+
+## Erster Start unter macOS
+
+Meldet macOS einen nicht verifizierten Entwickler, klicken Sie mit der rechten Maustaste auf die App und wählen Sie
+**Öffnen**, oder führen Sie aus:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## Laufen lassen
+
+Kobralink muss laufen, damit OrcaSlicer sich verbinden kann und damit Warteschlange, Automatisierungen und Benachrichtigungen
+funktionieren.
+
+- Unter Windows und Linux beendet das Schließen des Fensters die App. Minimieren Sie es stattdessen.
+- Unter macOS läuft die App weiter, wenn das Fenster geschlossen ist. Beenden Sie sie mit **Beenden**.
+- Das Symbol in der Menüleiste zeigt den Zustand Ihrer Drucker und öffnet das Fenster wieder.
+
+Das Beenden von Kobralink stoppt keinen bereits gestarteten Druck: Der Drucker hat die Datei.
+
+## Updates [#updates]
+
+Die App sucht beim Start und danach alle 6 Stunden auf GitHub nach Updates. Sie fragt vor dem Herunterladen und vor dem
+Neustart. Sie können auch **Nach Updates suchen…** im Menü verwenden.
+
+## Wo die Daten liegen
+
+Die Daten liegen im Ordner `data` des App-Verzeichnisses, das Bridge-Protokoll in `logs/api.log`:
+
+| System | Verzeichnis |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+Der genaue Datenpfad steht unter **Einstellungen → System**.
+
+## Grenzen gegenüber Docker
+
+Die Desktop-App meldet Sie unter `http://localhost:7100` an. Sie ist für die Nutzung auf dem Computer gedacht, auf dem sie
+läuft; ihre Moonraker-Ports bleiben im Netzwerk erreichbar. Web-Push-Benachrichtigungen gibt es in der App nicht. Um das
+Dashboard vom Smartphone oder mit mehreren Personen zu nutzen, installieren Sie [Docker](/de/docs/getting-started/docker).

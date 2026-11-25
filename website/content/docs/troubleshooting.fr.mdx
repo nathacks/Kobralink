@@ -1,0 +1,71 @@
+---
+title: Dépannage
+description: Les problèmes courants et que faire.
+---
+
+Commencez par **Paramètres → Journal** : filtrez par imprimante, puis téléchargez le journal si vous devez le partager.
+Retirez les adresses IP et les noms de fichiers que vous voulez garder privés avant de le publier.
+
+## L'imprimante reste hors ligne
+
+| Message | Cause | Solution |
+| --- | --- | --- |
+| Port MQTT fermé | Le mode LAN est désactivé | Activez-le dans les paramètres de l'imprimante |
+| Identifiants MQTT refusés | Les identifiants ont changé | Paramètres de l'imprimante → **Rafraîchir les identifiants** |
+| Imprimante injoignable sur le réseau | Mauvaise IP, imprimante éteinte, autre réseau | Vérifiez l'IP ; réservez-la dans votre box |
+| Limite de connexions (code 19002) | Un autre client LAN est connecté | Fermez Anycubic Slicer Next, les intégrations Home Assistant… |
+| Déconnectée manuellement | Vous avez fermé la session | Reconnectez |
+
+L'imprimante n'accepte **qu'une seule session LAN** : deux instances de Kobralink sur la même imprimante se déconnectent
+mutuellement.
+
+## Je n'arrive pas à me connecter
+
+`BETTER_AUTH_URL` doit être l'adresse que vous tapez dans le navigateur, protocole et port compris. Ajoutez les autres
+adresses à `KOBRALINK_EXTRA_ORIGINS`, puis recréez le conteneur avec `docker compose up -d`. Avec une adresse HTTPS, la
+connexion en HTTP simple ne marche pas.
+
+## OrcaSlicer ne se connecte pas
+
+- Vérifiez que l'hôte contient `http://` et le port de l'imprimante.
+- Vérifiez que Kobralink tourne et que le pare-feu autorise le port.
+- Si les clés sont exigées, collez-en une avec l'usage Moonraker.
+- À partir de la 17ᵉ imprimante, [publiez plus de ports](/fr/docs/getting-started/docker#ports).
+
+## L'impression ne démarre pas après *envoyer et imprimer*
+
+La fenêtre d'impression attend dans le tableau de bord. Confirmez-la, ou désactivez **Dialogue après envoi** dans les
+paramètres de l'imprimante.
+
+## L'envoi est refusé
+
+| Message | Solution |
+| --- | --- |
+| Pas assez d'espace sur l'imprimante | Supprimez des fichiers dans l'onglet **Imprimante** |
+| L'imprimante a refusé le nom ou le type du fichier | Utilisez un nom simple qui finit par `.gcode` |
+| L'imprimante n'a pas fourni d'URL d'envoi | Reconnectez l'imprimante |
+
+## La caméra ne s'affiche pas
+
+- *Aucune caméra connectée* : l'imprimante indique qu'aucune n'est branchée.
+- *429* : un autre client utilise le flux. Fermez-le et redémarrez le flux.
+- Avec une installation personnalisée, vérifiez que ffmpeg est disponible.
+
+## La file n'avance pas
+
+Lisez le motif affiché sur l'élément, voir [Pourquoi un élément attend](/fr/docs/guide/queue#why-an-item-waits). Le plus
+souvent, le plateau n'a pas été confirmé vide.
+
+## Les automatisations se lancent à la mauvaise heure
+
+Elles utilisent le fuseau horaire du serveur, affiché dans **Paramètres → Système**. Définissez `TZ` dans `.env`.
+
+## L'application de bureau ne démarre pas le bridge
+
+L'écran d'erreur donne accès au journal. Une cause fréquente est le port 7100 déjà utilisé par une autre instance.
+
+## La poignée de main TLS est refusée
+
+Après une mise à jour du firmware Anycubic, le certificat inclus peut être périmé. Ouvrez une
+[issue](https://github.com/NatHacks/Kobralink/issues), ou extrayez-en un nouveau : voir
+[Certificats](/fr/docs/development/setup#certificates).

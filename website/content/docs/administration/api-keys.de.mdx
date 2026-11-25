@@ -1,0 +1,37 @@
+---
+title: API-Schlüssel
+description: Schlüssel für Moonraker-Clients, Prometheus und KI-Assistenten.
+---
+
+Alle Schlüssel werden unter **Einstellungen → API-Schlüssel** verwaltet. Legen Sie einen Schlüssel pro App an, damit Sie ihn
+einzeln widerrufen können. Ein Schlüssel wird nur einmal angezeigt. Er beginnt mit `kl_`.
+
+| Verwendung | Öffnet |
+| --- | --- |
+| Moonraker | Vollständige Steuerung des Druckers über seinen Moonraker-Port, Kamera inklusive |
+| Prometheus-Metriken | Lesezugriff auf `/api/v1/metrics` |
+| KI-Assistent (MCP) | Den MCP-Server, nur lesend oder steuernd |
+
+Ein Schlüssel kann mehrere Verwendungen haben und gilt für einen oder alle Drucker. Ein Schlüssel mit MCP-Verwendung gilt
+immer für alle Drucker. Betrachter können keine Schlüssel anlegen.
+
+## Moonraker-Ports absichern [#lock-the-moonraker-ports]
+
+Standardmäßig nehmen die Moonraker-Ports jeden im Netzwerk an. Schalten Sie **API-Schlüssel auf Moonraker-Ports verlangen**
+unter **Einstellungen → OrcaSlicer** ein, um auf allen Druckern einen Schlüssel zu verlangen, Kamera inklusive.
+
+Clients senden den Schlüssel auf eine dieser Arten:
+
+| Art | Verwendet von |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Skripte |
+| `?api_key=kl_…` in der URL | `<img>`-Tags der Kamera |
+| `/access/oneshot_token`, dann `?token=…` | WebSocket-Clients |
+
+Zwei Dinge sind zu beachten:
+
+- **Mainsail** hat kein Feld für einen API-Schlüssel und kann sich nicht verbinden, solange die Option an ist.
+- Die Adressen unter `/serve/` bleiben offen, weil der Drucker dort seine Dateien herunterlädt.
+
+Ein an einen Drucker gebundener Schlüssel öffnet nur diesen Drucker.

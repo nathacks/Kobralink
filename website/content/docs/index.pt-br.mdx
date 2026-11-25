@@ -1,0 +1,55 @@
+---
+title: Introdução
+description: O que é o Kobralink, o que ele faz e por onde começar.
+---
+
+O Kobralink transforma uma **Anycubic Kobra X** ou **Kobra 4** em uma **impressora compatível com Moonraker**. Sem Klipper,
+sem Raspberry Pi e sem alterar o firmware: o Kobralink conversa com a impressora pela sua rede, no modo LAN, e a expõe como um
+servidor Moonraker.
+
+![O painel do Kobralink](../../../docs/interface.png)
+
+Você pode usar a impressora pelo:
+
+- **OrcaSlicer**, que envia e acompanha as impressões
+- **painel web**, que cuida de todo o resto
+- **clientes Moonraker** como Mainsail, Fluidd, Obico ou Home Assistant
+- **assistente de IA** (Claude, ChatGPT…) por meio do servidor MCP integrado
+
+## Escolha como instalar
+
+<Cards>
+    <Card title="Docker" href="/pt-br/docs/getting-started/docker">
+        Recomendado para um servidor sempre ligado: várias impressoras, vários usuários, acesso pelo celular.
+    </Card>
+    <Card title="Aplicativo de desktop" href="/pt-br/docs/getting-started/desktop">
+        Para um único computador com macOS, Windows ou Linux. Nada mais a instalar.
+    </Card>
+</Cards>
+
+Depois siga a [primeira execução](/pt-br/docs/getting-started/first-run) e [conecte o OrcaSlicer](/pt-br/docs/getting-started/orcaslicer).
+
+## O que você ganha
+
+| Área | Recursos |
+| --- | --- |
+| [Painel](/pt-br/docs/guide/dashboard) | Temperaturas, progresso, controles e câmera ao vivo, para uma ou várias impressoras |
+| [Impressão](/pt-br/docs/guide/printing) | Biblioteca de G-code, prévia 3D, mapeamento de filamentos, pular objetos, inícios agendados |
+| [Fila](/pt-br/docs/guide/queue) | Uma única fila para todas as impressoras, com verificação de compatibilidade e de filamento |
+| [Filamento](/pt-br/docs/guide/filament) | Slots do ACE, secagem, perfis do OrcaSlicer, Spoolman ou estoque local |
+| [Câmera](/pt-br/docs/guide/camera) | Transmissão ao vivo, capturas e timelapses |
+| [Detecção de falhas](/pt-br/docs/guide/failure-detection) | Modelo de IA local que notifica, pausa ou cancela |
+| [Automações](/pt-br/docs/guide/automations) e [macros](/pt-br/docs/guide/macros) | Regras e sequências de ações em um clique |
+| [Estatísticas](/pt-br/docs/guide/statistics) | Histórico, custos, energia, falhas, exportação CSV |
+| [Manutenção](/pt-br/docs/guide/maintenance) | Tarefas vencidas por horas de impressão, número de impressões ou dias |
+| [Notificações](/pt-br/docs/guide/notifications) | Webhook, Discord, Telegram, ntfy, notificações push |
+| [Integrações](/pt-br/docs/integrations/moonraker) | Moonraker, Home Assistant, Spoolman, Prometheus, MCP |
+
+A interface está disponível em francês, inglês, alemão, espanhol, italiano, chinês simplificado e português do Brasil.
+
+<Callout type="warn" title="Antes de começar">
+    Ativar o modo LAN desvincula a impressora da sua conta Anycubic. A impressora aceita uma única sessão LAN: não use o
+    Kobralink ao mesmo tempo que outro cliente LAN (como o Anycubic Slicer Next).
+</Callout>
+
+O Kobralink é um projeto independente sob a licença GPL-3.0. Não tem vínculo com a Anycubic.

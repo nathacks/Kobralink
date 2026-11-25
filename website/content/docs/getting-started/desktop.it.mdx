@@ -1,0 +1,55 @@
+---
+title: App desktop
+description: Installare Kobralink su macOS, Windows o Linux.
+---
+
+L'app desktop esegue il bridge sul tuo computer e mostra la dashboard in una finestra propria. Scaricala dalle
+[release di GitHub](https://github.com/NatHacks/Kobralink/releases/latest).
+
+| Sistema | File |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` o `Kobralink-<version>-amd64.deb` |
+
+## Primo avvio su macOS
+
+Se macOS dice che lo sviluppatore non è identificato, fai clic destro sull'app e scegli **Apri**, oppure esegui:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## Tenerla in esecuzione
+
+Kobralink deve essere in esecuzione perché OrcaSlicer si colleghi, e perché coda, automazioni e notifiche funzionino.
+
+- Su Windows e Linux, chiudere la finestra chiude l'app. Riducila a icona invece.
+- Su macOS, l'app resta in esecuzione con la finestra chiusa. Usa **Esci** per fermarla.
+- L'icona nella barra dei menu mostra lo stato delle stampanti e riapre la finestra.
+
+Chiudere Kobralink non ferma una stampa già avviata: la stampante ha il file.
+
+## Aggiornamenti [#updates]
+
+L'app cerca aggiornamenti su GitHub all'avvio e poi ogni 6 ore. Chiede prima di scaricare e prima di riavviare. Puoi anche usare
+**Controlla aggiornamenti…** nel menu.
+
+## Dove sono i dati
+
+I dati sono nella cartella `data` della directory dell'app, e il log del bridge in `logs/api.log`:
+
+| Sistema | Directory |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+Il percorso esatto dei dati è indicato in **Impostazioni → Sistema**.
+
+## Limiti rispetto a Docker
+
+L'app desktop ti fa accedere su `http://localhost:7100`. È pensata per essere usata sul computer dove gira; le sue porte
+Moonraker restano raggiungibili dalla rete. Le notifiche push non sono disponibili nell'app. Per usare la dashboard dal telefono
+o in più persone, installa [Docker](/it/docs/getting-started/docker).

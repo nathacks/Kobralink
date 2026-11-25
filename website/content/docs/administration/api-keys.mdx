@@ -1,0 +1,37 @@
+---
+title: API keys
+description: Keys for Moonraker clients, Prometheus and AI assistants.
+---
+
+All keys are managed in **Settings → API keys**. Create one key per app, so that you can revoke it separately. A key is shown
+only once. It starts with `kl_`.
+
+| Use | Opens |
+| --- | --- |
+| Moonraker | Full control of the printer through its Moonraker port, camera included |
+| Prometheus metrics | Read-only access to `/api/v1/metrics` |
+| AI assistant (MCP) | The MCP server, read only or control |
+
+A key can have several uses, and covers one printer or all of them. A key with the MCP use always covers every printer. Viewers
+cannot create keys.
+
+## Lock the Moonraker ports
+
+By default the Moonraker ports accept anyone on the network. Turn on **Require an API key on Moonraker ports** in
+**Settings → OrcaSlicer** to require a key on every printer, camera included.
+
+Clients send the key in one of these ways:
+
+| Way | Used by |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Scripts |
+| `?api_key=kl_…` in the URL | Camera `<img>` tags |
+| `/access/oneshot_token`, then `?token=…` | WebSocket clients |
+
+Two things to know:
+
+- **Mainsail** has no API key field and cannot connect while the option is on.
+- The addresses under `/serve/` stay open, because the printer downloads its files there.
+
+A key bound to a printer only unlocks that printer.

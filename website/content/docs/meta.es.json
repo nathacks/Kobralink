@@ -1,0 +1,16 @@
+{
+    "pages": [
+        "index",
+        "---Empezar---",
+        "getting-started",
+        "---Usar---",
+        "guide",
+        "integrations",
+        "---Administrar---",
+        "administration",
+        "troubleshooting",
+        "---Ir más allá---",
+        "reference",
+        "development"
+    ]
+}

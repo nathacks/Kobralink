@@ -1,0 +1,33 @@
+---
+title: Spoolman
+description: Use Spoolman as the source of truth for spools.
+---
+
+With [Spoolman](https://github.com/Donkie/Spoolman), spools, prices and usage are shared with your other tools. Kobralink reads the spools and reports
+the usage.
+
+## Set up
+
+1. Open **Settings → Integrations → Spoolman** and enter the server URL, for example `http://192.168.1.20:7912`.
+2. In the **Filaments** card, click a slot and choose its Spoolman spool.
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Sync while printing | 0 s | Interval between two usage reports. 0 reports only at the end of the print |
+
+Once a URL is set, the local inventory is no longer used.
+
+## Usage reports
+
+If Spoolman cannot be reached, the usage is kept and sent again when it answers. The **Filament** page shows how many reports are
+waiting. Nothing is lost if Kobralink restarts.
+
+## Prices
+
+The price of a spool is its own price, or the one of its filament, divided by its weight. The weight, density and diameter come from
+Spoolman.
+
+## Docker
+
+From the Kobralink container, `localhost` is the container itself. Use the address of the host on the network, or a service name if
+both run in the same Compose project.

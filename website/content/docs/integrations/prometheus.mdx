@@ -1,0 +1,57 @@
+---
+title: Prometheus
+description: Export printer metrics to Prometheus and Grafana.
+---
+
+Metrics are served on `/api/v1/metrics`, on the dashboard port.
+
+## Set up
+
+1. In [Settings → API keys](/en/docs/administration/api-keys), create a key with the **Prometheus metrics** use.
+2. Add the job to Prometheus. **Settings → Prometheus** shows it with your address:
+
+```yaml title="prometheus.yml"
+scrape_configs:
+  - job_name: kobralink
+    scheme: http
+    metrics_path: /api/v1/metrics
+    authorization:
+      credentials: kl_…
+    static_configs:
+      - targets: ['192.168.1.20:7100']
+```
+
+A key bound to one printer only sees that printer. The key can also be sent as an `X-Api-Key` header.
+
+## Metrics
+
+All metrics are gauges, with a `printer_id` label.
+
+| Metric | Meaning |
+| --- | --- |
+| `kobralink_printer_info` | Always 1, with `name` and `firmware` labels |
+| `kobralink_printer_connected` | 1 when the MQTT session is up |
+| `kobralink_printer_state` | 1 for the current state, in the `state` label |
+| `kobralink_nozzle_temperature_celsius`, `kobralink_nozzle_target_celsius` | Nozzle |
+| `kobralink_bed_temperature_celsius`, `kobralink_bed_target_celsius` | Bed |
+| `kobralink_fan_speed_ratio` | Part fan, 0–1 |
+| `kobralink_print_speed_mode` | 1 Calm, 2 Standard, 3 Sport |
+| `kobralink_print_progress_ratio` | Progress, 0–1 |
+| `kobralink_print_duration_seconds` | Elapsed time |
+| `kobralink_print_remaining_seconds` | Estimated remaining time |
+| `kobralink_print_layer`, `kobralink_print_layers_total` | Layers |
+| `kobralink_printer_error_code` | Last error code, 0 when none |
+| `kobralink_light_on` | 1 when the light is on |
+| `kobralink_storage_used_bytes`, `kobralink_storage_total_bytes` | Printer storage |
+| `kobralink_ace_humidity_percent` | ACE humidity, with an `ace` label |
+| `kobralink_ace_temperature_celsius` | ACE temperature, with an `ace` label |
+| `kobralink_ace_drying` | 1 while the ACE dries, with an `ace` label |
+
+Print metrics are 0 when nothing is printing.
+
+## Show the printer name
+
+```text
+kobralink_nozzle_temperature_celsius
+  * on (printer_id) group_left (name) kobralink_printer_info
+```

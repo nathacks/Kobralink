@@ -1,0 +1,68 @@
+---
+title: OrcaSlicer
+description: Conectar o OrcaSlicer ao Kobralink e enviar impressões.
+---
+
+O Kobralink expõe cada impressora como um servidor Moonraker, então o OrcaSlicer se conecta como a uma máquina Klipper. O
+endereço exato de cada impressora está em **Configurações → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Abrir as configurações de conexão
+
+Na aba **Preparar**, clique no ícone de conexão (tomada) ao lado do perfil da impressora, ou abra
+**Configurações da impressora → Geral → Impressora física**.
+
+</Step>
+<Step>
+
+### Escolher o tipo de host
+
+Escolha **Moonraker**.
+
+</Step>
+<Step>
+
+### Preencher o host
+
+Informe o endereço da impressora, com protocolo e porta:
+
+```text
+http://192.168.1.20:7125
+```
+
+Se o OrcaSlicer roda na mesma máquina que o Kobralink, use `http://localhost:7125`. Deixe a chave de API vazia, a menos que
+você tenha ativado [Exigir chave de API](/pt-br/docs/administration/api-keys#lock-the-moonraker-ports).
+
+</Step>
+<Step>
+
+### Testar e salvar
+
+**Testar** deve indicar que a conexão funcionou. A aba **Dispositivo** agora mostra sua Kobra e **Imprimir** envia o G-code ao
+Kobralink.
+
+</Step>
+</Steps>
+
+## O que a aba Dispositivo faz
+
+A aba Dispositivo cuida só da impressora: iniciar uma impressão, acompanhar o progresso, pausar ou cancelar e sincronizar os
+filamentos do ACE. Todo o resto (fila, arquivos, macros, câmera, detecção de falhas, estatísticas, notificações) fica no painel
+do Kobralink.
+
+## Enviar uma impressão
+
+Por padrão, um arquivo enviado pelo OrcaSlicer abre a janela de impressão no painel, mesmo com *enviar e imprimir*. Lá você
+confere os filamentos e os slots e depois inicia. Para começar direto, desative **Diálogo após o envio** nas
+[configurações da impressora](/pt-br/docs/administration/printer-settings#printing).
+
+## Sincronizar filamentos
+
+O botão de sincronização de filamentos da aba Dispositivo busca os slots informados pela impressora. A marca e o perfil
+enviados por slot são definidos na [janela do slot](/pt-br/docs/guide/filament#orcaslicer-profiles).
+
+## Pular objetos
+
+Para pular objetos, o G-code precisa ter marcadores de objeto. Ative **Rotular objetos** no OrcaSlicer.

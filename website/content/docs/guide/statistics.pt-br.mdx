@@ -1,0 +1,49 @@
+---
+title: Histórico, estatísticas e custos
+description: O que foi impresso, o que falhou e quanto custou.
+---
+
+## Histórico
+
+A página **Histórico** lista cada impressão com prévia, duração, filamento, energia e custo. Em uma impressão que falhou, você
+pode:
+
+- escolher um motivo: spaghetti, aderência à mesa, entupimento, fim do filamento, deslocamento de camada, queda de energia,
+  cancelada de propósito, qualidade reprovada, outro
+- adicionar uma anotação
+- ver a captura da câmera feita no fim, se a câmera estava ligada
+- ler o código de erro informado pela impressora
+
+## Estatísticas
+
+Escolha uma impressora e um período: 7, 30, 90 ou 365 dias, ou tudo. A página mostra:
+
+- impressões, taxa de sucesso, tempo de impressão e filamento, comparados ao período anterior
+- impressões, horas e custo por dia ou por mês, por dia da semana e por hora de início
+- uso por material e os arquivos mais impressos
+- para cada impressora: utilização, tempo médio entre falhas, tempo ociosa após uma impressão, precisão da estimativa do
+  fatiador, energia medida
+- falhas por motivo, da mais frequente para a menos
+- o filamento desperdiçado por impressões que nunca terminaram
+
+**Exportar CSV** baixa as impressões da seleção.
+
+## Custos [#costs]
+
+Custo = filamento + energia.
+
+**Filamento.** O preço vem do carretel do Spoolman. Sem ele, vale o *preço padrão do filamento* (**Configurações → Geral**).
+Filamento sem nenhum preço aparece como *sem preço*.
+
+**Energia.** Medida pelo medidor da tomada quando o [Home Assistant](/pt-br/docs/integrations/home-assistant#smart-plug-and-energy)
+está configurado. Caso contrário, estimada:
+
+```text
+potência média (W) ÷ 1000 × horas × preço do kWh
+```
+
+A potência média é a da impressora, do perfil dela, ou o padrão em **Configurações → Geral**. Deixe o preço da energia em 0 para
+ignorar a energia.
+
+Um custo estimado aparece antes da impressão no cartão do arquivo, na prévia e na janela de impressão. O custo real é calculado
+no fim.

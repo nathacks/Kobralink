@@ -1,0 +1,20 @@
+---
+title: 限制
+description: 打印机在局域网下不提供的功能。
+---
+
+Kobralink 只能做到打印机局域网协议所提供的功能。
+
+| 不可用 | 说明 |
+| --- | --- |
+| 原始 G-code | 不发送控制台命令，参见 [G-code 脚本](/zh-cn/docs/integrations/moonraker#g-code-scripts) |
+| 自由设定速度和流量百分比 | 只有三种速度模式；无法调节流量 |
+| 实时位置 | Z 根据层数估算 |
+| Z 偏移命令 | |
+| 固件更新 | 请使用打印机屏幕 |
+| 打印机自带的 AI 检测 | Kobralink 使用[自己的检测](/zh-cn/docs/guide/failure-detection) |
+| 打印机自带的延时摄影 | Kobralink 录制[自己的延时摄影](/zh-cn/docs/guide/camera#timelapses) |
+| Anycubic 云服务 | 局域网模式会让打印机与账号解绑 |
+| 第二个局域网客户端 | 打印机只接受一个会话 |
+| 列出超过 256 个文件 | 在 Kobra 4 上观察到 |
+| `.bgcode` 的 3D 预览 | |

@@ -1,0 +1,73 @@
+---
+title: First run
+description: Create the administrator account and add your first printer.
+---
+
+The first time you open Kobralink, a wizard walks you through the setup. Every step after the account can be changed
+later.
+
+<Steps>
+<Step>
+
+### Create the admin account
+
+This account manages printers, users and settings. Sign-up closes as soon as it exists: later accounts are created by an
+administrator in [Settings → Users](/en/docs/administration/users).
+
+</Step>
+<Step>
+
+### Choose language, currency and address
+
+The address is used in notification links. The language applies to messages sent by the bridge.
+
+</Step>
+<Step>
+
+### Add your printer
+
+On the printer, open **Settings → Network** and turn on **LAN mode**. Keep the printer on and connected to the same network, then note the IP
+address on its network screen.
+
+Enter only the IP address, without a port. Kobralink reads the username, password and device ID from the printer itself.
+
+</Step>
+<Step>
+
+### Describe the printer
+
+Location, tags, installed nozzle and average power draw. These are used by reports, costs and the
+[queue](/en/docs/guide/queue). Official Anycubic specifications are shown when the model is known.
+
+</Step>
+<Step>
+
+### Connect Spoolman (optional)
+
+If you use [Spoolman](/en/docs/integrations/spoolman), enter its URL and test it.
+
+</Step>
+<Step>
+
+### Connect OrcaSlicer
+
+The wizard shows the address to paste in OrcaSlicer. See [OrcaSlicer](/en/docs/getting-started/orcaslicer).
+
+</Step>
+</Steps>
+
+## Add more printers
+
+Open **Printers → Add a printer** and enter the IP address. Each printer gets its own Moonraker port: `7125`, `7126`, and
+so on. Give every printer a fixed IP address in your router (DHCP reservation), so that Kobralink always finds it.
+
+## If the printer is not found
+
+| Message | What to do |
+| --- | --- |
+| Is LAN mode enabled on the printer? | Turn LAN mode on, then try again |
+| Connection limit (code 19002) | Disconnect other LAN clients such as Anycubic Slicer Next |
+| Printer unreachable on the network | Check the IP address and that both machines are on the same network |
+| This printer already exists | The printer is already in Kobralink |
+
+More cases in [Troubleshooting](/en/docs/troubleshooting).

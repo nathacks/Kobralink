@@ -1,0 +1,56 @@
+---
+title: Drucken
+description: Der Druckdialog, die Filamentzuordnung, übersprungene Objekte und geplante Drucke.
+---
+
+## Der Druckdialog
+
+Der Dialog öffnet sich, wenn Sie eine Datei drucken, und nach einem Upload (auch bei *Senden und drucken* aus OrcaSlicer).
+
+1. **Teil prüfen** in der Vorschau.
+2. **Filamente zuordnen**: Jeder G-Code-Kanal geht an einen Slot. Kobralink schlägt passende Slots vor und warnt, wenn das
+   Material nicht passt.
+3. **Menge prüfen**: Der Dialog vergleicht das benötigte Filament mit dem Rest auf der zugeordneten Spule (reicht, knapp,
+   reicht nicht). Ist eine Spule zu knapp, müssen Sie bestätigen, um trotzdem zu drucken.
+4. **Objekte überspringen**, die Sie nicht drucken wollen.
+5. **Optionen wählen**, dann drucken, einreihen oder planen.
+
+Ohne geladenen Slot verwendet der Drucker das Filament im Druckkopf.
+
+### Optionen
+
+| Option | Wirkung |
+| --- | --- |
+| Automatische Bettnivellierung | Tastet das Bett vor dem Druck ab |
+| Vibrationskompensation | Misst Resonanzen vor dem Druck, um Schwingungen zu verringern |
+| Flusskalibrierung | Misst den Extrusionsfluss vor dem Druck |
+| Zeitraffer aufnehmen | Siehe [Kamera](/de/docs/guide/camera#timelapses) |
+| Fehlererkennung (KI) | Siehe [Fehlererkennung](/de/docs/guide/failure-detection) |
+
+Die drei Kalibrierungsoptionen erscheinen nur, wenn der Drucker meldet, dass er sie unterstützt. Ihre Standardwerte stehen in
+den [Druckereinstellungen](/de/docs/administration/printer-settings#printing).
+
+## Während des Drucks
+
+Der Druck beginnt nach der Kalibrierung; die Karte nennt den aktuellen Schritt (Aufheizen, Nivellieren, Flusskalibrierung…).
+Sie können pausieren, fortsetzen, abbrechen, Geschwindigkeit, Temperaturen und Lüfter ändern und Objekte überspringen.
+
+**Objekte überspringen** druckt die gewählten Objekte ab der aktuellen Schicht nicht mehr. Das lässt sich für diesen Druck
+nicht rückgängig machen. Der G-Code muss Objektmarken enthalten (**Objekte beschriften** in OrcaSlicer).
+
+Pausiert der Drucker von selbst, wird der Grund für die häufigsten Codes in Ihrer Sprache angezeigt. Andere Codes zeigen die
+Meldung des Druckers.
+
+## Geplante Drucke
+
+**Planen** startet den Druck zu einem gewählten Datum und einer gewählten Uhrzeit. Zu diesem Zeitpunkt:
+
+- ist der Drucker frei, startet der Druck
+- ist der Drucker belegt, offline, in Wartung oder wartet darauf, dass sein Bett geräumt wird, kommt die Datei **an den Anfang
+  der Warteschlange**
+- war Kobralink aus, startet der Druck beim Wiederkommen trotzdem, außer er ist mehr als eine Stunde verspätet; dann wird der
+  Termin verworfen
+
+Geplante Drucke stehen im Tab **Geplant** der Warteschlange. Sie erhalten eine Benachrichtigung mit dem Ergebnis.
+
+<Callout type="warn">Stellen Sie sicher, dass das Bett vor einem geplanten Start leer ist.</Callout>

@@ -1,0 +1,48 @@
+---
+title: HTTP API
+description: 服务器的接口。
+---
+
+| 地址 | 用途 | 认证 |
+| --- | --- | --- |
+| `:7100/api/v1/*` | 控制台 API | 会话 Cookie |
+| `:7100/api/v1/metrics` | [Prometheus](/zh-cn/docs/integrations/prometheus) | API 密钥或会话 |
+| `:7100/api/v1/setup/status` | 第一个账号是否已存在 | 无 |
+| `:7100/api/auth/*` | 登录（Better Auth） | |
+| `:7100/api/auth/ok` | 健康检查 | 无 |
+| `:7100/api/mcp` | [MCP 服务器](/zh-cn/docs/integrations/mcp) | API 密钥或 OAuth |
+| `:7125+` | [Moonraker](/zh-cn/docs/integrations/moonraker)，每台打印机一个端口 | 无，或 API 密钥 |
+
+<Callout type="warn" title="自己写脚本时，请使用 Moonraker 或 MCP">
+    `/api/v1` 是为控制台设计的。它不保证稳定，也不接受 API 密钥（指标除外）。
+</Callout>
+
+## 控制台 API
+
+请求体由 `packages/shared` 中的 Zod 模式校验。观察者只能读取。
+
+| 路径 | 用途 |
+| --- | --- |
+| `/printers`、`/printers/:id` | 列出、添加、修改、删除 |
+| `/printers/:id/{connect,disconnect,reconnect,refresh-credentials}` | 连接 |
+| `/printers/:id/power` | 智能插座 |
+| `/printers/:id/{state,samples}` | 实时状态和近期温度 |
+| `/printers/:id/{temperature,fan,light,speed,axis,axis/off}` | 控制 |
+| `/printers/:id/{ams/slot,ams/feed,ace/auto-feed,ace/dry}` | 耗材 |
+| `/printers/:id/print`、`/printers/:id/print/{pause,resume,cancel}` | 打印 |
+| `/printers/:id/skip`、`/printers/:id/skip/{query,state}` | 跳过对象 |
+| `/printers/:id/files`、`/printers/:id/printer-files` | 文件 |
+| `/printers/:id/camera/{stream,h264,snapshot,start,stop,reset}` | 摄像头 |
+| `/printers/:id/{schedule,dry-schedule,maintenance,history,detection}` | 每台打印机的数据 |
+| `/printers/:id/queue`、`/printers/:id/queue/{status,start,bed-clear,auto-start,maintenance}` | 某台打印机的队列 |
+| `/printers/:id/filament/slots`、`/printers/:id/{spools,spoolman}` | 槽位和料卷 |
+| `/queue`、`/queue/{check,reorder}` | 队列 |
+| `/files`、`/history`、`/stats`、`/stats/export.csv`、`/timelapses` | 文件库和统计 |
+| `/macros`、`/automations`、`/spools`、`/filament/profiles` | 配置 |
+| `/settings`、`/users`、`/notifications`、`/push`、`/detection` | 管理 |
+| `/system`、`/system/{backup,restore,restart,update-check}`、`/logs/download` | 系统 |
+
+## 实时事件
+
+`/api/v1/events/multiplexed?channels=printers,logs` 是一个 Server-Sent Events 流。每条消息是一个 JSON 信封
+`{ channel, event, data }`，每 25 秒有一次心跳。可用频道为 `printers` 和 `logs`。

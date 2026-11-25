@@ -1,0 +1,35 @@
+---
+title: Settings
+description: What each settings page contains.
+---
+
+The search field at the top of the settings finds any option, including those of the printers.
+
+| Page | Content |
+| --- | --- |
+| General | Theme, interface language, currency, costs, address, updates |
+| Notifications | [Channels and events](/en/docs/guide/notifications) |
+| AI detection | [Model, action, sensitivity](/en/docs/guide/failure-detection) |
+| Integrations | [Spoolman](/en/docs/integrations/spoolman), [Home Assistant](/en/docs/integrations/home-assistant) |
+| OrcaSlicer | [Addresses](/en/docs/getting-started/orcaslicer), API key requirement |
+| MCP (AI) | [Server, tools, connected apps](/en/docs/integrations/mcp) |
+| API keys | [Keys](/en/docs/administration/api-keys) |
+| Prometheus | [Metrics address](/en/docs/integrations/prometheus) |
+| Macros | [Macros](/en/docs/guide/macros) |
+| Users | [Accounts](/en/docs/administration/users), administrators only |
+| System | Version, uptime, [backup](/en/docs/administration/backup), restart |
+| Logs | Live log, filter by level and source, download |
+
+## General
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Theme, interface language | | Kept in this browser |
+| Notification language | French | Language of the messages sent by the bridge |
+| Currency | `EUR` | ISO code used to show costs |
+| Default filament price | 0 | Per kg. 0 means not costed |
+| Electricity price | 0 | Per kWh. 0 ignores energy |
+| Printer average power | 0 | In watts, used when the printer has none |
+| Kobralink address | | Target of the links in notifications |
+| Check for updates | on | Asks GitHub for the latest release |
+| Verbose HTTP log | off | Logs every request |

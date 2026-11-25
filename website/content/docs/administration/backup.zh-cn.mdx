@@ -1,0 +1,42 @@
+---
+title: 备份与恢复
+description: 备份数据，并把 Kobralink 迁移到另一台机器。
+---
+
+## 在控制台中
+
+管理员打开**设置 → 系统 → 备份与恢复**。
+
+**下载备份**会得到一个 ZIP，包含数据库（打印机、用户、设置、历史、配置）和 G-code 文件。延时摄影是可选的，可能很大。
+
+**恢复**会用压缩包替换当前所有数据，然后重启桥接程序。最大支持 4 GB 的压缩包。Docker 和桌面应用会自动重启。
+
+<Callout type="warn">
+    压缩包包含打印机凭据、账号数据和集成令牌。请妥善保存。
+</Callout>
+
+压缩包**不**包含会话密钥、推送通知密钥、失败打印的摄像头快照和检测模型。在另一台机器上恢复后，请重新登录，在每台设备上重新开启
+推送通知，并重新下载模型。
+
+## 整个 Docker 卷
+
+这会复制所有内容。请先停止 Kobralink，避免复制时写入数据库：
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+docker run --rm -v kobralink_kobralink-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/kobralink-data.tgz -C /data .
+docker compose -f docker-compose.prod.yml start
+```
+
+## 数据目录
+
+| 路径 | 内容 |
+| --- | --- |
+| `kobralink.db` | SQLite 数据库 |
+| `gcodes/` | G-code 文件 |
+| `timelapses/` | 视频 |
+| `failures/` | 打印的摄像头快照 |
+| `models/` | 失败检测模型 |
+| `.auth-secret` | 会话密钥，除非设置了 `BETTER_AUTH_SECRET` |
+| `.vapid.json` | 推送通知密钥 |

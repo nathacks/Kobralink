@@ -1,0 +1,37 @@
+---
+title: Clés API
+description: Les clés pour les clients Moonraker, Prometheus et les assistants IA.
+---
+
+Toutes les clés se gèrent dans **Paramètres → Clés API**. Créez une clé par application, pour pouvoir la révoquer
+séparément. Une clé n'est affichée qu'une fois. Elle commence par `kl_`.
+
+| Usage | Ouvre |
+| --- | --- |
+| Moonraker | Le contrôle complet de l'imprimante par son port Moonraker, caméra comprise |
+| Métriques Prometheus | L'accès en lecture à `/api/v1/metrics` |
+| Assistant IA (MCP) | Le serveur MCP, en lecture seule ou en contrôle |
+
+Une clé peut avoir plusieurs usages, et couvre une imprimante ou toutes. Une clé avec l'usage MCP couvre toujours toutes les
+imprimantes. Les comptes en lecture seule ne peuvent pas créer de clés.
+
+## Verrouiller les ports Moonraker [#lock-the-moonraker-ports]
+
+Par défaut les ports Moonraker acceptent tout le monde sur le réseau. Activez **Exiger une clé API sur les ports Moonraker**
+dans **Paramètres → OrcaSlicer** pour exiger une clé sur toutes les imprimantes, caméra comprise.
+
+Les clients envoient la clé de l'une de ces façons :
+
+| Méthode | Utilisée par |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Scripts |
+| `?api_key=kl_…` dans l'URL | Balises `<img>` de la caméra |
+| `/access/oneshot_token`, puis `?token=…` | Clients WebSocket |
+
+Deux choses à savoir :
+
+- **Mainsail** n'a pas de champ de clé API et ne peut pas se connecter quand l'option est active.
+- Les adresses sous `/serve/` restent ouvertes, car l'imprimante y télécharge ses fichiers.
+
+Une clé liée à une imprimante ne déverrouille que cette imprimante.

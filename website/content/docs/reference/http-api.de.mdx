@@ -1,0 +1,49 @@
+---
+title: HTTP-API
+description: Die Endpunkte des Servers.
+---
+
+| Adresse | Zweck | Authentifizierung |
+| --- | --- | --- |
+| `:7100/api/v1/*` | API des Dashboards | Sitzungscookie |
+| `:7100/api/v1/metrics` | [Prometheus](/de/docs/integrations/prometheus) | API-Schlüssel oder Sitzung |
+| `:7100/api/v1/setup/status` | Ob das erste Konto existiert | Keine |
+| `:7100/api/auth/*` | Anmeldung (Better Auth) | |
+| `:7100/api/auth/ok` | Health-Check | Keine |
+| `:7100/api/mcp` | [MCP-Server](/de/docs/integrations/mcp) | API-Schlüssel oder OAuth |
+| `:7125+` | [Moonraker](/de/docs/integrations/moonraker), ein Port pro Drucker | Keine, oder API-Schlüssel |
+
+<Callout type="warn" title="Für eigene Skripte Moonraker oder MCP verwenden">
+    `/api/v1` ist für das Dashboard gemacht. Es hat keine Stabilitätsgarantie und nimmt keine API-Schlüssel an, außer für die
+    Metriken.
+</Callout>
+
+## Dashboard-API
+
+Request-Bodies werden von den Zod-Schemas in `packages/shared` geprüft. Betrachter können nur lesen.
+
+| Pfad | Zweck |
+| --- | --- |
+| `/printers`, `/printers/:id` | Auflisten, hinzufügen, ändern, löschen |
+| `/printers/:id/{connect,disconnect,reconnect,refresh-credentials}` | Verbindung |
+| `/printers/:id/power` | Smarte Steckdose |
+| `/printers/:id/{state,samples}` | Live-Zustand und letzte Temperaturen |
+| `/printers/:id/{temperature,fan,light,speed,axis,axis/off}` | Steuerung |
+| `/printers/:id/{ams/slot,ams/feed,ace/auto-feed,ace/dry}` | Filament |
+| `/printers/:id/print`, `/printers/:id/print/{pause,resume,cancel}` | Druck |
+| `/printers/:id/skip`, `/printers/:id/skip/{query,state}` | Objekte überspringen |
+| `/printers/:id/files`, `/printers/:id/printer-files` | Dateien |
+| `/printers/:id/camera/{stream,h264,snapshot,start,stop,reset}` | Kamera |
+| `/printers/:id/{schedule,dry-schedule,maintenance,history,detection}` | Daten pro Drucker |
+| `/printers/:id/queue`, `/printers/:id/queue/{status,start,bed-clear,auto-start,maintenance}` | Warteschlange eines Druckers |
+| `/printers/:id/filament/slots`, `/printers/:id/{spools,spoolman}` | Slots und Spulen |
+| `/queue`, `/queue/{check,reorder}` | Warteschlange |
+| `/files`, `/history`, `/stats`, `/stats/export.csv`, `/timelapses` | Bibliothek und Statistiken |
+| `/macros`, `/automations`, `/spools`, `/filament/profiles` | Konfiguration |
+| `/settings`, `/users`, `/notifications`, `/push`, `/detection` | Administration |
+| `/system`, `/system/{backup,restore,restart,update-check}`, `/logs/download` | System |
+
+## Live-Ereignisse
+
+`/api/v1/events/multiplexed?channels=printers,logs` ist ein Server-Sent-Events-Stream. Jede Nachricht ist ein JSON-Umschlag
+`{ channel, event, data }`, mit einem Heartbeat alle 25 Sekunden. Verfügbare Kanäle sind `printers` und `logs`.

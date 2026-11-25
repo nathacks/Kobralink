@@ -1,0 +1,151 @@
+---
+title: MCP-Server (KI)
+description: Einen KI-Assistenten Ihre Drucker überwachen und steuern lassen.
+---
+
+Kobralink ist ein [MCP](https://modelcontextprotocol.io)-Server: Claude, ChatGPT oder jeder MCP-Client kann die Drucker über
+56 Werkzeuge überwachen und steuern (20 zum Lesen, 36 zum Steuern). Er ist **standardmäßig aus**.
+
+## Einrichten
+
+<Steps>
+<Step>
+
+### Einschalten
+
+Ein Administrator öffnet **Einstellungen → MCP (KI)** und aktiviert den Server. Seine Adresse ist `<ihre adresse>/api/mcp`.
+
+</Step>
+<Step>
+
+### Den Client verbinden
+
+<Tabs items={['Claude Code', 'claude.ai, ChatGPT', 'Andere Clients']}>
+<Tab value="Claude Code">
+
+Legen Sie unter [Einstellungen → API-Schlüssel](/de/docs/administration/api-keys) einen Schlüssel mit der Verwendung
+**KI-Assistent (MCP)** an, dann:
+
+```bash
+claude mcp add --transport http kobralink http://192.168.1.20:7100/api/mcp --header "Authorization: Bearer kl_..."
+```
+
+</Tab>
+<Tab value="claude.ai, ChatGPT">
+
+Sie laufen in der Cloud, daher braucht Kobralink eine öffentliche HTTPS-Adresse: siehe [HTTPS](/de/docs/administration/https).
+Fügen Sie dann `https://<domain>/api/mcp` als Connector hinzu und melden Sie sich mit Ihrem Kobralink-Konto an (OAuth 2.1).
+
+</Tab>
+<Tab value="Andere Clients">
+
+Jeder Client, der einen Header senden kann, funktioniert im lokalen Netzwerk. Senden Sie `Authorization: Bearer kl_...` mit
+einem MCP-Schlüssel.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## Zugriff
+
+Jeder Schlüssel und jede verbundene App ist **nur lesend** oder **steuernd**. Die Rolle des Besitzers wird bei jeder Anfrage
+geprüft: Ein Betrachter steuert nie etwas. MCP-Schlüssel gelten immer für alle Drucker. Schlüssel widerrufen Sie unter
+**Einstellungen → API-Schlüssel**, Apps unter **Einstellungen → MCP (KI)**, jeweils mit sofortiger Wirkung.
+
+## Berechtigungen
+
+Ein Administrator stellt jedes Werkzeug ein auf:
+
+| Modus | Wirkung |
+| --- | --- |
+| Erlauben | Der Assistent handelt selbstständig |
+| Fragen | Sie erhalten im Chat eine Ja/Nein-Frage, und das Werkzeug läuft nur bei Ja |
+| Ablehnen | Das Werkzeug ist ausgeblendet |
+
+Heikle Werkzeuge starten auf *Fragen*, die anderen auf *Erlauben*. Eine App, die nicht fragen kann, erhält eine Ablehnung;
+stellen Sie das Werkzeug dann auf *Erlauben* und verlassen Sie sich auf die Freigabe der App selbst. Die Antwort kommt von
+der KI-App: Kobralink kann nicht nachweisen, wer geklickt hat.
+
+## Sicherheit
+
+- Achsen bewegen, Filament laden, trocknen, einen Druck starten oder den Strom abschalten wird **abgelehnt, solange der
+  Drucker druckt oder pausiert ist**.
+- Ein Druckstart verlangt `bedIsClear: true`. Der Server kann nicht prüfen, ob das Bett wirklich leer ist, lassen Sie die
+  Werkzeugfreigabe in Ihrem KI-Client also an.
+- Jeder Steueraufruf wird mit Schlüssel oder App, Werkzeug und Drucker protokolliert.
+- Antworten enthalten nie Kameraadressen, IP-Adressen oder Zugangsdaten.
+- Nicht verfügbar: Benutzer, Schlüssel, Einstellungen, Sicherungen, Löschen von Dateien, roher G-Code. Laden Sie Dateien über
+  das Dashboard oder Moonraker hoch.
+
+Diese Regeln gelten nur für den MCP-Server. Ein Programm in Ihrem Netzwerk kann die Moonraker-Ports weiterhin nutzen: Sichern
+Sie sie mit einem [API-Schlüssel](/de/docs/administration/api-keys#lock-the-moonraker-ports) ab.
+
+## Lese-Werkzeuge
+
+| Werkzeug | Zweck |
+| --- | --- |
+| `list_printers` | Drucker und Status |
+| `get_printer_state` | Vollständiger Live-Status |
+| `get_temperature_history` | Temperaturverlauf |
+| `get_camera_snapshot` | Kamerabild |
+| `get_power_state` | Status der Steckdose |
+| `list_files` | G-Code-Dateien |
+| `get_file_objects` | Objekte einer Datei |
+| `list_printer_files` | Dateien auf dem Drucker |
+| `list_filament_slots` | Filament-Slots und ACE |
+| `list_spools` | Spulen |
+| `get_queue` | Druckwarteschlange |
+| `check_queue_compatibility` | Mit einer Datei kompatible Drucker |
+| `list_schedules` | Geplante Drucke und Trocknungen |
+| `get_print_history` | Druckverlauf |
+| `get_stats` | Statistiken und Kosten |
+| `get_recent_events` | Letzte Benachrichtigungen |
+| `get_detection_status` | KI-Fehlererkennung |
+| `list_maintenance` | Wartungsaufgaben |
+| `list_macros` | Makros |
+| `list_automations` | Automatisierungen |
+
+## Steuer-Werkzeuge
+
+*Standard* ist die Berechtigung, bevor Sie sie ändern. *Gesperrt* heißt: während eines Drucks abgelehnt.
+
+| Werkzeug | Zweck | Standard | Gesperrt |
+| --- | --- | --- | --- |
+| `start_print` | Druck starten | Fragen | Ja |
+| `start_printer_file` | Datei des Druckers starten | Fragen | Ja |
+| `pause_print` | Druck pausieren | Erlauben |  |
+| `resume_print` | Druck fortsetzen | Erlauben |  |
+| `cancel_print` | Druck abbrechen | Fragen |  |
+| `skip_objects` | Objekte auslassen | Fragen |  |
+| `set_print_speed` | Druckgeschwindigkeit | Erlauben |  |
+| `set_temperature` | Düsen- und Betttemperatur | Fragen |  |
+| `set_fan` | Lüfter | Erlauben |  |
+| `set_light` | Licht | Erlauben |  |
+| `home_axes` | Achsen referenzieren | Erlauben | Ja |
+| `move_axis` | Achse bewegen | Erlauben | Ja |
+| `disable_motors` | Motoren abschalten | Erlauben | Ja |
+| `set_power` | Steckdose schalten | Fragen | Manchmal |
+| `set_printer_connection` | Druckerverbindung | Erlauben |  |
+| `set_filament_slot` | Material und Farbe eines Slots | Erlauben |  |
+| `feed_filament` | Filament laden oder entladen | Erlauben | Ja |
+| `set_auto_feed` | Automatische ACE-Zufuhr | Erlauben |  |
+| `start_drying` | Trocknung starten | Erlauben | Ja |
+| `stop_drying` | Trocknung stoppen | Erlauben |  |
+| `assign_spool` | Spule zuweisen | Erlauben |  |
+| `add_to_queue` | Zur Warteschlange hinzufügen | Fragen |  |
+| `remove_from_queue` | Aus der Warteschlange entfernen | Fragen |  |
+| `reorder_queue` | Warteschlange umsortieren | Erlauben |  |
+| `start_next_in_queue` | Nächsten Druck starten | Fragen | Ja |
+| `confirm_bed_clear` | Leeres Druckbett bestätigen | Fragen | Ja |
+| `cancel_queue_auto_start` | Automatischen Start abbrechen | Erlauben |  |
+| `set_maintenance_mode` | Wartungsmodus | Fragen |  |
+| `schedule_print` | Druck planen | Fragen |  |
+| `cancel_scheduled_print` | Geplanten Druck abbrechen | Fragen |  |
+| `schedule_drying` | Trocknung planen | Erlauben |  |
+| `cancel_scheduled_drying` | Geplante Trocknung abbrechen | Fragen |  |
+| `run_macro` | Makro ausführen | Fragen | Manchmal |
+| `set_automation_enabled` | Automatisierung ein- oder ausschalten | Erlauben |  |
+| `complete_maintenance_task` | Wartung abschließen | Erlauben |  |
+| `annotate_print_job` | Notiz oder Fehlerursache eines Drucks | Erlauben |  |

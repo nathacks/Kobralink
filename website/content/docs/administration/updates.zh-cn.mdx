@@ -1,0 +1,33 @@
+---
+title: 更新
+description: 更新 Kobralink。
+---
+
+**设置 → 系统**显示当前版本，并在 GitHub 上检查是否有新版本。可以在**设置 → 常规**中关闭检查。
+
+更新前请先[备份](/zh-cn/docs/administration/backup)。数据库迁移在启动时自动执行；没有备份就无法回退到旧版本。
+
+## Docker
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+如果你固定了版本，请先修改 `image:` 行。
+
+## 桌面应用
+
+应用会自行提示更新，参见[桌面应用](/zh-cn/docs/getting-started/desktop#updates)。
+
+## 从源码
+
+```bash
+git pull
+bun install
+bun run build
+```
+
+## 打印期间
+
+重启 Kobralink 不会停止打印。与打印机的连接会中断几秒钟。

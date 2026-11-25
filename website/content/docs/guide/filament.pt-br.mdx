@@ -1,0 +1,62 @@
+---
+title: Filamento
+description: Slots, unidades ACE, secagem, perfis e carretéis.
+---
+
+## Slots
+
+O cartão **Filamentos** mostra o que a impressora informa. Três ligações são detectadas automaticamente:
+
+| Modo | Slots |
+| --- | --- |
+| Cabeçote (buffer) | Os slots do cabeçote |
+| ACE direto | Quatro slots por unidade ACE |
+| Cabeçote + ACE (hub) | Três slots do cabeçote, mais os slots das unidades ACE ligadas ao quarto |
+
+Sem ACE, escolha o **carretel externo** montado no suporte da impressora; o consumo é descontado dele.
+
+Clique em um slot para definir material e cor (gravados na tela da impressora), perfil do OrcaSlicer e carretel, e para
+carregar ou descarregar o filamento. Filamento lido por RFID é reconhecido.
+
+## Secagem
+
+Inicie um ciclo na seção ACE do cartão: 30–80 °C por 10 a 1440 minutos. Seu ACE pode recusar as temperaturas mais altas. Você
+também pode agendar um ciclo para depois.
+
+As predefinições são editadas na página **Filamento**. Por padrão:
+
+| Predefinição | Temperatura | Duração |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Alimentação automática** liga ou desliga a recarga automática de uma unidade ACE.
+
+## Perfis do OrcaSlicer [#orcaslicer-profiles]
+
+Cada slot pode ter um perfil do OrcaSlicer, enviado ao OrcaSlicer como marca e nome de perfil quando ele sincroniza os
+filamentos. Sem escolha, o Kobralink escolhe um pelo material.
+
+Para adicionar seus próprios perfis, abra **Filamento** e importe um ZIP ou arquivos `.json` do OrcaSlicer. Eles são marcados
+com ★. Para encurtar a lista, escolha as marcas visíveis nas configurações da impressora.
+
+## Carretéis
+
+Duas formas de controlar o filamento:
+
+| | Spoolman | Estoque local |
+| --- | --- | --- |
+| Onde ficam os carretéis | No [Spoolman](/pt-br/docs/integrations/spoolman) | No Kobralink |
+| Preços | Do Spoolman | Preço padrão por kg |
+| Use se | Você quer uma fonte única compartilhada com outras ferramentas | Você não usa o Spoolman |
+
+O estoque local é usado enquanto não houver URL do Spoolman. Adicione carretéis com material, cor e peso líquido inicial; o
+peso restante é estimado pelo consumo que a impressora informa.
+
+Atribua um carretel a um slot na janela do slot. A partir daí, o consumo é descontado durante a impressão, a janela de impressão
+avisa quando ele não é suficiente e a fila leva isso em conta.
+
+Um alerta é enviado abaixo do limite definido nas configurações da impressora (*Carretel quase vazio*, desativado por padrão).

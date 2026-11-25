@@ -1,0 +1,59 @@
+---
+title: Dashboard
+description: Follow and control your printers.
+---
+
+## Printers page
+
+The **Printers** page shows a card for each printer, with its state, progress, remaining time and finish time. Counters at the
+top filter the list: printing, paused, ready, bed to clear, maintenance, error and offline. The page also shows which
+printer finishes next.
+
+On a computer, the navigation is a sidebar that folds into a rail of icons. On a phone, it is a bar at the bottom.
+
+## Printer page
+
+| Card | What it does |
+| --- | --- |
+| Print | Current job: progress, layer, elapsed and remaining time, 3D view, pause, resume, cancel, skip objects |
+| Temperatures | Live chart, nozzle and bed targets, presets |
+| Camera | Live stream and full screen, see [Camera](/en/docs/guide/camera) |
+| Controls | Speed, part fan, light, smart plug, axes |
+| Filaments | Slots, loading, drying, see [Filament](/en/docs/guide/filament) |
+| Print queue | Items this printer can take, see [Queue](/en/docs/guide/queue) |
+| Files | Library, printer storage, timelapses, see [Files](/en/docs/guide/files) |
+| Macros | One-click actions, see [Macros](/en/docs/guide/macros) |
+| Maintenance | Tasks and due dates, see [Maintenance](/en/docs/guide/maintenance) |
+
+## Controls
+
+**Temperatures.** The nozzle accepts 0–320 °C and the bed 0–120 °C; your printer may allow less. The presets are:
+
+| Preset | Nozzle | Bed |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Off | 0 °C | 0 °C |
+
+**Speed.** Three modes: Calm, Standard and Sport. They are the only speeds the printer offers over LAN, and they apply to
+the current print.
+
+**Axes.** Move X, Y and Z by 1, 10 or 50 mm, home XYZ, XY or Z, and turn the motors off. Locked while printing.
+
+**Light and fan.** Switch the camera light and set the part fan.
+
+**Power.** Available once a [smart plug](/en/docs/integrations/home-assistant#smart-plug-and-energy) is chosen.
+
+## Cancelling a print
+
+Cancelling asks for an optional reason (spaghetti, adhesion, clog, quality…). The reason feeds the failure statistics. A
+cancelled print cannot be resumed.
+
+## Appearance
+
+Theme (system, light or dark) and interface language are in **Settings → General**. They are kept in the browser.
+
+## Read-only accounts
+
+A viewer sees the same pages with the controls disabled. See [Users and roles](/en/docs/administration/users).

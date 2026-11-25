@@ -1,0 +1,35 @@
+---
+title: API 密钥
+description: 用于 Moonraker 客户端、Prometheus 和 AI 助手的密钥。
+---
+
+所有密钥都在**设置 → API 密钥**中管理。每个应用建一个密钥，便于单独吊销。密钥只显示一次，以 `kl_` 开头。
+
+| 用途 | 开放 |
+| --- | --- |
+| Moonraker | 通过 Moonraker 端口完全控制打印机，包括摄像头 |
+| Prometheus 指标 | 只读访问 `/api/v1/metrics` |
+| AI 助手（MCP） | MCP 服务器，只读或控制 |
+
+一个密钥可以有多个用途，覆盖一台或所有打印机。带 MCP 用途的密钥始终覆盖所有打印机。观察者不能创建密钥。
+
+## 锁定 Moonraker 端口 [#lock-the-moonraker-ports]
+
+默认情况下，Moonraker 端口接受网络中的任何人。在**设置 → OrcaSlicer** 中开启 **Moonraker 端口需要 API 密钥**，即可要求所有打印机
+（包括摄像头）都使用密钥。
+
+客户端可以用以下任一方式发送密钥：
+
+| 方式 | 使用者 |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer、Fluidd、Obico、Home Assistant |
+| `Authorization: Bearer kl_…` | 脚本 |
+| URL 中的 `?api_key=kl_…` | 摄像头的 `<img>` 标签 |
+| `/access/oneshot_token`，再用 `?token=…` | WebSocket 客户端 |
+
+需要注意两点：
+
+- **Mainsail** 没有 API 密钥字段，开启此选项后无法连接。
+- `/serve/` 下的地址保持开放，因为打印机从那里下载文件。
+
+绑定到某台打印机的密钥只能解锁那台打印机。

@@ -1,0 +1,46 @@
+---
+title: Macros
+description: Des séquences d'actions en un clic.
+---
+
+Une macro est une liste d'actions (jusqu'à 30) exécutées dans l'ordre sur une imprimante. Les macros ne sont pas du G-code :
+l'imprimante n'accepte pas de G-code brut en LAN.
+
+Créez-les dans **Paramètres → Macros**, lancez-les depuis la carte **Macros** d'une imprimante.
+
+## Actions
+
+| Action | Paramètres |
+| --- | --- |
+| Températures | Buse 0–320 °C, plateau 0–120 °C |
+| Attendre la température | Buse et/ou plateau, 15 minutes au maximum |
+| Ventilateur | 0–100 % |
+| Lumière | Allumée ou éteinte |
+| Vitesse | Calme, Standard ou Sport |
+| Origine | Tous, XY ou Z |
+| Déplacement | X, Y ou Z, jusqu'à 300 mm dans les deux sens |
+| Couper les moteurs | |
+| Filament | Charger ou décharger un slot |
+| Séchage | 30–80 °C, 10–1440 min |
+| Arrêter le séchage | |
+| Attendre | Jusqu'à 600 s |
+
+Une seule macro tourne à la fois sur une imprimante.
+
+## Exemple : préchauffer pour le PLA
+
+1. Températures : buse 210 °C, plateau 60 °C
+2. Attendre la température : plateau 60 °C
+3. Lumière : allumée
+
+## Appeler une macro depuis un autre programme
+
+Le nom de la macro fonctionne comme une commande G-code sur le port [Moonraker](/fr/docs/integrations/moonraker). La casse, les
+espaces et les tirets ne comptent pas :
+
+```bash
+curl -X POST "http://192.168.1.20:7125/printer/gcode/script?script=PREHEAT_PLA"
+```
+
+Les macros peuvent aussi être lancées par les [automatisations](/fr/docs/guide/automations) et par un
+[assistant IA](/fr/docs/integrations/mcp).

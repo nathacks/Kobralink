@@ -1,0 +1,81 @@
+---
+title: Warteschlange
+description: Eine Warteschlange für alle Drucker, mit Kompatibilitäts- und Filamentprüfung.
+---
+
+Kobralink hat **eine Warteschlange für alle Drucker**. Jede Datei geht an den ersten kompatiblen Drucker, der frei ist.
+
+## Eine Datei hinzufügen
+
+Verwenden Sie **Zur Warteschlange** im Druckdialog und wählen Sie das Ziel:
+
+- **Diesen Drucker**
+- **Beliebiger Drucker**
+- **Ein Tag**: jeder Drucker, der es trägt (Tags stellen Sie im [Profil](/de/docs/administration/printer-settings#profile) des
+  Druckers ein)
+
+Kobralink lehnt eine Datei ab, die kein Drucker drucken kann, und nennt für jeden den Grund.
+
+## Kompatibilität [#compatibility]
+
+| Prüfung | Regel |
+| --- | --- |
+| Ziel | Der Drucker ist der gewählte oder trägt die gewählten Tags |
+| Modell | Die Datei wurde für dieses Modell gesliced |
+| Düse | Die Düse der Datei passt zur eingebauten Düse oder zur Standarddüse des Modells |
+| Größe | Das Teil passt in den Bauraum |
+| Material | In Ihrem Bestand gibt es eine Spule dieses Materials |
+| Farbe | Nur ein Hinweis, blockiert nie |
+
+Ihr Bestand ist Spoolman (oder das lokale Inventar) plus das, was in den Slots geladen ist.
+
+## Warum ein Eintrag wartet [#why-an-item-waits]
+
+| Grund | Bedeutung |
+| --- | --- |
+| Kein Drucker kann ihn übernehmen | Es gibt keinen kompatiblen Drucker |
+| Drucker belegt | Ein Druck läuft |
+| Bett räumen | Das letzte Teil muss entnommen und bewertet werden |
+| Drucker in Wartung | Der Drucker ist aus der Warteschlange genommen |
+| Drucker offline | Kobralink erreicht ihn nicht |
+| Wartet auf Filament | Das geladene Material passt nicht oder die Spule ist zu knapp |
+| Bereit, von Hand starten | Alles in Ordnung, der automatische Start ist aus |
+
+Ein Eintrag, der auf Filament wartet, blockiert die folgenden nicht. Beim ersten Überspringen erhalten Sie eine
+Benachrichtigung.
+
+## Das Bett räumen [#clearing-the-bed]
+
+Nach einem Druck wartet der Drucker, bis Sie bestätigen, dass das Bett frei ist:
+
+- **Bett frei, Druck OK** gibt den Drucker frei.
+- **Druck abgelehnt** zählt den Druck als fehlgeschlagen (*Qualität abgelehnt*, sofern er noch keinen Grund hat) und setzt die
+  Datei für diesen Drucker wieder an den Anfang der Warteschlange.
+
+Abgebrochene und fehlgeschlagene Drucke warten immer auf Sie, auch wenn die Bestätigung aus ist.
+
+## Automatischer Start [#automatic-start]
+
+Wird in den [Druckereinstellungen](/de/docs/administration/printer-settings#printing) für jeden Drucker eingestellt:
+
+| Einstellung | Standard | Wirkung |
+| --- | --- | --- |
+| Nächste Datei automatisch starten | aus | Die nächste Datei startet von selbst |
+| Freies Druckbett bestätigen | an | Nach jedem Druck auf Ihre Bestätigung warten |
+| Vor dem Start warten | 15 s | Countdown vor dem Start, abbrechbar |
+| Licht-Auslöser | aus | Am Drucker selbst bestätigen |
+
+<Callout type="error" title="Automatischer Start ohne Bestätigung">
+    Schalten Sie *Freies Druckbett bestätigen* nur aus, wenn sich das Bett selbst räumt (ein Auswerfer). Sonst startet der
+    nächste Druck auf dem vorigen Teil.
+</Callout>
+
+### Licht-Auslöser [#light-trigger]
+
+Tippen Sie **3-mal innerhalb von 20 Sekunden** auf die Lichttaste am Druckerbildschirm: Das Bett gilt als frei und die nächste
+Datei startet sofort, ohne Countdown. Das Einschalten des Licht-Auslösers schaltet auch den automatischen Start ein.
+
+## Wartungsmodus [#maintenance-mode]
+
+Der **Wartungsmodus** nimmt einen Drucker aus der Warteschlange, bis Sie ihn beenden. Ist der automatische Start an, kann das
+Beenden die nächste Datei starten.

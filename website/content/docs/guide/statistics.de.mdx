@@ -1,0 +1,49 @@
+---
+title: Verlauf, Statistiken und Kosten
+description: Was gedruckt wurde, was fehlschlug und was es kostete.
+---
+
+## Verlauf
+
+Die Seite **Verlauf** listet jeden Druck mit Vorschau, Dauer, Filament, Energie und Kosten. Bei einem fehlgeschlagenen Druck
+können Sie:
+
+- einen Grund wählen: Spaghetti, Betthaftung, Verstopfung, Filamentende, Schichtversatz, Stromausfall, absichtlich
+  abgebrochen, Qualität abgelehnt, Sonstiges
+- eine Notiz hinzufügen
+- den Kamera-Schnappschuss vom Ende ansehen, wenn die Kamera lief
+- den vom Drucker gemeldeten Fehlercode lesen
+
+## Statistiken
+
+Wählen Sie einen Drucker und einen Zeitraum: 7, 30, 90 oder 365 Tage, oder alles. Die Seite zeigt:
+
+- Drucke, Erfolgsquote, Druckzeit und Filament, verglichen mit dem vorigen Zeitraum
+- Drucke, Stunden und Kosten pro Tag oder Monat, nach Wochentag und nach Startstunde
+- Verbrauch nach Material und die am häufigsten gedruckten Dateien
+- für jeden Drucker: Auslastung, mittlere Zeit zwischen Fehlern, Leerlauf nach einem Druck, Genauigkeit der
+  Slicer-Schätzung, gemessene Energie
+- Fehler nach Grund, der häufigste zuerst
+- das Filament, das Drucke verbraucht haben, die nie fertig wurden
+
+**CSV exportieren** lädt die Drucke der Auswahl herunter.
+
+## Kosten [#costs]
+
+Kosten = Filament + Energie.
+
+**Filament.** Der Preis kommt von der Spoolman-Spule. Ohne sie gilt der *Standard-Filamentpreis*
+(**Einstellungen → Allgemein**). Filament ganz ohne Preis wird als *ohne Preis* angezeigt.
+
+**Energie.** Gemessen vom Zähler der Steckdose, wenn [Home Assistant](/de/docs/integrations/home-assistant#smart-plug-and-energy)
+eingerichtet ist. Sonst geschätzt:
+
+```text
+Durchschnittsleistung (W) ÷ 1000 × Stunden × Preis pro kWh
+```
+
+Die Durchschnittsleistung ist die des Druckers aus seinem Profil, oder der Standardwert unter **Einstellungen → Allgemein**.
+Lassen Sie den Strompreis auf 0, um die Energie zu ignorieren.
+
+Geschätzte Kosten werden vor dem Druck auf der Dateikarte, in der Vorschau und im Druckdialog angezeigt. Die tatsächlichen
+Kosten werden am Ende berechnet.

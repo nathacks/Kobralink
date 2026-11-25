@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Conectar Mainsail, Fluidd, Obico e outros clientes Moonraker.
+---
+
+Cada impressora tem seu próprio servidor Moonraker na sua própria porta (`7125`, `7126`, …), por HTTP e WebSocket
+(`/websocket`). A porta aparece na página da impressora e pode ser alterada nas configurações dela.
+
+Abrir a porta no navegador leva à página da impressora no Kobralink.
+
+## Autenticação
+
+Por padrão as portas Moonraker ficam **abertas para a rede local**, como o próprio Moonraker. Para trancá-las, veja
+[Trancar as portas Moonraker](/pt-br/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## O que é suportado
+
+| Recurso | Suporte |
+| --- | --- |
+| Objetos da impressora: consulta e inscrição | Sim |
+| Envio, e envio com impressão | Sim, `.gcode` e `.bgcode`. Envios no estilo OctoPrint também funcionam |
+| Iniciar, pausar, retomar, cancelar | Sim |
+| Arquivos: lista, metadados, miniaturas | Sim |
+| Histórico de impressões | Sim |
+| Fila de trabalhos | Sim, ligada à [fila do Kobralink](/pt-br/docs/guide/queue). Pausar e pular não fazem nada |
+| Webcams | Sim, uma webcam anunciada automaticamente |
+| Slots de filamento | Sim, lidos pelo OrcaSlicer |
+| Scripts G-code | Um pequeno subconjunto, veja abaixo |
+
+## Scripts G-code [#g-code-scripts]
+
+| Comando | Efeito |
+| --- | --- |
+| `PAUSE`, `M25` | Pausar |
+| `RESUME`, `M24` | Retomar |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Cancelar |
+| `M104 S<temp>` | Alvo do bico |
+| `M140 S<temp>` | Alvo da mesa |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Alvo do bico ou da mesa |
+| O nome de uma [macro](/pt-br/docs/guide/macros) | Executa a macro |
+
+Qualquer outro comando responde `ok` e **não faz nada**: a impressora não aceita G-code bruto pela LAN.
+
+## Valores a conhecer
+
+- `gcode_move.speed_factor` reflete o modo de velocidade: Silencioso 0,5, Padrão 1,0, Esportivo 1,3.
+- `motion_report.live_velocity` é sempre 0.
+- A impressora não informa a posição. Z é estimado pelas camadas.
+
+## Clientes
+
+O **Mainsail** não tem campo de chave de API e não consegue se conectar quando uma chave é exigida. **Fluidd**, **Obico**,
+**OrcaSlicer** e **Home Assistant** conseguem enviar uma.

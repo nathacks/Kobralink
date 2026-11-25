@@ -1,0 +1,68 @@
+---
+title: OrcaSlicer
+description: Connecter OrcaSlicer à Kobralink et envoyer des impressions.
+---
+
+Kobralink expose chaque imprimante comme un serveur Moonraker : OrcaSlicer s'y connecte comme à une machine Klipper.
+L'adresse exacte de chaque imprimante est listée dans **Paramètres → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Ouvrir les réglages de connexion
+
+Dans l'onglet **Préparer**, cliquez sur l'icône de connexion (prise) à côté du préréglage d'imprimante, ou ouvrez
+**Réglages de l'imprimante → Général → Imprimante physique**.
+
+</Step>
+<Step>
+
+### Choisir le type d'hôte
+
+Choisissez **Moonraker**.
+
+</Step>
+<Step>
+
+### Renseigner l'hôte
+
+Saisissez l'adresse de l'imprimante, avec le protocole et le port :
+
+```text
+http://192.168.1.20:7125
+```
+
+Si OrcaSlicer tourne sur la même machine que Kobralink, utilisez `http://localhost:7125`. Laissez la clé API vide, sauf si
+vous avez activé [Exiger une clé API](/fr/docs/administration/api-keys#lock-the-moonraker-ports).
+
+</Step>
+<Step>
+
+### Tester, puis enregistrer
+
+**Tester** doit indiquer que la connexion a réussi. L'onglet **Appareil** affiche maintenant votre Kobra et **Imprimer**
+envoie le G-code à Kobralink.
+
+</Step>
+</Steps>
+
+## Ce que fait l'onglet Appareil
+
+L'onglet Appareil ne vise que l'imprimante : lancer une impression, suivre la progression, mettre en pause ou annuler, et
+synchroniser les filaments de l'ACE. Tout le reste (file d'attente, fichiers, macros, caméra, détection d'échec,
+statistiques, notifications) est dans le tableau de bord Kobralink.
+
+## Envoyer une impression
+
+Par défaut, un fichier envoyé depuis OrcaSlicer ouvre la fenêtre d'impression dans le tableau de bord, même avec *envoyer et
+imprimer*. Vous y vérifiez les filaments et les slots, puis vous lancez. Pour démarrer directement, désactivez
+**Dialogue après envoi** dans les [paramètres de l'imprimante](/fr/docs/administration/printer-settings#printing).
+
+## Synchroniser les filaments
+
+Le bouton de synchronisation des filaments de l'onglet Appareil récupère les slots signalés par l'imprimante. La marque et le
+préréglage envoyés pour chaque slot se règlent dans la [fenêtre du slot](/fr/docs/guide/filament#orcaslicer-profiles).
+
+## Ignorer des objets
+
+Pour ignorer des objets, le G-code doit contenir des repères d'objets. Activez **Étiqueter les objets** dans OrcaSlicer.

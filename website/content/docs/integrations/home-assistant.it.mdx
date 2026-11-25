@@ -1,0 +1,60 @@
+---
+title: Home Assistant
+description: Sensori e comandi via MQTT, presa smart e misura dell'energia.
+---
+
+Tre modi indipendenti di usare Kobralink con Home Assistant:
+
+| Modo | Fornisce |
+| --- | --- |
+| [Discovery MQTT](#mqtt-discovery) | Sensori, luce, pulsanti, immagine della fotocamera, miniatura in Home Assistant |
+| [API di Home Assistant](#smart-plug-and-energy) | Presa smart ed energia misurata in Kobralink |
+| [Integrazione Moonraker (HACS)](#moonraker-integration) | La stampante come dispositivo Moonraker |
+
+## Discovery MQTT [#mqtt-discovery]
+
+In **Impostazioni → Integrazioni**, attiva la pubblicazione MQTT e inserisci l'URL del broker (per esempio
+`mqtt://192.168.1.10:1883`), il nome utente e la password. I dispositivi compaiono da soli in Home Assistant.
+
+| Entità | Tipo |
+| --- | --- |
+| Stato, avanzamento, file, strato | Sensore |
+| Temperatura e obiettivo di ugello e piano | Sensore |
+| Tempo rimanente e trascorso, ventola | Sensore |
+| Connessa, in stampa | Sensore binario |
+| Luce | Interruttore |
+| Pausa, ripresa, annullamento | Pulsante |
+| Fotocamera | Fotocamera |
+| Miniatura | Immagine |
+
+| Impostazione | Predefinito |
+| --- | --- |
+| Prefisso di discovery | `homeassistant` |
+| Prefisso dei topic | `kobralink` |
+
+I topic sono `<prefisso>/<printerId>/state`, `/availability`, `/camera`, `/thumbnail` e `/cmd/{light,pause,resume,cancel}`.
+
+### Fotocamera in diretta
+
+L'entità fotocamera mostra l'ultima immagine ogni 5 secondi mentre la fotocamera è attiva. Non accende mai la fotocamera. Per il
+video in diretta, aggiungi l'integrazione **MJPEG IP Camera** con la porta Moonraker della stampante:
+
+- URL MJPEG: `http://<ip-del-bridge>:7125/api/camera/stream`
+- URL dell'immagine fissa: `http://<ip-del-bridge>:7125/api/camera/snapshot`
+
+## Presa smart ed energia [#smart-plug-and-energy]
+
+1. In Home Assistant, apri il tuo profilo → **Sicurezza** → **Token di accesso di lunga durata** → **Crea token**.
+2. In **Impostazioni → Integrazioni**, inserisci l'indirizzo di Home Assistant e il token, poi prova.
+3. Nelle impostazioni di ogni stampante, scegli il suo **interruttore della presa** e il suo **contatore di energia** (un sensore
+   in kWh).
+
+L'interruttore accende e spegne la stampante dalla dashboard e dalle automazioni. Il contatore viene letto all'inizio e alla
+fine di ogni stampa, così il [costo](/it/docs/guide/statistics#costs) usa l'energia reale invece di una stima.
+
+## Integrazione Moonraker [#moonraker-integration]
+
+L'integrazione HACS **Moonraker** funziona con host = l'indirizzo del bridge e porta = la porta Moonraker della stampante.
+
+Recupera sempre la miniatura sulla porta `7125`. Dalla seconda stampante in poi, imposta la sua opzione **Thumbnail Port** sulla
+porta della stampante, altrimenti mostra la miniatura della prima.

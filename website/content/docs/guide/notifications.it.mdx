@@ -1,0 +1,66 @@
+---
+title: Notifiche
+description: Discord, Telegram, ntfy, webhook, browser e notifiche push.
+---
+
+Configurale in **Impostazioni → Notifiche**, poi usa **Invia un test**.
+
+## Canali
+
+| Canale | Cosa inserire |
+| --- | --- |
+| Discord | L'URL del webhook del canale |
+| Telegram | Il token del bot e l'ID della chat |
+| ntfy | L'URL completo del topic, pubblico o self-hosted |
+| Webhook | Qualsiasi URL che accetti un `POST` JSON |
+| Browser | Niente. Mostrate quando la scheda è in secondo piano |
+| Notifiche push | Niente. Da attivare su ogni dispositivo |
+
+### Notifiche push
+
+Le notifiche push arrivano anche con il browser chiuso. Richiedono **HTTPS** (o localhost), vedi
+[HTTPS](/it/docs/administration/https). Su iPhone, aggiungi prima Kobralink alla schermata Home. Non sono disponibili nell'app
+desktop.
+
+### Contenuto del webhook
+
+```json
+{
+    "id": "0b5c…",
+    "type": "print_finished",
+    "printerId": "…",
+    "printerName": "Kobra del laboratorio",
+    "title": "Kobra del laboratorio — stampa terminata",
+    "body": "pezzo.gcode terminato in 2 h 05 min.",
+    "ts": 1764000000000,
+    "url": "https://kobralink.example.com/printers/…",
+    "data": {}
+}
+```
+
+`url` è presente solo se l'indirizzo di Kobralink è impostato. `data` dipende dall'evento.
+
+## Eventi
+
+| Evento | Predefinito | `type` |
+| --- | --- | --- |
+| Stampa avviata | disattivato | `print_started` |
+| Stampa terminata | attivo | `print_finished` |
+| Stampa annullata | attivo | `print_cancelled` |
+| In pausa | attivo | `print_paused` |
+| Stampante offline | disattivato | `printer_offline` |
+| Stampante di nuovo online | disattivato | `printer_online` |
+| Asciugatura terminata | attivo | `drying_done` |
+| Allarmi | attivo | `alert_nozzle_temp`, `alert_bed_temp`, `alert_offline`, `alert_spool_low` |
+| Fallimento di stampa rilevato (IA) | attivo | `alert_print_failure` |
+| Coda: file successivo pronto | attivo | `queue_next`, `queue_filament` |
+| Stampa programmata | attivo | `scheduled_print` |
+| Manutenzione da fare | attivo | `maintenance_due` |
+| Messaggi delle automazioni | attivo | `automation` |
+
+## Link
+
+Le notifiche portano alla schermata giusta una volta impostato l'**Indirizzo di Kobralink** in **Impostazioni → Generale**. Lì si
+imposta anche la lingua dei messaggi.
+
+Le soglie degli allarmi si impostano per ogni stampante, vedi [Allarmi](/it/docs/administration/printer-settings#alerts).

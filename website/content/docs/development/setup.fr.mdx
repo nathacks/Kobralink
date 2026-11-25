@@ -1,0 +1,61 @@
+---
+title: Environnement de développement
+description: Lancer Kobralink depuis les sources.
+---
+
+Il vous faut [Bun](https://bun.sh) 1.4.2 ou plus récent.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Ouvrez `http://localhost:5454`. L'API écoute sur le port 7100.
+
+## Commandes
+
+| Commande | Effet |
+| --- | --- |
+| `bun run dev` | API, tableau de bord et application de bureau |
+| `bun run dev:web` | API et tableau de bord |
+| `bun run dev:desktop` | Application de bureau et ses dépendances |
+| `bun run build` | Tout compiler |
+| `bun run check-types` | Vérification des types |
+| `bun run test` | Tous les tests |
+| `bun run lint` | Vérification Biome |
+| `bun run format` | Formatage Biome |
+| `bun run db:migrate` | Créer ou appliquer une migration Prisma |
+| `bun run db:studio` | Explorer la base |
+| `bun run --filter @kobralink/desktop dist` | Installeur de bureau pour le système courant |
+
+Lancez un seul fichier de test avec `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Sans imprimante
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+Émule une Kobra 4 avec un ACE en pleine impression, sur `127.0.0.1`. Ajoutez une imprimante avec cette IP dans le tableau de
+bord. C'est réservé au développement et jamais livré.
+
+## Règles
+
+- Bun seulement : ni npm ni pnpm. Le lockfile est `bun.lock`.
+- Pas d'API `Bun.*` dans `apps/api` : elle tourne aussi sous Node dans l'application de bureau.
+- Pas de commentaires dans le code.
+- Chaque texte visible est un message dans `packages/i18n/messages`, ajouté dans **toutes** les langues.
+- Biome formate avec 4 espaces et 120 colonnes. Un hook pre-commit le lance sur les fichiers indexés.
+
+## Certificats [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` est du matériel tiers, inclus seulement pour l'interopérabilité. Ne le modifiez pas. Si
+l'imprimante refuse la poignée de main TLS, un certificat périmé est une cause probable. Pour extraire une nouvelle paire
+depuis une installation d'Anycubic Slicer Next :
+
+```bash
+bun run certs:extract <chemin> [--out apps/api/certs] [--force]
+```

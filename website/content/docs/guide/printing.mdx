@@ -1,0 +1,55 @@
+---
+title: Printing
+description: The print dialog, filament mapping, object skip and scheduled prints.
+---
+
+## The print dialog
+
+The dialog opens when you print a file, and after an upload (including *send and print* from OrcaSlicer).
+
+1. **Check the part** in the preview.
+2. **Map the filaments**: each G-code channel goes to a slot. Kobralink proposes compatible slots and warns when the material
+   does not match.
+3. **Check the amount**: the dialog compares the filament needed with what is left on the assigned spool (enough,
+   just enough, not enough). If a spool is too short, you must confirm to print anyway.
+4. **Skip objects** you do not want to print.
+5. **Choose the options**, then print, queue or schedule.
+
+Without a loaded slot, the printer uses the toolhead filament.
+
+### Options
+
+| Option | Effect |
+| --- | --- |
+| Auto bed leveling | Probes the bed before printing |
+| Vibration compensation | Measures resonance before printing to reduce ringing |
+| Flow calibration | Measures the extrusion flow before printing |
+| Record a timelapse | See [Camera](/en/docs/guide/camera#timelapses) |
+| Failure detection (AI) | See [Failure detection](/en/docs/guide/failure-detection) |
+
+The three calibration options appear only when the printer reports that it supports them. Their defaults are in the
+[printer settings](/en/docs/administration/printer-settings#printing).
+
+## During a print
+
+The print starts after calibration; the card names the current step (heating, leveling, flow calibration…). You can
+pause, resume, cancel, change the speed, temperatures and fan, and skip objects.
+
+**Skip objects** stops printing the selected objects from the current layer on. It cannot be undone for this print. The G-code
+must contain object markers (**Label objects** in OrcaSlicer).
+
+When the printer pauses by itself, the reason is shown in your language for the most common codes. Other codes show the
+printer's own message.
+
+## Scheduled prints
+
+**Schedule** starts the print at a chosen date and time. At that moment:
+
+- if the printer is free, the print starts
+- if the printer is busy, offline, in maintenance or waiting for its bed to be cleared, the file goes to the **front of the queue**
+- if Kobralink was off, the print still starts when it comes back, unless it is more than one hour late; the schedule is
+  then dropped
+
+Scheduled prints are listed in the **Scheduled** tab of the queue. You get a notification with the result.
+
+<Callout type="warn">Make sure the bed is empty before a scheduled start.</Callout>

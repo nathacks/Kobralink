@@ -1,0 +1,55 @@
+---
+title: Stampa
+description: La finestra di stampa, l'assegnazione dei filamenti, gli oggetti saltati e le stampe programmate.
+---
+
+## La finestra di stampa
+
+La finestra si apre quando stampi un file e dopo un caricamento (anche con *invia e stampa* da OrcaSlicer).
+
+1. **Controlla il pezzo** nell'anteprima.
+2. **Assegna i filamenti**: ogni canale del G-code va a uno slot. Kobralink propone gli slot compatibili e avvisa quando il
+   materiale non corrisponde.
+3. **Controlla la quantità**: la finestra confronta il filamento necessario con quello rimasto sulla bobina assegnata
+   (sufficiente, al limite, insufficiente). Se una bobina non basta, devi confermare per stampare comunque.
+4. **Salta gli oggetti** che non vuoi stampare.
+5. **Scegli le opzioni**, poi stampa, metti in coda o programma.
+
+Senza slot caricato, la stampante usa il filamento della testina.
+
+### Opzioni
+
+| Opzione | Effetto |
+| --- | --- |
+| Livellamento automatico del piano | Tasta il piano prima di stampare |
+| Compensazione delle vibrazioni | Misura le risonanze prima di stampare per ridurre le vibrazioni |
+| Calibrazione del flusso | Misura il flusso di estrusione prima di stampare |
+| Registra un timelapse | Vedi [Fotocamera](/it/docs/guide/camera#timelapses) |
+| Rilevamento fallimenti (IA) | Vedi [Rilevamento fallimenti](/it/docs/guide/failure-detection) |
+
+Le tre opzioni di calibrazione compaiono solo se la stampante dichiara di supportarle. I loro valori predefiniti sono nelle
+[impostazioni della stampante](/it/docs/administration/printer-settings#printing).
+
+## Durante la stampa
+
+La stampa inizia dopo la calibrazione; la scheda indica il passaggio in corso (riscaldamento, livellamento, calibrazione del
+flusso…). Puoi mettere in pausa, riprendere, annullare, cambiare velocità, temperature e ventola, e saltare oggetti.
+
+**Salta oggetti** smette di stampare gli oggetti scelti dallo strato attuale in poi. Non si può annullare per questa stampa. Il
+G-code deve contenere i marcatori degli oggetti (**Etichetta oggetti** in OrcaSlicer).
+
+Quando la stampante si mette in pausa da sola, il motivo appare nella tua lingua per i codici più comuni. Gli altri codici
+mostrano il messaggio della stampante.
+
+## Stampe programmate
+
+**Programma** avvia la stampa alla data e all'ora scelte. In quel momento:
+
+- se la stampante è libera, la stampa parte
+- se la stampante è occupata, offline, in manutenzione o in attesa che il piano sia liberato, il file va **in cima alla coda**
+- se Kobralink era spento, la stampa parte comunque al suo ritorno, a meno che sia in ritardo di più di un'ora; in quel caso
+  viene scartata
+
+Le stampe programmate sono nella scheda **Programmate** della coda. Ricevi una notifica con il risultato.
+
+<Callout type="warn">Assicurati che il piano sia vuoto prima di un avvio programmato.</Callout>

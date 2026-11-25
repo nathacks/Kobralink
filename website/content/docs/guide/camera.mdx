@@ -1,0 +1,43 @@
+---
+title: Camera and timelapses
+description: Live stream, snapshots and timelapse videos.
+---
+
+Kobralink reads the printer's camera once and shares it with every viewer: the dashboard, Moonraker clients, timelapses and
+failure detection. The stream is MJPEG at the native resolution and frame rate.
+
+## Settings
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Camera always on | on | Keeps the camera streaming, so the live view is always available |
+| Camera on print start | off | Starts the stream when a print begins |
+
+With *always on* off, the stream stops after 60 seconds without a viewer.
+
+## Addresses
+
+Moonraker clients receive these addresses automatically. Use the Moonraker port of the printer:
+
+| Address | Content |
+| --- | --- |
+| `http://<host>:7125/api/camera/stream` | MJPEG stream |
+| `http://<host>:7125/api/camera/snapshot` | Still image (JPEG) |
+| `http://<host>:7125/api/camera/h264` | H.264 stream |
+
+If the Moonraker ports require a key, add `?api_key=<key>` to the address.
+
+## Timelapses
+
+Turn on **Record a timelapse** in the printer settings, or in the print dialog for a single print. Kobralink takes one frame per layer
+and builds an MP4 at the end of the print, at 15 frames per second by default (5 to 60).
+
+- A print that gives fewer than 5 frames is discarded.
+- Videos are in the **Timelapses** tab of the files, where you can play, download and delete them.
+- They are stored in the data directory, in `timelapses/`.
+
+Timelapses are recorded by Kobralink. The printer's own timelapse, which needs a USB drive, is not used.
+
+## ffmpeg
+
+Docker and the desktop app include ffmpeg. To use another binary, set `KOBRALINK_FFMPEG`.

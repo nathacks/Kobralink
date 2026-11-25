@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Conectar Mainsail, Fluidd, Obico y otros clientes Moonraker.
+---
+
+Cada impresora tiene su propio servidor Moonraker en su propio puerto (`7125`, `7126`, …), por HTTP y WebSocket
+(`/websocket`). El puerto aparece en la página de la impresora y se puede cambiar en sus ajustes.
+
+Abrir el puerto en un navegador lleva a la página de la impresora en Kobralink.
+
+## Autenticación
+
+Por defecto los puertos Moonraker están **abiertos a la red local**, como el propio Moonraker. Para protegerlos, consulta
+[Proteger los puertos Moonraker](/es/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Qué se admite
+
+| Función | Soporte |
+| --- | --- |
+| Objetos de la impresora: consulta y suscripción | Sí |
+| Subida, y subida con impresión | Sí, `.gcode` y `.bgcode`. Las subidas al estilo OctoPrint también funcionan |
+| Iniciar, pausar, reanudar, cancelar | Sí |
+| Archivos: lista, metadatos, miniaturas | Sí |
+| Historial de impresiones | Sí |
+| Cola de trabajos | Sí, conectada a la [cola de Kobralink](/es/docs/guide/queue). Pausar y saltar no hacen nada |
+| Webcams | Sí, se anuncia una webcam automáticamente |
+| Ranuras de filamento | Sí, las lee OrcaSlicer |
+| Scripts G-code | Un pequeño subconjunto, ver abajo |
+
+## Scripts G-code [#g-code-scripts]
+
+| Comando | Efecto |
+| --- | --- |
+| `PAUSE`, `M25` | Pausar |
+| `RESUME`, `M24` | Reanudar |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Cancelar |
+| `M104 S<temp>` | Objetivo de la boquilla |
+| `M140 S<temp>` | Objetivo de la cama |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Objetivo de la boquilla o de la cama |
+| El nombre de una [macro](/es/docs/guide/macros) | Ejecuta la macro |
+
+Cualquier otro comando responde `ok` y **no hace nada**: la impresora no acepta G-code en bruto por LAN.
+
+## Valores a conocer
+
+- `gcode_move.speed_factor` refleja el modo de velocidad: Calma 0,5, Estándar 1,0, Sport 1,3.
+- `motion_report.live_velocity` siempre vale 0.
+- La impresora no informa de la posición. Z se estima a partir de las capas.
+
+## Clientes
+
+**Mainsail** no tiene campo de clave API y no puede conectarse mientras se requiera una. **Fluidd**, **Obico**, **OrcaSlicer**
+y **Home Assistant** pueden enviarla.

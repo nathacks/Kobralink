@@ -1,0 +1,144 @@
+---
+title: MCP 服务器（AI）
+description: 让 AI 助手查看并控制你的打印机。
+---
+
+Kobralink 是一个 [MCP](https://modelcontextprotocol.io) 服务器：Claude、ChatGPT 或任何 MCP 客户端都可以通过 56 个工具（20 个
+读取、36 个控制）查看并控制打印机。它**默认关闭**。
+
+## 配置
+
+<Steps>
+<Step>
+
+### 开启
+
+管理员打开**设置 → MCP（AI）**并启用服务器。其地址为 `<你的地址>/api/mcp`。
+
+</Step>
+<Step>
+
+### 连接客户端
+
+<Tabs items={['Claude Code', 'claude.ai、ChatGPT', '其他客户端']}>
+<Tab value="Claude Code">
+
+在[设置 → API 密钥](/zh-cn/docs/administration/api-keys)中创建一个带 **AI 助手（MCP）**用途的密钥，然后：
+
+```bash
+claude mcp add --transport http kobralink http://192.168.1.20:7100/api/mcp --header "Authorization: Bearer kl_..."
+```
+
+</Tab>
+<Tab value="claude.ai、ChatGPT">
+
+它们运行在云端，因此 Kobralink 需要一个公网 HTTPS 地址：参见 [HTTPS](/zh-cn/docs/administration/https)。然后把
+`https://<域名>/api/mcp` 添加为连接器，并用你的 Kobralink 账号登录（OAuth 2.1）。
+
+</Tab>
+<Tab value="其他客户端">
+
+任何能发送请求头的客户端都可以在局域网中使用。用 MCP 密钥发送 `Authorization: Bearer kl_...`。
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## 访问权限
+
+每个密钥或已连接的应用要么是**只读**，要么是**控制**。每次请求都会检查其所有者的角色：观察者永远无法控制任何东西。MCP 密钥始终
+覆盖所有打印机。密钥在**设置 → API 密钥**中吊销，应用在**设置 → MCP（AI）**中断开，立即生效。
+
+## 工具权限
+
+管理员把每个工具设置为：
+
+| 模式 | 作用 |
+| --- | --- |
+| 允许 | 助手自行执行 |
+| 询问 | 你会在聊天中收到一个是/否问题，只有回答是才执行 |
+| 拒绝 | 工具被隐藏 |
+
+敏感工具默认为*询问*，其他为*允许*。不能提问的应用会被拒绝；此时请把工具设为*允许*，并依赖应用自身的确认。答案来自 AI 应用：
+Kobralink 无法证明是谁点击的。
+
+## 安全
+
+- 打印机正在打印或暂停时，移动轴、进料、烘干、开始打印或断电都会**被拒绝**。
+- 开始打印需要 `bedIsClear: true`。服务器无法确认热床真的为空，因此请在 AI 客户端中保持工具确认开启。
+- 每次控制调用都会记录密钥或应用、工具和打印机。
+- 回复中从不包含摄像头地址、IP 地址或凭据。
+- 不开放：用户、密钥、设置、备份、删除文件、原始 G-code。请通过控制台或 Moonraker 上传文件。
+
+这些规则只针对 MCP 服务器。你网络中的程序仍可以使用 Moonraker 端口：请用 [API 密钥](/zh-cn/docs/administration/api-keys#lock-the-moonraker-ports)
+锁定它们。
+
+## 读取工具
+
+| 工具 | 用途 |
+| --- | --- |
+| `list_printers` | 打印机及状态 |
+| `get_printer_state` | 完整实时状态 |
+| `get_temperature_history` | 温度历史 |
+| `get_camera_snapshot` | 摄像头画面 |
+| `get_power_state` | 智能插座状态 |
+| `list_files` | G-code 文件 |
+| `get_file_objects` | 文件中的对象 |
+| `list_printer_files` | 打印机内的文件 |
+| `list_filament_slots` | 耗材槽位与 ACE |
+| `list_spools` | 料盘 |
+| `get_queue` | 打印队列 |
+| `check_queue_compatibility` | 与文件兼容的打印机 |
+| `list_schedules` | 已计划的打印与烘干 |
+| `get_print_history` | 打印历史 |
+| `get_stats` | 统计与成本 |
+| `get_recent_events` | 最近通知 |
+| `get_detection_status` | AI 故障检测 |
+| `list_maintenance` | 维护任务 |
+| `list_macros` | 宏 |
+| `list_automations` | 自动化 |
+
+## 控制工具
+
+*默认*是你修改之前的权限。*锁定*表示打印期间会被拒绝。
+
+| 工具 | 用途 | 默认 | 锁定 |
+| --- | --- | --- | --- |
+| `start_print` | 开始打印 | 询问 | 是 |
+| `start_printer_file` | 打印打印机内的文件 | 询问 | 是 |
+| `pause_print` | 暂停打印 | 允许 |  |
+| `resume_print` | 继续打印 | 允许 |  |
+| `cancel_print` | 取消打印 | 询问 |  |
+| `skip_objects` | 跳过对象 | 询问 |  |
+| `set_print_speed` | 打印速度 | 允许 |  |
+| `set_temperature` | 喷嘴与热床温度 | 询问 |  |
+| `set_fan` | 风扇 | 允许 |  |
+| `set_light` | 灯光 | 允许 |  |
+| `home_axes` | 轴归零 | 允许 | 是 |
+| `move_axis` | 移动轴 | 允许 | 是 |
+| `disable_motors` | 关闭电机 | 允许 | 是 |
+| `set_power` | 开关智能插座 | 询问 | 有时 |
+| `set_printer_connection` | 打印机连接 | 允许 |  |
+| `set_filament_slot` | 槽位材料与颜色 | 允许 |  |
+| `feed_filament` | 进料或退料 | 允许 | 是 |
+| `set_auto_feed` | ACE 自动补料 | 允许 |  |
+| `start_drying` | 开始烘干 | 允许 | 是 |
+| `stop_drying` | 停止烘干 | 允许 |  |
+| `assign_spool` | 分配料盘 | 允许 |  |
+| `add_to_queue` | 加入队列 | 询问 |  |
+| `remove_from_queue` | 从队列移除 | 询问 |  |
+| `reorder_queue` | 调整队列顺序 | 允许 |  |
+| `start_next_in_queue` | 开始队列下一项 | 询问 | 是 |
+| `confirm_bed_clear` | 确认热床已清空 | 询问 | 是 |
+| `cancel_queue_auto_start` | 取消自动开始 | 允许 |  |
+| `set_maintenance_mode` | 维护模式 | 询问 |  |
+| `schedule_print` | 计划打印 | 询问 |  |
+| `cancel_scheduled_print` | 取消计划打印 | 询问 |  |
+| `schedule_drying` | 计划烘干 | 允许 |  |
+| `cancel_scheduled_drying` | 取消计划烘干 | 询问 |  |
+| `run_macro` | 运行宏 | 询问 | 有时 |
+| `set_automation_enabled` | 启用或停用自动化 | 允许 |  |
+| `complete_maintenance_task` | 完成维护任务 | 允许 |  |
+| `annotate_print_job` | 打印备注或失败原因 | 允许 |  |

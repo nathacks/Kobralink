@@ -1,0 +1,80 @@
+---
+title: Coda di stampa
+description: Una sola coda per tutte le stampanti, con controllo di compatibilità e filamento.
+---
+
+Kobralink ha **una sola coda per tutte le stampanti**. Ogni file va alla prima stampante compatibile che è libera.
+
+## Aggiungere un file
+
+Usa **Aggiungi alla coda** nella finestra di stampa e scegli la destinazione:
+
+- **Questa stampante**
+- **Qualsiasi stampante**
+- **Un tag**: qualsiasi stampante che lo porta (i tag si impostano nel [profilo](/it/docs/administration/printer-settings#profile)
+  della stampante)
+
+Kobralink rifiuta un file che nessuna stampante può stampare, e spiega il motivo per ciascuna.
+
+## Compatibilità [#compatibility]
+
+| Controllo | Regola |
+| --- | --- |
+| Destinazione | La stampante è quella scelta, o porta i tag scelti |
+| Modello | Il file è stato slicato per questo modello |
+| Ugello | L'ugello del file corrisponde a quello installato, o a quello standard del modello |
+| Dimensioni | Il pezzo sta nel volume di stampa |
+| Materiale | Esiste una bobina di questo materiale nella tua scorta |
+| Colore | Solo un'indicazione, non blocca mai |
+
+La tua scorta è Spoolman (o l'inventario locale) più ciò che è caricato negli slot.
+
+## Perché un elemento attende [#why-an-item-waits]
+
+| Motivo | Significato |
+| --- | --- |
+| Nessuna stampante può prenderlo | Non esiste alcuna stampante compatibile |
+| Stampante occupata | C'è una stampa in corso |
+| Piano da liberare | L'ultimo pezzo va tolto e valutato |
+| Stampante in manutenzione | La stampante è fuori dalla coda |
+| Stampante offline | Kobralink non la raggiunge |
+| In attesa di filamento | Il materiale caricato non corrisponde, o la bobina non basta |
+| Pronto, da avviare a mano | Tutto a posto, l'avvio automatico è disattivato |
+
+Un elemento in attesa di filamento non blocca i successivi. Ricevi una notifica la prima volta che viene saltato.
+
+## Liberare il piano [#clearing-the-bed]
+
+Dopo una stampa, la stampante aspetta che confermi che il piano è libero:
+
+- **Piano libero, pezzo buono** libera la stampante.
+- **Pezzo scartato** conta la stampa come fallita (*qualità rifiutata*, salvo che abbia già un motivo) e rimette il file in cima
+  alla coda per questa stampante.
+
+Le stampe annullate o fallite aspettano sempre te, anche se la conferma è disattivata.
+
+## Avvio automatico [#automatic-start]
+
+Si imposta nelle [impostazioni della stampante](/it/docs/administration/printer-settings#printing), per ogni stampante:
+
+| Impostazione | Predefinito | Effetto |
+| --- | --- | --- |
+| Avvia il file successivo automaticamente | disattivato | Il file successivo parte da solo |
+| Conferma piano libero | attivo | Attendere la tua conferma dopo ogni stampa |
+| Attendi prima di avviare | 15 s | Conto alla rovescia prima dell'avvio, annullabile |
+| Attivatore luce | disattivato | Confermare dalla stampante stessa |
+
+<Callout type="error" title="Avvio automatico senza conferma">
+    Disattiva *Conferma piano libero* solo se il piano si libera da solo (un espulsore). Altrimenti la stampa successiva parte
+    sopra il pezzo precedente.
+</Callout>
+
+### Attivatore luce [#light-trigger]
+
+Premi **3 volte in 20 secondi** il pulsante della luce sullo schermo della stampante: il piano risulta confermato libero e il
+file successivo parte subito, senza conto alla rovescia. Attivare l'attivatore luce attiva anche l'avvio automatico.
+
+## Modalità manutenzione [#maintenance-mode]
+
+La **modalità manutenzione** toglie una stampante dalla coda finché non la termini. Se l'avvio automatico è attivo, terminarla
+può avviare il file successivo.

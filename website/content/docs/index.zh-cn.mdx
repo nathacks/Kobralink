@@ -1,0 +1,54 @@
+---
+title: 简介
+description: Kobralink 是什么、能做什么、从哪里开始。
+---
+
+Kobralink 让 **Anycubic Kobra X** 或 **Kobra 4** 变成**兼容 Moonraker 的打印机**。无需 Klipper，无需树莓派，也无需更改固件：
+Kobralink 在局域网模式下通过你的网络与打印机通信，并把它作为 Moonraker 服务器提供出来。
+
+![Kobralink 控制台](../../../docs/interface.png)
+
+你可以通过以下方式使用打印机：
+
+- **OrcaSlicer**：发送并跟踪打印
+- **网页控制台**：管理其余一切
+- **Moonraker 客户端**：如 Mainsail、Fluidd、Obico 或 Home Assistant
+- **AI 助手**（Claude、ChatGPT…）：通过内置的 MCP 服务器
+
+## 选择安装方式
+
+<Cards>
+    <Card title="Docker" href="/zh-cn/docs/getting-started/docker">
+        推荐用于常开的服务器：多台打印机、多个用户、手机访问。
+    </Card>
+    <Card title="桌面应用" href="/zh-cn/docs/getting-started/desktop">
+        适用于一台 macOS、Windows 或 Linux 电脑。无需安装其他东西。
+    </Card>
+</Cards>
+
+然后按照[首次启动](/zh-cn/docs/getting-started/first-run)操作，并[连接 OrcaSlicer](/zh-cn/docs/getting-started/orcaslicer)。
+
+## 功能一览
+
+| 领域 | 功能 |
+| --- | --- |
+| [控制台](/zh-cn/docs/guide/dashboard) | 实时温度、进度、控制和摄像头，支持一台或多台打印机 |
+| [打印](/zh-cn/docs/guide/printing) | G-code 库、3D 预览、耗材映射、跳过对象、定时开始 |
+| [队列](/zh-cn/docs/guide/queue) | 所有打印机共用一个队列，带兼容性和耗材检查 |
+| [耗材](/zh-cn/docs/guide/filament) | ACE 槽位、烘干、OrcaSlicer 配置、Spoolman 或本地库存 |
+| [摄像头](/zh-cn/docs/guide/camera) | 实时画面、快照和延时摄影 |
+| [失败检测](/zh-cn/docs/guide/failure-detection) | 本地 AI 模型，可通知、暂停或取消 |
+| [自动化](/zh-cn/docs/guide/automations)和[宏](/zh-cn/docs/guide/macros) | 规则和一键动作序列 |
+| [统计](/zh-cn/docs/guide/statistics) | 历史、成本、能耗、失败、CSV 导出 |
+| [维护](/zh-cn/docs/guide/maintenance) | 按打印小时、打印次数或天数到期的任务 |
+| [通知](/zh-cn/docs/guide/notifications) | Webhook、Discord、Telegram、ntfy、网页推送 |
+| [集成](/zh-cn/docs/integrations/moonraker) | Moonraker、Home Assistant、Spoolman、Prometheus、MCP |
+
+界面支持法语、英语、德语、西班牙语、意大利语、简体中文和巴西葡萄牙语。
+
+<Callout type="warn" title="开始之前">
+    开启局域网模式会让打印机与你的 Anycubic 账号解绑。打印机只接受一个局域网会话：不要让 Kobralink 与其他局域网客户端（如
+    Anycubic Slicer Next）同时运行。
+</Callout>
+
+Kobralink 是采用 GPL-3.0 许可证的独立项目，与 Anycubic 无关。

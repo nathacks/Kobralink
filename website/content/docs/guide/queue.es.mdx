@@ -1,0 +1,80 @@
+---
+title: Cola de impresión
+description: Una sola cola para todas las impresoras, con control de compatibilidad y de filamento.
+---
+
+Kobralink tiene **una sola cola para todas las impresoras**. Cada archivo va a la primera impresora compatible que esté libre.
+
+## Añadir un archivo
+
+Usa **Añadir a la cola** en el diálogo de impresión y elige el destino:
+
+- **Esta impresora**
+- **Cualquier impresora**
+- **Una etiqueta**: cualquier impresora que la lleve (las etiquetas se ajustan en el
+  [perfil](/es/docs/administration/printer-settings#profile) de la impresora)
+
+Kobralink rechaza un archivo que ninguna impresora puede imprimir, y explica el motivo para cada una.
+
+## Compatibilidad [#compatibility]
+
+| Comprobación | Regla |
+| --- | --- |
+| Destino | La impresora es la elegida, o lleva las etiquetas elegidas |
+| Modelo | El archivo se laminó para este modelo |
+| Boquilla | La boquilla del archivo coincide con la instalada, o con la estándar del modelo |
+| Tamaño | La pieza cabe en el volumen de impresión |
+| Material | Existe una bobina de este material en tu stock |
+| Color | Solo una indicación, nunca bloquea |
+
+Tu stock es Spoolman (o el inventario local) más lo que está cargado en las ranuras.
+
+## Por qué espera un elemento [#why-an-item-waits]
+
+| Motivo | Significado |
+| --- | --- |
+| Ninguna impresora puede tomarlo | No existe ninguna impresora compatible |
+| Impresora ocupada | Hay una impresión en curso |
+| Cama por vaciar | Hay que retirar y valorar la última pieza |
+| Impresora en mantenimiento | La impresora está fuera de la cola |
+| Impresora desconectada | Kobralink no la alcanza |
+| Esperando filamento | El material cargado no coincide, o la bobina se queda corta |
+| Lista, iníciala a mano | Todo está bien, el inicio automático está desactivado |
+
+Un elemento que espera filamento no bloquea los siguientes. Recibes una notificación la primera vez que se salta.
+
+## Vaciar la cama [#clearing-the-bed]
+
+Tras una impresión, la impresora espera a que confirmes que la cama está vacía:
+
+- **Cama libre, pieza buena** libera la impresora.
+- **Pieza rechazada** cuenta la impresión como fallida (*calidad rechazada* salvo que ya tenga un motivo) y vuelve a poner el
+  archivo al principio de la cola para esta impresora.
+
+Las impresiones canceladas y fallidas siempre te esperan, aunque la confirmación esté desactivada.
+
+## Inicio automático [#automatic-start]
+
+Se ajusta en los [ajustes de la impresora](/es/docs/administration/printer-settings#printing), para cada impresora:
+
+| Ajuste | Por defecto | Efecto |
+| --- | --- | --- |
+| Iniciar el siguiente archivo automáticamente | desactivado | El siguiente archivo empieza solo |
+| Confirmar cama vacía | activado | Esperar tu confirmación tras cada impresión |
+| Esperar antes de iniciar | 15 s | Cuenta atrás antes del inicio, cancelable |
+| Disparador de luz | desactivado | Confirmar desde la propia impresora |
+
+<Callout type="error" title="Inicio automático sin confirmación">
+    Desactiva *Confirmar cama vacía* solo si la cama se vacía sola (un expulsor). Si no, la siguiente impresión empieza encima
+    de la pieza anterior.
+</Callout>
+
+### Disparador de luz [#light-trigger]
+
+Pulsa **3 veces en 20 segundos** el botón de luz de la pantalla de la impresora: la cama queda confirmada como vacía y el
+siguiente archivo empieza enseguida, sin cuenta atrás. Activar el disparador de luz activa también el inicio automático.
+
+## Modo mantenimiento [#maintenance-mode]
+
+El **modo mantenimiento** saca una impresora de la cola hasta que lo termines. Si el inicio automático está activo, terminarlo
+puede iniciar el siguiente archivo.

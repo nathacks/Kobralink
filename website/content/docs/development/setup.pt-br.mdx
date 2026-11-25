@@ -1,0 +1,61 @@
+---
+title: Ambiente de desenvolvimento
+description: Rodar o Kobralink a partir do código-fonte.
+---
+
+Você precisa do [Bun](https://bun.sh) 1.4.2 ou mais recente.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Abra `http://localhost:5454`. A API escuta na porta 7100.
+
+## Comandos
+
+| Comando | Efeito |
+| --- | --- |
+| `bun run dev` | API, painel e aplicativo de desktop |
+| `bun run dev:web` | API e painel |
+| `bun run dev:desktop` | Aplicativo de desktop e suas dependências |
+| `bun run build` | Compilar tudo |
+| `bun run check-types` | Verificação de tipos |
+| `bun run test` | Todos os testes |
+| `bun run lint` | Verificação do Biome |
+| `bun run format` | Formatação do Biome |
+| `bun run db:migrate` | Criar ou aplicar uma migração do Prisma |
+| `bun run db:studio` | Explorar o banco de dados |
+| `bun run --filter @kobralink/desktop dist` | Instalador de desktop para o sistema atual |
+
+Rode um único arquivo de teste com `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Sem impressora
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+Emula uma Kobra 4 com um ACE no meio de uma impressão, em `127.0.0.1`. Adicione uma impressora com esse IP no painel. Serve só
+para desenvolvimento e nunca é distribuído.
+
+## Regras
+
+- Só Bun: nada de npm nem pnpm. O lockfile é o `bun.lock`.
+- Nenhuma API `Bun.*` em `apps/api`: ela também roda no Node, no aplicativo de desktop.
+- Sem comentários no código.
+- Todo texto visível é uma mensagem em `packages/i18n/messages`, adicionada em **todos** os idiomas.
+- O Biome formata com 4 espaços e 120 colunas. Um hook de pre-commit o aplica nos arquivos preparados.
+
+## Certificados [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` é material de terceiros, incluído só para interoperabilidade. Não o altere. Se a impressora
+recusar o handshake TLS, a causa provável é um certificado desatualizado. Para extrair um par novo de uma instalação do Anycubic
+Slicer Next:
+
+```bash
+bun run certs:extract <caminho> [--out apps/api/certs] [--force]
+```

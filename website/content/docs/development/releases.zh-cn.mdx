@@ -1,0 +1,21 @@
+---
+title: 发布
+description: 如何发布一个版本。
+---
+
+推送 `v*` 标签会运行 `.github/workflows/release.yml`，它会发布：
+
+- 适用于 amd64 和 arm64 的 Docker 镜像，标签为 `<版本>`、`<主版本>.<次版本>` 和 `latest`
+- 一个 GitHub release，包含 macOS、Windows 和 Linux 的桌面应用
+
+`bun run version:set <x.y.z|major|minor|patch>` 会设置所有包的版本。
+
+## 密钥
+
+| 密钥 | 用途 |
+| --- | --- |
+| `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN` | 必需，Docker Hub |
+| `CSC_LINK`、`CSC_KEY_PASSWORD` | 可选，为 macOS 应用签名 |
+| `APPLE_ID`、`APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID` | 可选，为 macOS 应用公证 |
+
+没有 Apple 证书时，macOS 应用使用临时签名，首次启动时 Gatekeeper 会显示警告。

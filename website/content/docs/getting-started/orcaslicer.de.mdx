@@ -1,0 +1,69 @@
+---
+title: OrcaSlicer
+description: OrcaSlicer mit Kobralink verbinden und Drucke senden.
+---
+
+Kobralink stellt jeden Drucker als Moonraker-Server bereit, OrcaSlicer verbindet sich also wie mit einer Klipper-Maschine. Die
+genaue Adresse jedes Druckers steht unter **Einstellungen → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Verbindungseinstellungen öffnen
+
+Klicken Sie im Tab **Vorbereiten** auf das Verbindungssymbol (Stecker) neben dem Druckerprofil, oder öffnen Sie
+**Druckereinstellungen → Allgemein → Physischer Drucker**.
+
+</Step>
+<Step>
+
+### Host-Typ wählen
+
+Wählen Sie **Moonraker**.
+
+</Step>
+<Step>
+
+### Host eintragen
+
+Geben Sie die Adresse des Druckers mit Protokoll und Port ein:
+
+```text
+http://192.168.1.20:7125
+```
+
+Läuft OrcaSlicer auf demselben Rechner wie Kobralink, verwenden Sie `http://localhost:7125`. Lassen Sie den API-Schlüssel leer,
+außer Sie haben [API-Schlüssel verlangen](/de/docs/administration/api-keys#lock-the-moonraker-ports) eingeschaltet.
+
+</Step>
+<Step>
+
+### Testen, dann speichern
+
+**Testen** sollte eine erfolgreiche Verbindung melden. Der Tab **Gerät** zeigt nun Ihren Kobra, und **Drucken** sendet den
+G-Code an Kobralink.
+
+</Step>
+</Steps>
+
+## Was der Gerät-Tab kann
+
+Der Gerät-Tab steuert nur den Drucker: Druck starten, Fortschritt verfolgen, pausieren oder abbrechen und die ACE-Filamente
+synchronisieren. Alles andere (Warteschlange, Dateien, Makros, Kamera, Fehlererkennung, Statistiken, Benachrichtigungen) liegt
+im Kobralink-Dashboard.
+
+## Einen Druck senden
+
+Standardmäßig öffnet eine aus OrcaSlicer gesendete Datei den Druckdialog im Dashboard, auch mit *Senden und drucken*. Dort
+prüfen Sie Filamente und Slots und starten dann. Um direkt zu starten, schalten Sie **Dialog nach dem Upload** in den
+[Druckereinstellungen](/de/docs/administration/printer-settings#printing) aus.
+
+## Filamente synchronisieren
+
+Die Filament-Synchronisierung im Gerät-Tab holt die vom Drucker gemeldeten Slots. Marke und Profil, die pro Slot gesendet
+werden, stellen Sie im [Slot-Dialog](/de/docs/guide/filament#orcaslicer-profiles) ein.
+
+## Objekte überspringen
+
+Damit Objekte übersprungen werden können, muss der G-Code Objektmarken enthalten. Schalten Sie in OrcaSlicer
+**Objekte beschriften** ein.

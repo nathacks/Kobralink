@@ -1,0 +1,47 @@
+---
+title: HTTPS e proxy reverso
+description: Servir o Kobralink em HTTPS.
+---
+
+O HTTPS é necessário para as notificações push e para que o claude.ai ou o ChatGPT se conectem ao
+[servidor MCP](/pt-br/docs/integrations/mcp).
+
+## Com o Caddy
+
+O Caddy obtém um certificado automaticamente. Você precisa de um domínio apontando para este host, com as portas 80 e 443
+acessíveis pela internet.
+
+<Callout type="warn">Crie a primeira conta antes de abrir as portas: o primeiro cadastro vira administrador.</Callout>
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.https.yml
+```
+
+Defina `KOBRALINK_DOMAIN` no `.env`:
+
+```bash title=".env"
+KOBRALINK_DOMAIN=kobralink.example.com
+```
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.https.yml up -d
+```
+
+`BETTER_AUTH_URL` passa a ser `https://kobralink.example.com`. Os cookies ficam restritos ao HTTPS: entre pelo domínio, o login
+do painel deixa de funcionar em `http://<ip>:7100`. As chaves de API e as portas Moonraker continuam funcionando ali.
+
+No roteador, redirecione só as portas 80 e 443, **nunca a 7100 nem as portas Moonraker**.
+
+## Com o seu próprio proxy
+
+```bash title=".env"
+KOBRALINK_BIND=127.0.0.1
+BETTER_AUTH_URL=https://kobralink.example.com
+KOBRALINK_TRUSTED_PROXIES=127.0.0.1,172.16.0.0/12
+```
+
+- `KOBRALINK_BIND=127.0.0.1` também vale para as portas Moonraker. O OrcaSlicer acessa essas portas diretamente: se ele roda em
+  outra máquina, publique `7125-7140` na sua interface de rede no arquivo compose.
+- `KOBRALINK_TRUSTED_PROXIES` permite ao Kobralink ver o endereço real do cliente para limitar as tentativas de login. Com o
+  Cloudflare, você pode usar `KOBRALINK_IP_HEADERS=cf-connecting-ip`.
+- O painel usa Server-Sent Events e uma transmissão MJPEG: desative o buffer das respostas no proxy.

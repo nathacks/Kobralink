@@ -1,0 +1,37 @@
+---
+title: Claves API
+description: Claves para clientes Moonraker, Prometheus y asistentes de IA.
+---
+
+Todas las claves se gestionan en **Ajustes → Claves API**. Crea una clave por aplicación para poder revocarla por separado. Una
+clave solo se muestra una vez. Empieza por `kl_`.
+
+| Uso | Abre |
+| --- | --- |
+| Moonraker | Control completo de la impresora por su puerto Moonraker, cámara incluida |
+| Métricas de Prometheus | Acceso de lectura a `/api/v1/metrics` |
+| Asistente de IA (MCP) | El servidor MCP, de solo lectura o de control |
+
+Una clave puede tener varios usos y cubre una impresora o todas. Una clave con uso MCP cubre siempre todas las impresoras. Los
+observadores no pueden crear claves.
+
+## Proteger los puertos Moonraker [#lock-the-moonraker-ports]
+
+Por defecto los puertos Moonraker aceptan a cualquiera en la red. Activa **Requerir una clave API en los puertos Moonraker** en
+**Ajustes → OrcaSlicer** para exigir una clave en todas las impresoras, cámara incluida.
+
+Los clientes envían la clave de una de estas formas:
+
+| Forma | Usada por |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Scripts |
+| `?api_key=kl_…` en la URL | Etiquetas `<img>` de la cámara |
+| `/access/oneshot_token` y luego `?token=…` | Clientes WebSocket |
+
+Dos cosas a tener en cuenta:
+
+- **Mainsail** no tiene campo de clave API y no puede conectarse mientras la opción esté activa.
+- Las direcciones bajo `/serve/` siguen abiertas, porque la impresora descarga ahí sus archivos.
+
+Una clave ligada a una impresora solo desbloquea esa impresora.

@@ -1,0 +1,61 @@
+---
+title: Entorno de desarrollo
+description: Ejecutar Kobralink desde el código fuente.
+---
+
+Necesitas [Bun](https://bun.sh) 1.4.2 o posterior.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Abre `http://localhost:5454`. La API escucha en el puerto 7100.
+
+## Comandos
+
+| Comando | Efecto |
+| --- | --- |
+| `bun run dev` | API, panel y aplicación de escritorio |
+| `bun run dev:web` | API y panel |
+| `bun run dev:desktop` | Aplicación de escritorio y sus dependencias |
+| `bun run build` | Compilarlo todo |
+| `bun run check-types` | Comprobación de tipos |
+| `bun run test` | Todas las pruebas |
+| `bun run lint` | Comprobación de Biome |
+| `bun run format` | Formato de Biome |
+| `bun run db:migrate` | Crear o aplicar una migración de Prisma |
+| `bun run db:studio` | Explorar la base de datos |
+| `bun run --filter @kobralink/desktop dist` | Instalador de escritorio para el sistema actual |
+
+Ejecuta un solo archivo de pruebas con `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Sin impresora
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+Emula una Kobra 4 con un ACE en plena impresión, en `127.0.0.1`. Añade una impresora con esa IP en el panel. Es solo para
+desarrollo y nunca se distribuye.
+
+## Reglas
+
+- Solo Bun: ni npm ni pnpm. El lockfile es `bun.lock`.
+- Nada de API `Bun.*` en `apps/api`: también se ejecuta con Node en la aplicación de escritorio.
+- Sin comentarios en el código.
+- Cada texto visible es un mensaje en `packages/i18n/messages`, añadido en **todos** los idiomas.
+- Biome formatea con 4 espacios y 120 columnas. Un hook de pre-commit lo aplica a los archivos preparados.
+
+## Certificados [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` es material de terceros, incluido solo por interoperabilidad. No lo modifiques. Si la
+impresora rechaza el handshake TLS, la causa probable es un certificado obsoleto. Para extraer un par nuevo de una instalación
+de Anycubic Slicer Next:
+
+```bash
+bun run certs:extract <ruta> [--out apps/api/certs] [--force]
+```

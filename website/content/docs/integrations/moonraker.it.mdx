@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Collegare Mainsail, Fluidd, Obico e altri client Moonraker.
+---
+
+Ogni stampante ha il suo server Moonraker sulla sua porta (`7125`, `7126`, …), via HTTP e WebSocket (`/websocket`). La porta
+è indicata nella pagina della stampante e si può cambiare nelle sue impostazioni.
+
+Aprire la porta in un browser porta alla pagina della stampante in Kobralink.
+
+## Autenticazione
+
+Per impostazione predefinita le porte Moonraker sono **aperte alla rete locale**, come Moonraker stesso. Per proteggerle, vedi
+[Proteggere le porte Moonraker](/it/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Cosa è supportato
+
+| Funzione | Supporto |
+| --- | --- |
+| Oggetti della stampante: lettura e sottoscrizione | Sì |
+| Caricamento, e caricamento con stampa | Sì, `.gcode` e `.bgcode`. Funzionano anche i caricamenti in stile OctoPrint |
+| Avviare, mettere in pausa, riprendere, annullare | Sì |
+| File: elenco, metadati, miniature | Sì |
+| Cronologia delle stampe | Sì |
+| Coda dei lavori | Sì, collegata alla [coda di Kobralink](/it/docs/guide/queue). Pausa e salto non fanno nulla |
+| Webcam | Sì, una webcam annunciata automaticamente |
+| Slot del filamento | Sì, letti da OrcaSlicer |
+| Script G-code | Un piccolo sottoinsieme, vedi sotto |
+
+## Script G-code [#g-code-scripts]
+
+| Comando | Effetto |
+| --- | --- |
+| `PAUSE`, `M25` | Pausa |
+| `RESUME`, `M24` | Ripresa |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Annullamento |
+| `M104 S<temp>` | Obiettivo dell'ugello |
+| `M140 S<temp>` | Obiettivo del piano |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Obiettivo di ugello o piano |
+| Il nome di una [macro](/it/docs/guide/macros) | Esegue la macro |
+
+Qualsiasi altro comando risponde `ok` e **non fa nulla**: la stampante non accetta G-code grezzo via LAN.
+
+## Valori da conoscere
+
+- `gcode_move.speed_factor` riflette la modalità di velocità: Calma 0,5, Standard 1,0, Sport 1,3.
+- `motion_report.live_velocity` vale sempre 0.
+- La stampante non comunica la posizione. Z è stimata dagli strati.
+
+## Client
+
+**Mainsail** non ha un campo per la chiave API e non può collegarsi quando è richiesta. **Fluidd**, **Obico**, **OrcaSlicer** e
+**Home Assistant** possono inviarne una.

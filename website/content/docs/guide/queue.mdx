@@ -1,0 +1,78 @@
+---
+title: Print queue
+description: One queue for every printer, with compatibility and filament checks.
+---
+
+Kobralink has **one queue for all printers**. Each file goes to the first compatible printer that is free.
+
+## Add a file
+
+Use **Add to queue** in the print dialog and choose the target:
+
+- **This printer**
+- **Any printer**
+- **A tag**: any printer carrying it (tags are set in the printer [profile](/en/docs/administration/printer-settings#profile))
+
+Kobralink refuses a file that no printer can print, and says why for each one.
+
+## Compatibility
+
+| Check | Rule |
+| --- | --- |
+| Target | The printer is the one chosen, or carries the chosen tags |
+| Model | The file was sliced for this model |
+| Nozzle | The file's nozzle matches the installed nozzle, or the model's standard nozzle |
+| Size | The part fits the build volume |
+| Material | A spool of this material exists in your stock |
+| Colour | A hint only, never blocks |
+
+Your stock is Spoolman (or the local inventory) plus what is loaded in the slots.
+
+## Why an item waits
+
+| Reason | Meaning |
+| --- | --- |
+| No printer can take it | No compatible printer exists |
+| Printer busy | A print is running |
+| Bed to clear | The last part must be removed and rated |
+| Printer in maintenance | The printer is out of the queue |
+| Printer offline | Kobralink cannot reach it |
+| Waiting for filament | The loaded material does not match, or the spool is too short |
+| Ready, start it by hand | Everything is fine, automatic start is off |
+
+An item that waits for filament does not block the next ones. You get a notification the first time it is skipped.
+
+## Clearing the bed
+
+After a print, the printer waits until you confirm that the bed is clear:
+
+- **Bed clear, print OK** frees the printer.
+- **Print rejected** counts the print as failed (*rejected quality* unless it already has a reason) and puts the file back at the front of the queue for
+  this printer.
+
+Cancelled and failed prints always wait for you, even when confirmation is off.
+
+## Automatic start
+
+Set in the [printer settings](/en/docs/administration/printer-settings#printing), for each printer:
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Start the next file automatically | off | The next file starts by itself |
+| Confirm the bed is clear | on | Wait for your confirmation after each print |
+| Wait before starting | 15 s | Countdown before the start, which you can cancel |
+| Light trigger | off | Confirm from the printer itself |
+
+<Callout type="error" title="Automatic start without confirmation">
+    Turn off *Confirm the bed is clear* only if the bed clears itself (an ejector). Otherwise the next print starts on top of
+    the previous part.
+</Callout>
+
+### Light trigger
+
+Tap the light button on the printer screen **3 times within 20 seconds**: the bed is confirmed clear and the next file
+starts right away, without the countdown. Turning on the light trigger also turns on the automatic start.
+
+## Maintenance mode
+
+**Maintenance mode** takes a printer out of the queue until you end it. If automatic start is on, ending it may start the next file.

@@ -1,0 +1,15 @@
+---
+title: LAN-Protokoll
+description: Wie Kobralink mit dem Drucker spricht.
+---
+
+| Port des Druckers | Verwendung |
+| --- | --- |
+| `18910` (HTTP) | Liest Modell und MQTT-Zugangsdaten, empfängt den G-Code-Upload |
+| `9883` (MQTT über TLS) | Zustand und Befehle, eine Sitzung zur Zeit |
+| `18088` (HTTP-FLV) | H.264-Kamerastream, ein Abnehmer zur Zeit |
+
+Beim Start eines Drucks kann der Drucker die Datei auch von Kobralink herunterladen, über den Moonraker-Port (`/serve/…`).
+
+Die vollständige Untersuchung (Anfragen, Meldungen, Zustände, Fehlercodes, Unterschiede zum offiziellen Anycubic-Client) steht
+in [`docs/protocol.md`](https://github.com/NatHacks/Kobralink/blob/main/docs/protocol.md), auf Englisch.

@@ -1,0 +1,30 @@
+---
+title: Utilisateurs et rôles
+description: Les comptes et ce que chaque rôle peut faire.
+---
+
+| Rôle | Peut |
+| --- | --- |
+| Administrateur | Tout |
+| Opérateur | Piloter les imprimantes, modifier les paramètres, créer des clés API |
+| Lecture seule | Seulement consulter |
+
+Seuls les administrateurs peuvent gérer les utilisateurs, activer ou désactiver le serveur MCP, modifier les autorisations de
+ses outils, télécharger ou restaurer une sauvegarde, et redémarrer Kobralink.
+
+Un compte en lecture seule peut quand même activer les notifications push sur son propre appareil et déconnecter les
+applications d'IA qu'il a autorisées.
+
+## Gérer les comptes
+
+Le premier compte est créé par l'assistant de configuration et il est administrateur. L'inscription est ensuite fermée. Les
+administrateurs créent les autres comptes dans **Paramètres → Utilisateurs**, avec un mot de passe d'au moins 8 caractères,
+et peuvent y changer un rôle ou un mot de passe.
+
+- Il doit toujours rester au moins un administrateur.
+- Vous ne pouvez pas retirer votre propre rôle d'administrateur ni supprimer votre propre compte.
+- Supprimer un utilisateur ferme ses sessions immédiatement.
+
+Les sessions durent 30 jours et sont renouvelées tant qu'elles servent.
+
+<Callout type="info">Ne donnez de compte qu'à des personnes de confiance, y compris en lecture seule.</Callout>

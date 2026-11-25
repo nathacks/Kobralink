@@ -1,0 +1,33 @@
+---
+title: Spoolman
+description: Utiliser Spoolman comme source de vérité pour les bobines.
+---
+
+Avec [Spoolman](https://github.com/Donkie/Spoolman), les bobines, les prix et la consommation sont partagés avec vos autres
+outils. Kobralink lit les bobines et signale la consommation.
+
+## Configurer
+
+1. Ouvrez **Paramètres → Intégrations → Spoolman** et saisissez l'URL du serveur, par exemple `http://192.168.1.20:7912`.
+2. Dans la carte **Filaments**, cliquez sur un slot et choisissez sa bobine Spoolman.
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Synchro pendant l'impression | 0 s | Intervalle entre deux envois de consommation. 0 n'envoie qu'à la fin de l'impression |
+
+Dès qu'une URL est définie, l'inventaire local n'est plus utilisé.
+
+## Envois de consommation
+
+Si Spoolman est injoignable, la consommation est gardée et renvoyée quand il répond. La page **Filament** indique combien
+d'envois attendent. Rien n'est perdu si Kobralink redémarre.
+
+## Prix
+
+Le prix d'une bobine est son propre prix, ou celui de son filament, divisé par son poids. Le poids, la densité et le diamètre
+viennent de Spoolman.
+
+## Docker
+
+Depuis le conteneur Kobralink, `localhost` désigne le conteneur lui-même. Utilisez l'adresse de l'hôte sur le réseau, ou un
+nom de service si les deux tournent dans le même projet Compose.

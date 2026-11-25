@@ -1,0 +1,63 @@
+---
+title: Filamento
+description: Slot, unità ACE, asciugatura, profili e bobine.
+---
+
+## Slot
+
+La scheda **Filamenti** mostra ciò che la stampante segnala. Tre collegamenti vengono rilevati automaticamente:
+
+| Modalità | Slot |
+| --- | --- |
+| Testina (buffer) | Gli slot della testina |
+| ACE diretto | Quattro slot per unità ACE |
+| Testina + ACE (hub) | Tre slot della testina, più gli slot delle unità ACE collegate al quarto |
+
+Senza ACE, scegli la **bobina esterna** montata sul supporto della stampante; il suo consumo viene scalato da lì.
+
+Fai clic su uno slot per impostarne materiale e colore (scritti sullo schermo della stampante), profilo OrcaSlicer e bobina, e
+per caricare o scaricare il filamento. Il filamento letto via RFID viene riconosciuto.
+
+## Asciugatura
+
+Avvia un ciclo dalla sezione ACE della scheda: 30–80 °C per 10–1440 minuti. Il tuo ACE può rifiutare le temperature più alte.
+Puoi anche programmare un ciclo per dopo.
+
+I preset si modificano nella pagina **Filamento**. Predefiniti:
+
+| Preset | Temperatura | Durata |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Alimentazione automatica** attiva o disattiva la ricarica automatica di un'unità ACE.
+
+## Profili OrcaSlicer [#orcaslicer-profiles]
+
+Ogni slot può avere un profilo OrcaSlicer, inviato a OrcaSlicer come marca e nome del profilo quando sincronizza i filamenti.
+Senza scelta, Kobralink ne sceglie uno in base al materiale.
+
+Per aggiungere i tuoi profili, apri **Filamento** e importa uno ZIP o file `.json` di OrcaSlicer. Sono segnati con ★. Per
+accorciare l'elenco, scegli le marche visibili nelle impostazioni della stampante.
+
+## Bobine
+
+Due modi per tenere traccia del filamento:
+
+| | Spoolman | Inventario locale |
+| --- | --- | --- |
+| Dove stanno le bobine | In [Spoolman](/it/docs/integrations/spoolman) | In Kobralink |
+| Prezzi | Da Spoolman | Prezzo predefinito al kg |
+| Usalo se | Vuoi una fonte unica condivisa con altri strumenti | Non usi Spoolman |
+
+L'inventario locale si usa finché non è impostato un URL di Spoolman. Aggiungi bobine con materiale, colore e peso netto
+iniziale; il peso residuo è stimato dal consumo segnalato dalla stampante.
+
+Assegna una bobina a uno slot nella finestra dello slot. Da lì, il suo consumo viene scalato durante la stampa, la finestra di
+stampa avvisa quando non basta e la coda ne tiene conto.
+
+Sotto la soglia impostata nelle impostazioni della stampante (*Bobina quasi vuota*, disattivata per impostazione predefinita)
+viene inviato un allarme.

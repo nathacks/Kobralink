@@ -1,0 +1,15 @@
+---
+title: 局域网协议
+description: Kobralink 如何与打印机通信。
+---
+
+| 打印机端口 | 用途 |
+| --- | --- |
+| `18910`（HTTP） | 读取型号和 MQTT 凭据，接收 G-code 上传 |
+| `9883`（基于 TLS 的 MQTT） | 状态和命令，同一时间一个会话 |
+| `18088`（HTTP-FLV） | H.264 摄像头画面，同一时间一个使用者 |
+
+开始打印时，打印机也可能通过 Moonraker 端口（`/serve/…`）从 Kobralink 下载文件。
+
+完整的研究（请求、报告、状态、错误代码、与 Anycubic 官方客户端的差异）见
+[`docs/protocol.md`](https://github.com/NatHacks/Kobralink/blob/main/docs/protocol.md)（英文）。

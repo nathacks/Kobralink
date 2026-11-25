@@ -1,0 +1,66 @@
+---
+title: Notifications
+description: Discord, Telegram, ntfy, webhook, browser and web push.
+---
+
+Set them up in **Settings → Notifications**, then use **Send a test**.
+
+## Channels
+
+| Channel | What to enter |
+| --- | --- |
+| Discord | The channel webhook URL |
+| Telegram | The bot token and the chat ID |
+| ntfy | The full topic URL, public or self-hosted |
+| Webhook | Any URL that accepts a JSON `POST` |
+| Browser | Nothing. Shown when the tab is in the background |
+| Web push | Nothing. Turn it on for each device |
+
+### Web push
+
+Push notifications arrive even with the browser closed. They need **HTTPS** (or localhost), see
+[HTTPS](/en/docs/administration/https). On iPhone, add Kobralink to the home screen first. They are not available in the
+desktop app.
+
+### Webhook payload
+
+```json
+{
+    "id": "0b5c…",
+    "type": "print_finished",
+    "printerId": "…",
+    "printerName": "Workshop Kobra",
+    "title": "Workshop Kobra — print finished",
+    "body": "part.gcode finished in 2 h 05 min.",
+    "ts": 1764000000000,
+    "url": "https://kobralink.example.com/printers/…",
+    "data": {}
+}
+```
+
+`url` is present only when the Kobralink address is set. `data` depends on the event.
+
+## Events
+
+| Event | Default | `type` |
+| --- | --- | --- |
+| Print started | off | `print_started` |
+| Print finished | on | `print_finished` |
+| Print cancelled | on | `print_cancelled` |
+| Paused | on | `print_paused` |
+| Printer offline | off | `printer_offline` |
+| Printer back online | off | `printer_online` |
+| Drying finished | on | `drying_done` |
+| Alerts | on | `alert_nozzle_temp`, `alert_bed_temp`, `alert_offline`, `alert_spool_low` |
+| Print failure detected (AI) | on | `alert_print_failure` |
+| Queue: next file ready | on | `queue_next`, `queue_filament` |
+| Scheduled print | on | `scheduled_print` |
+| Maintenance due | on | `maintenance_due` |
+| Automation messages | on | `automation` |
+
+## Links
+
+Notifications link to the right screen once **Kobralink address** is set in **Settings → General**. The language of the messages
+is set there too.
+
+Alert thresholds are set for each printer, see [Alerts](/en/docs/administration/printer-settings#alerts).

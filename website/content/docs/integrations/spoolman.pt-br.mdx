@@ -1,0 +1,32 @@
+---
+title: Spoolman
+description: Usar o Spoolman como fonte oficial dos carretéis.
+---
+
+Com o [Spoolman](https://github.com/Donkie/Spoolman), carretéis, preços e consumo são compartilhados com suas outras
+ferramentas. O Kobralink lê os carretéis e informa o consumo.
+
+## Configurar
+
+1. Abra **Configurações → Integrações → Spoolman** e informe a URL do servidor, por exemplo `http://192.168.1.20:7912`.
+2. No cartão **Filamentos**, clique em um slot e escolha o carretel do Spoolman.
+
+| Configuração | Padrão | Efeito |
+| --- | --- | --- |
+| Sincronizar durante a impressão | 0 s | Intervalo entre dois envios de consumo. 0 envia só no fim da impressão |
+
+Assim que uma URL é definida, o estoque local deixa de ser usado.
+
+## Envios de consumo
+
+Se o Spoolman estiver fora do ar, o consumo é guardado e reenviado quando ele voltar. A página **Filamento** mostra quantos
+envios estão pendentes. Nada se perde se o Kobralink reiniciar.
+
+## Preços
+
+O preço de um carretel é o próprio preço dele, ou o do filamento, dividido pelo peso. Peso, densidade e diâmetro vêm do Spoolman.
+
+## Docker
+
+De dentro do contêiner do Kobralink, `localhost` é o próprio contêiner. Use o endereço do host na rede, ou um nome de serviço se
+os dois rodarem no mesmo projeto Compose.

@@ -1,0 +1,61 @@
+---
+title: Ambiente di sviluppo
+description: Avviare Kobralink dai sorgenti.
+---
+
+Ti serve [Bun](https://bun.sh) 1.4.2 o successivo.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Apri `http://localhost:5454`. L'API ascolta sulla porta 7100.
+
+## Comandi
+
+| Comando | Effetto |
+| --- | --- |
+| `bun run dev` | API, dashboard e app desktop |
+| `bun run dev:web` | API e dashboard |
+| `bun run dev:desktop` | App desktop e le sue dipendenze |
+| `bun run build` | Compilare tutto |
+| `bun run check-types` | Controllo dei tipi |
+| `bun run test` | Tutti i test |
+| `bun run lint` | Controllo Biome |
+| `bun run format` | Formattazione Biome |
+| `bun run db:migrate` | Creare o applicare una migrazione Prisma |
+| `bun run db:studio` | Esplorare il database |
+| `bun run --filter @kobralink/desktop dist` | Installer desktop per il sistema corrente |
+
+Esegui un solo file di test con `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Senza stampante
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+Emula una Kobra 4 con un ACE nel mezzo di una stampa, su `127.0.0.1`. Aggiungi una stampante con quell'IP nella dashboard. È
+solo per lo sviluppo e non viene mai distribuito.
+
+## Regole
+
+- Solo Bun: niente npm né pnpm. Il lockfile è `bun.lock`.
+- Nessuna API `Bun.*` in `apps/api`: gira anche con Node nell'app desktop.
+- Nessun commento nel codice.
+- Ogni testo visibile è un messaggio in `packages/i18n/messages`, aggiunto in **tutte** le lingue.
+- Biome formatta con 4 spazi e 120 colonne. Un hook di pre-commit lo applica ai file in stage.
+
+## Certificati [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` è materiale di terze parti, incluso solo per l'interoperabilità. Non modificarlo. Se la
+stampante rifiuta l'handshake TLS, la causa probabile è un certificato superato. Per estrarre una nuova coppia da
+un'installazione di Anycubic Slicer Next:
+
+```bash
+bun run certs:extract <percorso> [--out apps/api/certs] [--force]
+```

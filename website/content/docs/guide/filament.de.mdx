@@ -1,0 +1,62 @@
+---
+title: Filament
+description: Slots, ACE-Einheiten, Trocknung, Profile und Spulen.
+---
+
+## Slots
+
+Die Karte **Filamente** zeigt, was der Drucker meldet. Drei Verkabelungen werden automatisch erkannt:
+
+| Modus | Slots |
+| --- | --- |
+| Druckkopf (Puffer) | Die Slots des Druckkopfs |
+| ACE direkt | Vier Slots pro ACE-Einheit |
+| Druckkopf + ACE (Hub) | Drei Druckkopf-Slots plus die Slots der ACE-Einheiten am vierten |
+
+Ohne ACE wählen Sie die **externe Spule** auf dem Halter des Druckers; ihr Verbrauch wird von ihr abgezogen.
+
+Klicken Sie auf einen Slot, um Material und Farbe (auf den Druckerbildschirm geschrieben), OrcaSlicer-Profil und Spule
+einzustellen und das Filament zu laden oder zu entladen. Per RFID gelesenes Filament wird erkannt.
+
+## Trocknung
+
+Starten Sie einen Zyklus im ACE-Bereich der Karte: 30–80 °C für 10 bis 1440 Minuten. Ihre ACE lehnt die höchsten Temperaturen
+eventuell ab. Sie können einen Zyklus auch für später planen.
+
+Die Voreinstellungen bearbeiten Sie auf der Seite **Filament**. Standardmäßig:
+
+| Voreinstellung | Temperatur | Dauer |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Automatischer Vorschub** schaltet das automatische Nachladen einer ACE-Einheit ein oder aus.
+
+## OrcaSlicer-Profile [#orcaslicer-profiles]
+
+Jeder Slot kann ein OrcaSlicer-Profil tragen, das beim Synchronisieren der Filamente als Marke und Profilname an OrcaSlicer
+gesendet wird. Ohne Auswahl wählt Kobralink eines anhand des Materials.
+
+Um eigene Profile hinzuzufügen, öffnen Sie **Filament** und importieren eine ZIP- oder `.json`-Dateien aus OrcaSlicer. Sie
+sind mit ★ markiert. Um die Liste zu kürzen, wählen Sie die sichtbaren Marken in den Druckereinstellungen.
+
+## Spulen
+
+Zwei Wege, Filament zu verfolgen:
+
+| | Spoolman | Lokales Inventar |
+| --- | --- | --- |
+| Wo die Spulen liegen | In [Spoolman](/de/docs/integrations/spoolman) | In Kobralink |
+| Preise | Aus Spoolman | Standardpreis pro kg |
+| Verwenden, wenn | Sie eine gemeinsame Quelle für mehrere Werkzeuge wollen | Sie Spoolman nicht nutzen |
+
+Das lokale Inventar wird verwendet, solange keine Spoolman-URL gesetzt ist. Fügen Sie Spulen mit Material, Farbe und
+anfänglichem Nettogewicht hinzu; das Restgewicht wird aus dem vom Drucker gemeldeten Verbrauch geschätzt.
+
+Ordnen Sie eine Spule im Slot-Dialog einem Slot zu. Ab dann wird ihr Verbrauch beim Drucken abgezogen, der Druckdialog warnt,
+wenn sie zu knapp ist, und die Warteschlange berücksichtigt sie.
+
+Unter der in den Druckereinstellungen festgelegten Schwelle (*Spule fast leer*, standardmäßig aus) wird ein Alarm gesendet.

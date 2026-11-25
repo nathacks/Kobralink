@@ -1,0 +1,30 @@
+---
+title: Usuarios y roles
+description: Las cuentas y lo que puede hacer cada rol.
+---
+
+| Rol | Puede |
+| --- | --- |
+| Administrador | Todo |
+| Operador | Controlar las impresoras, cambiar ajustes, crear claves API |
+| Observador | Solo consultar |
+
+Solo los administradores pueden gestionar usuarios, activar o desactivar el servidor MCP, cambiar los permisos de sus
+herramientas, descargar o restaurar una copia de seguridad y reiniciar Kobralink.
+
+Un observador puede igualmente activar las notificaciones push en su propio dispositivo y desconectar las aplicaciones de IA
+que haya autorizado.
+
+## Gestionar las cuentas
+
+La primera cuenta la crea el asistente de configuración y es administrador. Después, el registro se cierra. Los
+administradores crean las demás cuentas en **Ajustes → Usuarios**, con una contraseña de al menos 8 caracteres, y pueden
+cambiar ahí un rol o una contraseña.
+
+- Debe quedar siempre al menos un administrador.
+- No puedes quitarte tu propio rol de administrador ni borrar tu propia cuenta.
+- Borrar un usuario cierra sus sesiones al instante.
+
+Las sesiones duran 30 días y se renuevan mientras se usan.
+
+<Callout type="info">Da cuentas solo a personas de confianza, incluidas las de solo lectura.</Callout>

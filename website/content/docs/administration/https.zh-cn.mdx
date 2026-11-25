@@ -1,0 +1,45 @@
+---
+title: HTTPS 与反向代理
+description: 通过 HTTPS 提供 Kobralink。
+---
+
+推送通知需要 HTTPS，claude.ai 或 ChatGPT 连接 [MCP 服务器](/zh-cn/docs/integrations/mcp)也需要。
+
+## 使用 Caddy
+
+Caddy 会自动获取证书。你需要一个指向这台主机的域名，并且 80 和 443 端口可以从互联网访问。
+
+<Callout type="warn">在开放端口之前先创建第一个账号：第一个注册的账号会成为管理员。</Callout>
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.https.yml
+```
+
+在 `.env` 中设置 `KOBRALINK_DOMAIN`：
+
+```bash title=".env"
+KOBRALINK_DOMAIN=kobralink.example.com
+```
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.https.yml up -d
+```
+
+`BETTER_AUTH_URL` 会变成 `https://kobralink.example.com`。此后 Cookie 仅限 HTTPS：请通过域名登录，在 `http://<ip>:7100` 上
+无法再登录控制台。API 密钥和 Moonraker 端口在那里仍然可用。
+
+在路由器上只转发 80 和 443 端口，**绝不要转发 7100 或 Moonraker 端口**。
+
+## 使用你自己的代理
+
+```bash title=".env"
+KOBRALINK_BIND=127.0.0.1
+BETTER_AUTH_URL=https://kobralink.example.com
+KOBRALINK_TRUSTED_PROXIES=127.0.0.1,172.16.0.0/12
+```
+
+- `KOBRALINK_BIND=127.0.0.1` 也作用于 Moonraker 端口。OrcaSlicer 直接访问这些端口：如果它在另一台机器上，请在 compose 文件中把
+  `7125-7140` 发布到你的网卡上。
+- `KOBRALINK_TRUSTED_PROXIES` 让 Kobralink 获得客户端真实地址，用于限制登录尝试次数。使用 Cloudflare 时，可改用
+  `KOBRALINK_IP_HEADERS=cf-connecting-ip`。
+- 控制台使用 Server-Sent Events 和 MJPEG 画面：请在代理中关闭响应缓冲。

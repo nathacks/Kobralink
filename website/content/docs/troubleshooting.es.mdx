@@ -1,0 +1,70 @@
+---
+title: Solución de problemas
+description: Problemas habituales y qué hacer.
+---
+
+Empieza por **Ajustes → Registros**: filtra por impresora y descarga el registro si necesitas compartirlo. Quita las direcciones
+IP y los nombres de archivo que quieras mantener privados antes de publicarlo.
+
+## La impresora sigue desconectada
+
+| Mensaje | Causa | Solución |
+| --- | --- | --- |
+| Puerto MQTT cerrado | El modo LAN está desactivado | Actívalo en los ajustes de la impresora |
+| Credenciales MQTT rechazadas | Las credenciales han cambiado | Ajustes de la impresora → **Actualizar credenciales** |
+| Impresora inaccesible en la red | IP incorrecta, impresora apagada, otra red | Revisa la IP; resérvala en tu router |
+| Límite de conexiones (código 19002) | Hay otro cliente LAN conectado | Cierra Anycubic Slicer Next, las integraciones de Home Assistant… |
+| Desconectada manualmente | Cerraste la sesión | Vuelve a conectar |
+
+La impresora acepta **una sola sesión LAN**: dos instancias de Kobralink en la misma impresora se desconectan entre sí.
+
+## No puedo iniciar sesión
+
+`BETTER_AUTH_URL` debe ser la dirección que escribes en el navegador, con protocolo y puerto. Añade las demás direcciones a
+`KOBRALINK_EXTRA_ORIGINS` y recrea el contenedor con `docker compose up -d`. Con una dirección HTTPS, iniciar sesión por HTTP
+simple no funciona.
+
+## OrcaSlicer no se conecta
+
+- Comprueba que el host incluye `http://` y el puerto de la impresora.
+- Comprueba que Kobralink está en marcha y que el cortafuegos permite el puerto.
+- Si se exigen claves, pega una con el uso Moonraker.
+- A partir de la impresora 17, [publica más puertos](/es/docs/getting-started/docker#ports).
+
+## La impresión no empieza tras *enviar e imprimir*
+
+El diálogo de impresión espera en el panel. Confírmalo allí, o desactiva **Diálogo tras la subida** en los ajustes de la
+impresora.
+
+## Se rechaza la subida
+
+| Mensaje | Solución |
+| --- | --- |
+| No hay espacio suficiente en la impresora | Borra archivos en la pestaña **Impresora** |
+| La impresora rechazó el nombre o el tipo del archivo | Usa un nombre sencillo que termine en `.gcode` |
+| La impresora no dio una URL de subida | Vuelve a conectar la impresora |
+
+## La cámara no se ve
+
+- *Ninguna cámara conectada*: la impresora indica que no hay ninguna conectada.
+- *429*: otro cliente usa el vídeo. Ciérralo y reinicia el vídeo.
+- En una instalación personalizada, comprueba que ffmpeg está disponible.
+
+## La cola no avanza
+
+Lee el motivo que aparece en el elemento, consulta [Por qué espera un elemento](/es/docs/guide/queue#why-an-item-waits). Lo más
+habitual es que no se haya confirmado que la cama está vacía.
+
+## Las automatizaciones se ejecutan a una hora equivocada
+
+Usan la zona horaria del servidor, que aparece en **Ajustes → Sistema**. Define `TZ` en `.env`.
+
+## La aplicación de escritorio no arranca el bridge
+
+La pantalla de error da acceso al registro. Una causa habitual es que otra instancia ya usa el puerto 7100.
+
+## Se rechaza el handshake TLS
+
+Tras una actualización del firmware de Anycubic, el certificado incluido puede quedar obsoleto. Abre una
+[issue](https://github.com/NatHacks/Kobralink/issues) o extrae uno nuevo: consulta
+[Certificados](/es/docs/development/setup#certificates).

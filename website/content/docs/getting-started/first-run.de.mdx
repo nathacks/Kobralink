@@ -1,0 +1,74 @@
+---
+title: Erster Start
+description: Das Administratorkonto anlegen und den ersten Drucker hinzufügen.
+---
+
+Beim ersten Öffnen von Kobralink führt Sie ein Assistent durch die Einrichtung. Alle Schritte nach dem Konto lassen sich
+später ändern.
+
+<Steps>
+<Step>
+
+### Das Administratorkonto anlegen
+
+Dieses Konto verwaltet Drucker, Benutzer und Einstellungen. Die Registrierung schließt, sobald es existiert: Weitere Konten
+legt ein Administrator unter [Einstellungen → Benutzer](/de/docs/administration/users) an.
+
+</Step>
+<Step>
+
+### Sprache, Währung und Adresse wählen
+
+Die Adresse wird in den Links der Benachrichtigungen verwendet. Die Sprache gilt für die Nachrichten, die die Bridge sendet.
+
+</Step>
+<Step>
+
+### Ihren Drucker hinzufügen
+
+Öffnen Sie am Drucker **Einstellungen → Netzwerk** und schalten Sie den **LAN-Modus** ein. Lassen Sie den Drucker
+eingeschaltet und im selben Netzwerk, und notieren Sie die IP-Adresse aus seinem Netzwerkbildschirm.
+
+Geben Sie nur die IP-Adresse ein, ohne Port. Kobralink liest Benutzername, Passwort und Geräte-ID direkt vom Drucker.
+
+</Step>
+<Step>
+
+### Den Drucker beschreiben
+
+Standort, Tags, eingebaute Düse und durchschnittliche Leistungsaufnahme. Sie dienen für Berichte, Kosten und die
+[Warteschlange](/de/docs/guide/queue). Die offiziellen Anycubic-Daten werden angezeigt, wenn das Modell bekannt ist.
+
+</Step>
+<Step>
+
+### Spoolman verbinden (optional)
+
+Wenn Sie [Spoolman](/de/docs/integrations/spoolman) nutzen, geben Sie seine URL ein und testen Sie sie.
+
+</Step>
+<Step>
+
+### OrcaSlicer verbinden
+
+Der Assistent zeigt die Adresse, die Sie in OrcaSlicer einfügen. Siehe [OrcaSlicer](/de/docs/getting-started/orcaslicer).
+
+</Step>
+</Steps>
+
+## Weitere Drucker hinzufügen
+
+Öffnen Sie **Drucker → Drucker hinzufügen** und geben Sie die IP-Adresse ein. Jeder Drucker bekommt einen eigenen
+Moonraker-Port: `7125`, `7126` und so weiter. Geben Sie jedem Drucker eine feste IP-Adresse in Ihrem Router
+(DHCP-Reservierung), damit Kobralink ihn immer findet.
+
+## Wenn der Drucker nicht gefunden wird
+
+| Meldung | Was tun |
+| --- | --- |
+| Ist der LAN-Modus am Drucker aktiviert? | LAN-Modus einschalten, dann erneut versuchen |
+| Verbindungslimit (Code 19002) | Andere LAN-Clients wie Anycubic Slicer Next trennen |
+| Drucker im Netzwerk nicht erreichbar | IP-Adresse prüfen und ob beide Rechner im selben Netzwerk sind |
+| Dieser Drucker existiert bereits | Der Drucker ist schon in Kobralink |
+
+Weitere Fälle unter [Fehlerbehebung](/de/docs/troubleshooting).

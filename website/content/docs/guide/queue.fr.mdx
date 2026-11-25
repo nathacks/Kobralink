@@ -1,0 +1,81 @@
+---
+title: File d'attente
+description: Une seule file pour toutes les imprimantes, avec contrôle de compatibilité et de filament.
+---
+
+Kobralink a **une seule file pour toutes les imprimantes**. Chaque fichier part vers la première imprimante compatible qui est
+libre.
+
+## Ajouter un fichier
+
+Utilisez **Ajouter à la file** dans la fenêtre d'impression et choisissez la cible :
+
+- **Cette imprimante**
+- **N'importe quelle imprimante**
+- **Un tag** : toute imprimante qui le porte (les tags se règlent dans le [profil](/fr/docs/administration/printer-settings#profile) de l'imprimante)
+
+Kobralink refuse un fichier qu'aucune imprimante ne peut imprimer, et dit pourquoi pour chacune.
+
+## Compatibilité [#compatibility]
+
+| Contrôle | Règle |
+| --- | --- |
+| Cible | L'imprimante est celle choisie, ou porte les tags choisis |
+| Modèle | Le fichier a été tranché pour ce modèle |
+| Buse | La buse du fichier correspond à la buse installée, ou à la buse standard du modèle |
+| Taille | La pièce tient dans le volume d'impression |
+| Matériau | Une bobine de ce matériau existe dans votre stock |
+| Couleur | Simple indication, ne bloque jamais |
+
+Votre stock, c'est Spoolman (ou l'inventaire local) plus ce qui est chargé dans les slots.
+
+## Pourquoi un élément attend [#why-an-item-waits]
+
+| Motif | Signification |
+| --- | --- |
+| Aucune imprimante ne peut le prendre | Aucune imprimante compatible n'existe |
+| Imprimante occupée | Une impression est en cours |
+| Plateau à vider | La dernière pièce doit être retirée et évaluée |
+| Imprimante en maintenance | L'imprimante est sortie de la file |
+| Imprimante hors ligne | Kobralink ne la joint pas |
+| En attente de filament | Le matériau chargé ne correspond pas, ou la bobine est trop courte |
+| Prêt, à lancer à la main | Tout va bien, le lancement automatique est désactivé |
+
+Un élément qui attend du filament ne bloque pas les suivants. Vous recevez une notification la première fois qu'il est sauté.
+
+## Vider le plateau [#clearing-the-bed]
+
+Après une impression, l'imprimante attend que vous confirmiez que le plateau est vide :
+
+- **Plateau vidé, pièce bonne** libère l'imprimante.
+- **Pièce refusée** compte l'impression comme échouée (*qualité refusée* sauf si elle a déjà un motif) et remet le fichier en
+  tête de la file pour cette imprimante.
+
+Les impressions annulées ou échouées attendent toujours votre confirmation, même quand elle est désactivée.
+
+## Lancement automatique [#automatic-start]
+
+Se règle dans les [paramètres de l'imprimante](/fr/docs/administration/printer-settings#printing), pour chaque imprimante :
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Lancer le fichier suivant automatiquement | désactivé | Le fichier suivant démarre tout seul |
+| Confirmer le plateau vide | activé | Attendre votre confirmation après chaque impression |
+| Attendre avant de lancer | 15 s | Compte à rebours avant le départ, annulable |
+| Déclencheur lumineux | désactivé | Confirmer depuis l'imprimante elle-même |
+
+<Callout type="error" title="Lancement automatique sans confirmation">
+    Ne désactivez *Confirmer le plateau vide* que si le plateau se vide tout seul (un éjecteur). Sinon l'impression suivante
+    démarre sur la pièce précédente.
+</Callout>
+
+### Déclencheur lumineux [#light-trigger]
+
+Appuyez **3 fois en 20 secondes** sur le bouton lumière de l'écran de l'imprimante : le plateau est confirmé vide et le
+fichier suivant démarre aussitôt, sans compte à rebours. Activer le déclencheur lumineux active aussi le lancement
+automatique.
+
+## Mode maintenance [#maintenance-mode]
+
+Le **mode maintenance** sort une imprimante de la file jusqu'à ce que vous l'arrêtiez. Si le lancement automatique est actif,
+l'arrêter peut lancer le fichier suivant.

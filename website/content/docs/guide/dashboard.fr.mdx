@@ -1,0 +1,63 @@
+---
+title: Tableau de bord
+description: Suivre et piloter vos imprimantes.
+---
+
+## Page Imprimantes
+
+La page **Imprimantes** affiche une carte par imprimante, avec son état, sa progression, le temps restant et l'heure de fin.
+Les compteurs en haut filtrent la liste : en impression, en pause, prêtes, plateau à vider, maintenance, erreur et hors
+ligne. La page indique aussi quelle imprimante termine en premier.
+
+Sur ordinateur, la navigation est une barre latérale repliable en rail d'icônes. Sur téléphone, c'est une barre en bas.
+
+## Page d'une imprimante
+
+| Carte | Rôle |
+| --- | --- |
+| Impression | Tâche en cours : progression, couche, temps écoulé et restant, vue 3D, pause, reprise, annulation, objets ignorés |
+| Températures | Graphique en direct, consignes de buse et de plateau, préréglages |
+| Caméra | Flux en direct et plein écran, voir [Caméra](/fr/docs/guide/camera) |
+| Commandes | Vitesse, ventilateur pièce, lumière, prise connectée, axes |
+| Filaments | Slots, chargement, séchage, voir [Filament](/fr/docs/guide/filament) |
+| File d'impression | Éléments que cette imprimante peut prendre, voir [File d'attente](/fr/docs/guide/queue) |
+| Fichiers | Bibliothèque, stockage de l'imprimante, timelapses, voir [Fichiers](/fr/docs/guide/files) |
+| Macros | Actions en un clic, voir [Macros](/fr/docs/guide/macros) |
+| Maintenance | Tâches et échéances, voir [Maintenance](/fr/docs/guide/maintenance) |
+
+## Commandes
+
+**Températures.** La buse accepte 0–320 °C et le plateau 0–120 °C ; votre imprimante peut en accepter moins. Les
+préréglages sont :
+
+| Préréglage | Buse | Plateau |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Off | 0 °C | 0 °C |
+
+**Vitesse.** Trois modes : Calme, Standard et Sport. Ce sont les seules vitesses que l'imprimante propose en LAN, et elles
+s'appliquent à l'impression en cours.
+
+**Axes.** Déplacer X, Y et Z de 1, 10 ou 50 mm, mise à l'origine XYZ, XY ou Z, et coupure des moteurs. Verrouillé pendant
+l'impression.
+
+**Lumière et ventilateur.** Allumer la lumière de la caméra et régler le ventilateur pièce.
+
+**Alimentation.** Disponible une fois une [prise connectée](/fr/docs/integrations/home-assistant#smart-plug-and-energy) choisie.
+
+## Annuler une impression
+
+L'annulation demande un motif facultatif (spaghetti, adhérence, bouchage, qualité…). Le motif alimente les statistiques
+d'échec. Une impression annulée ne peut pas être reprise.
+
+## Apparence
+
+Le thème (système, clair ou sombre) et la langue de l'interface sont dans **Paramètres → Général**. Ils sont gardés dans le
+navigateur.
+
+## Comptes en lecture seule
+
+Un compte en lecture seule voit les mêmes pages avec les commandes désactivées. Voir
+[Utilisateurs et rôles](/fr/docs/administration/users).

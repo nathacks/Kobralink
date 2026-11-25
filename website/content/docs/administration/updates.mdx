@@ -1,0 +1,35 @@
+---
+title: Updates
+description: Update Kobralink.
+---
+
+**Settings → System** shows the current version and checks GitHub for a newer one. You can turn the check off in
+**Settings → General**.
+
+[Back up](/en/docs/administration/backup) before updating. Database migrations are applied automatically at startup; going back to
+an older version is not supported without a backup.
+
+## Docker
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+If you pinned a version, change the `image:` line first.
+
+## Desktop app
+
+The app offers the update by itself, see [Desktop app](/en/docs/getting-started/desktop#updates).
+
+## From source
+
+```bash
+git pull
+bun install
+bun run build
+```
+
+## During a print
+
+Restarting Kobralink does not stop a print. The connection to the printer drops for a few seconds.

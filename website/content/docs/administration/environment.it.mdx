@@ -1,0 +1,43 @@
+---
+title: Variabili d'ambiente
+description: La configurazione del server.
+---
+
+## Docker
+
+Da impostare in `.env`, accanto al file compose.
+
+| Variabile | Predefinito | Ruolo |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | `http://localhost:7100` | **Da impostare**: l'URL usato dal browser |
+| `BETTER_AUTH_SECRET` | generato in `/data` | Segreto di sessione (`openssl rand -base64 32`) |
+| `KOBRALINK_BIND` | `0.0.0.0` | Interfaccia dell'host. `127.0.0.1` dietro un reverse proxy |
+| `KOBRALINK_PORT` | `7100` | Porta della dashboard sull'host |
+| `KOBRALINK_EXTRA_ORIGINS` | | Altre origini consentite, separate da virgole |
+| `KOBRALINK_TRUSTED_PROXIES` | | IP o CIDR dei proxy, separati da virgole |
+| `KOBRALINK_IP_HEADERS` | | Header con l'IP del client, impostato dal proxy |
+| `KOBRALINK_DOMAIN` | | Dominio per `docker-compose.https.yml` |
+| `KOBRALINK_IMAGE` | `nathacks/kobralink:latest` | Nome dell'immagine, usato solo da `docker-compose.yml` (compilazione dai sorgenti) |
+| `TZ` | `UTC` | Fuso orario delle automazioni e delle statistiche giornaliere |
+
+## Processo del server
+
+Già impostate nell'immagine Docker e nell'app desktop. Utili per avviare dai sorgenti.
+
+| Variabile | Predefinito | Ruolo |
+| --- | --- | --- |
+| `KOBRALINK_DATA_DIR` | `<repo>/data` | Directory dei dati |
+| `DATABASE_URL` | `file:<data>/kobralink.db` | Database |
+| `KOBRALINK_WEB_DIR` | `apps/web/dist` | Build della dashboard da servire |
+| `KOBRALINK_CERTS_DIR` | `apps/api/certs` | `anycubic_slicer.crt` e `.key` |
+| `KOBRALINK_FFMPEG` | incluso, altrimenti `PATH` | Eseguibile di ffmpeg |
+| `KOBRALINK_VERSION` | `package.json` | Versione indicata |
+| `KOBRALINK_UPDATE_REPO` | `NatHacks/Kobralink` | Repository interrogato per gli aggiornamenti |
+| `KOBRALINK_DETECTION_MODEL_URL` | il modello di Obico | Indirizzo del modello di rilevamento |
+
+## App desktop
+
+| Variabile | Ruolo |
+| --- | --- |
+| `KOBRALINK_PORT` | Porta del bridge locale |
+| `KOBRALINK_URL` | Apre questo bridge senza avviarne uno locale |

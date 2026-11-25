@@ -1,0 +1,59 @@
+---
+title: Home Assistant
+description: 通过 MQTT 提供传感器和控制、智能插座与能耗计量。
+---
+
+在 Home Assistant 中使用 Kobralink 有三种相互独立的方式：
+
+| 方式 | 提供 |
+| --- | --- |
+| [MQTT 自动发现](#mqtt-discovery) | Home Assistant 中的传感器、灯光、按钮、摄像头图像、缩略图 |
+| [Home Assistant API](#smart-plug-and-energy) | Kobralink 中的智能插座和实测能耗 |
+| [Moonraker 集成（HACS）](#moonraker-integration) | 把打印机作为 Moonraker 设备 |
+
+## MQTT 自动发现 [#mqtt-discovery]
+
+在**设置 → 集成**中开启 MQTT 发布，填写代理 URL（例如 `mqtt://192.168.1.10:1883`）、用户名和密码。设备会自动出现在
+Home Assistant 中。
+
+| 实体 | 类型 |
+| --- | --- |
+| 状态、进度、文件、层 | 传感器 |
+| 喷嘴和热床的温度与目标温度 | 传感器 |
+| 剩余和已用时间、风扇 | 传感器 |
+| 已连接、打印中 | 二元传感器 |
+| 灯光 | 开关 |
+| 暂停、继续、取消 | 按钮 |
+| 摄像头 | 摄像头 |
+| 缩略图 | 图像 |
+
+| 设置 | 默认 |
+| --- | --- |
+| 发现前缀 | `homeassistant` |
+| 主题前缀 | `kobralink` |
+
+主题为 `<前缀>/<printerId>/state`、`/availability`、`/camera`、`/thumbnail` 和 `/cmd/{light,pause,resume,cancel}`。
+
+### 实时摄像头
+
+摄像头运行时，摄像头实体每 5 秒显示最新一帧。它从不主动打开摄像头。如需实时视频，请用打印机的 Moonraker 端口添加
+**MJPEG IP Camera** 集成：
+
+- MJPEG URL：`http://<桥接IP>:7125/api/camera/stream`
+- 静态图像 URL：`http://<桥接IP>:7125/api/camera/snapshot`
+
+## 智能插座与能耗 [#smart-plug-and-energy]
+
+1. 在 Home Assistant 中打开个人资料 → **安全** → **长期访问令牌** → **创建令牌**。
+2. 在**设置 → 集成**中填写 Home Assistant 地址和令牌，然后测试。
+3. 在每台打印机的设置中，选择它的**插座开关**和**电量计**（一个 kWh 传感器）。
+
+开关可从控制台和自动化中开关打印机电源。每次打印开始和结束时都会读取电量计，让[成本](/zh-cn/docs/guide/statistics#costs)使用实际能耗
+而不是估算值。
+
+## Moonraker 集成 [#moonraker-integration]
+
+HACS 的 **Moonraker** 集成使用：主机 = 桥接地址，端口 = 打印机的 Moonraker 端口。
+
+它总是通过 `7125` 端口获取缩略图。从第二台打印机起，请把它的 **Thumbnail Port** 选项设为该打印机的端口，否则显示的是第一台
+打印机的缩略图。

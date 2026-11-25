@@ -1,0 +1,43 @@
+---
+title: Macros
+description: One-click sequences of actions.
+---
+
+A macro is a list of actions (up to 30) run in order on a printer. Macros are not G-code: the printer does not accept raw G-code over LAN.
+
+Create them in **Settings → Macros**, run them from the **Macros** card of a printer.
+
+## Actions
+
+| Action | Parameters |
+| --- | --- |
+| Temperatures | Nozzle 0–320 °C, bed 0–120 °C |
+| Wait for temperature | Nozzle and/or bed, 15 minutes at most |
+| Fan | 0–100 % |
+| Light | On or off |
+| Speed | Calm, Standard or Sport |
+| Home | All, XY or Z |
+| Move | X, Y or Z, up to 300 mm in either direction |
+| Motors off | |
+| Filament | Load or unload a slot |
+| Drying | 30–80 °C, 10–1440 min |
+| Stop drying | |
+| Wait | Up to 600 s |
+
+Only one macro runs at a time on a printer.
+
+## Example: preheat for PLA
+
+1. Temperatures: nozzle 210 °C, bed 60 °C
+2. Wait for temperature: bed 60 °C
+3. Light: on
+
+## Call a macro from another program
+
+The macro name works as a G-code command on the [Moonraker](/en/docs/integrations/moonraker) port. Case, spaces and dashes do not matter:
+
+```bash
+curl -X POST "http://192.168.1.20:7125/printer/gcode/script?script=PREHEAT_PLA"
+```
+
+Macros can also be run by [automations](/en/docs/guide/automations) and by an [AI assistant](/en/docs/integrations/mcp).

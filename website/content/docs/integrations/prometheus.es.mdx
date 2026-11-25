@@ -1,0 +1,57 @@
+---
+title: Prometheus
+description: Exportar las métricas de las impresoras a Prometheus y Grafana.
+---
+
+Las métricas se sirven en `/api/v1/metrics`, en el puerto del panel.
+
+## Configurar
+
+1. En [Ajustes → Claves API](/es/docs/administration/api-keys), crea una clave con el uso **Métricas de Prometheus**.
+2. Añade el job a Prometheus. **Ajustes → Prometheus** lo muestra con tu dirección:
+
+```yaml title="prometheus.yml"
+scrape_configs:
+  - job_name: kobralink
+    scheme: http
+    metrics_path: /api/v1/metrics
+    authorization:
+      credentials: kl_…
+    static_configs:
+      - targets: ['192.168.1.20:7100']
+```
+
+Una clave ligada a una impresora solo ve esa impresora. La clave también puede enviarse en la cabecera `X-Api-Key`.
+
+## Métricas
+
+Todas las métricas son gauges, con la etiqueta `printer_id`.
+
+| Métrica | Significado |
+| --- | --- |
+| `kobralink_printer_info` | Siempre 1, con las etiquetas `name` y `firmware` |
+| `kobralink_printer_connected` | 1 cuando la sesión MQTT está activa |
+| `kobralink_printer_state` | 1 para el estado actual, en la etiqueta `state` |
+| `kobralink_nozzle_temperature_celsius`, `kobralink_nozzle_target_celsius` | Boquilla |
+| `kobralink_bed_temperature_celsius`, `kobralink_bed_target_celsius` | Cama |
+| `kobralink_fan_speed_ratio` | Ventilador de pieza, 0–1 |
+| `kobralink_print_speed_mode` | 1 Calma, 2 Estándar, 3 Sport |
+| `kobralink_print_progress_ratio` | Progreso, 0–1 |
+| `kobralink_print_duration_seconds` | Tiempo transcurrido |
+| `kobralink_print_remaining_seconds` | Tiempo restante estimado |
+| `kobralink_print_layer`, `kobralink_print_layers_total` | Capas |
+| `kobralink_printer_error_code` | Último código de error, 0 si no hay |
+| `kobralink_light_on` | 1 cuando la luz está encendida |
+| `kobralink_storage_used_bytes`, `kobralink_storage_total_bytes` | Almacenamiento de la impresora |
+| `kobralink_ace_humidity_percent` | Humedad del ACE, con la etiqueta `ace` |
+| `kobralink_ace_temperature_celsius` | Temperatura del ACE, con la etiqueta `ace` |
+| `kobralink_ace_drying` | 1 mientras el ACE seca, con la etiqueta `ace` |
+
+Las métricas de impresión valen 0 cuando no se imprime nada.
+
+## Mostrar el nombre de la impresora
+
+```text
+kobralink_nozzle_temperature_celsius
+  * on (printer_id) group_left (name) kobralink_printer_info
+```

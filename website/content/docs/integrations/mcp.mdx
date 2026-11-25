@@ -1,0 +1,145 @@
+---
+title: MCP server (AI)
+description: Let an AI assistant watch and control your printers.
+---
+
+Kobralink is an [MCP](https://modelcontextprotocol.io) server: Claude, ChatGPT or any MCP client can watch and control the printers through 56 tools
+(20 to read, 36 to control). It is **off by default**.
+
+## Set up
+
+<Steps>
+<Step>
+
+### Turn it on
+
+An administrator opens **Settings → MCP (AI)** and enables the server. Its address is `<your address>/api/mcp`.
+
+</Step>
+<Step>
+
+### Connect the client
+
+<Tabs items={['Claude Code', 'claude.ai, ChatGPT', 'Other clients']}>
+<Tab value="Claude Code">
+
+Create a key with the **AI assistant (MCP)** use in [Settings → API keys](/en/docs/administration/api-keys), then:
+
+```bash
+claude mcp add --transport http kobralink http://192.168.1.20:7100/api/mcp --header "Authorization: Bearer kl_..."
+```
+
+</Tab>
+<Tab value="claude.ai, ChatGPT">
+
+These run in the cloud, so Kobralink needs a public HTTPS address: see [HTTPS](/en/docs/administration/https). Then add
+`https://<domain>/api/mcp` as a connector and sign in with your Kobralink account (OAuth 2.1).
+
+</Tab>
+<Tab value="Other clients">
+
+Any client that can send a header works on the local network. Send `Authorization: Bearer kl_...` with an MCP key.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## Access
+
+Each key or connected app is **read only** or **control**. The role of its owner is checked on every request: a viewer never controls
+anything. MCP keys always cover every printer. Keys are revoked in **Settings → API keys** and apps in **Settings → MCP (AI)**, with immediate effect.
+
+## Permissions
+
+An administrator sets each tool to:
+
+| Mode | Effect |
+| --- | --- |
+| Allow | The assistant acts on its own |
+| Ask | You get a yes/no question in the chat, and the tool only runs on yes |
+| Deny | The tool is hidden |
+
+Sensitive tools start on *Ask*, the others on *Allow*. An app that cannot ask a question gets a refusal; set the tool to *Allow* and rely
+on the app's own approval there. The answer comes from the AI app: Kobralink cannot prove who clicked.
+
+## Safety
+
+- Moving axes, feeding filament, drying, starting a print or cutting the power is **refused while the printer prints or is paused**.
+- Starting a print requires `bedIsClear: true`. The server cannot check that the bed really is empty, so keep tool approval on in
+  your AI client.
+- Every control call is written to the log with the key or app, the tool and the printer.
+- Answers never contain camera addresses, IP addresses or credentials.
+- Not exposed: users, keys, settings, backups, file deletion, raw G-code. Upload files with the dashboard or Moonraker.
+
+These rules cover the MCP server only. A program on your network can still use the Moonraker ports: lock them with an
+[API key](/en/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Read tools
+
+| Tool | Purpose |
+| --- | --- |
+| `list_printers` | Printers and state |
+| `get_printer_state` | Full live state |
+| `get_temperature_history` | Temperature history |
+| `get_camera_snapshot` | Camera image |
+| `get_power_state` | Smart plug state |
+| `list_files` | G-code files |
+| `get_file_objects` | Objects of a file |
+| `list_printer_files` | Files on the printer |
+| `list_filament_slots` | Filament slots and ACE |
+| `list_spools` | Spools |
+| `get_queue` | Print queue |
+| `check_queue_compatibility` | Printers compatible with a file |
+| `list_schedules` | Scheduled prints and drying |
+| `get_print_history` | Print history |
+| `get_stats` | Statistics and costs |
+| `get_recent_events` | Recent notifications |
+| `get_detection_status` | AI failure detection |
+| `list_maintenance` | Maintenance tasks |
+| `list_macros` | Macros |
+| `list_automations` | Automations |
+
+## Control tools
+
+*Default* is the permission before you change it. *Blocked* means refused during a print.
+
+| Tool | Purpose | Default | Blocked |
+| --- | --- | --- | --- |
+| `start_print` | Start a print | Ask | Yes |
+| `start_printer_file` | Start a file of the printer | Ask | Yes |
+| `pause_print` | Pause the print | Allow |  |
+| `resume_print` | Resume the print | Allow |  |
+| `cancel_print` | Cancel the print | Ask |  |
+| `skip_objects` | Skip objects | Ask |  |
+| `set_print_speed` | Print speed | Allow |  |
+| `set_temperature` | Nozzle and bed temperature | Ask |  |
+| `set_fan` | Fan | Allow |  |
+| `set_light` | Light | Allow |  |
+| `home_axes` | Home axes | Allow | Yes |
+| `move_axis` | Move an axis | Allow | Yes |
+| `disable_motors` | Disable motors | Allow | Yes |
+| `set_power` | Switch the smart plug | Ask | Sometimes |
+| `set_printer_connection` | Printer connection | Allow |  |
+| `set_filament_slot` | Material and color of a slot | Allow |  |
+| `feed_filament` | Load or unload filament | Allow | Yes |
+| `set_auto_feed` | ACE auto feed | Allow |  |
+| `start_drying` | Start drying | Allow | Yes |
+| `stop_drying` | Stop drying | Allow |  |
+| `assign_spool` | Assign a spool | Allow |  |
+| `add_to_queue` | Add to the queue | Ask |  |
+| `remove_from_queue` | Remove from the queue | Ask |  |
+| `reorder_queue` | Reorder the queue | Allow |  |
+| `start_next_in_queue` | Start next in queue | Ask | Yes |
+| `confirm_bed_clear` | Confirm the bed is clear | Ask | Yes |
+| `cancel_queue_auto_start` | Cancel auto-start | Allow |  |
+| `set_maintenance_mode` | Maintenance mode | Ask |  |
+| `schedule_print` | Schedule a print | Ask |  |
+| `cancel_scheduled_print` | Cancel a scheduled print | Ask |  |
+| `schedule_drying` | Schedule drying | Allow |  |
+| `cancel_scheduled_drying` | Cancel scheduled drying | Ask |  |
+| `run_macro` | Run a macro | Ask | Sometimes |
+| `set_automation_enabled` | Enable or disable an automation | Allow |  |
+| `complete_maintenance_task` | Complete a maintenance task | Allow |  |
+| `annotate_print_job` | Note or failure reason of a print | Allow |  |

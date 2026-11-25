@@ -1,0 +1,150 @@
+---
+title: Server MCP (IA)
+description: Lasciare che un assistente IA sorvegli e comandi le stampanti.
+---
+
+Kobralink è un server [MCP](https://modelcontextprotocol.io): Claude, ChatGPT o qualsiasi client MCP può sorvegliare e comandare
+le stampanti con 56 strumenti (20 di lettura, 36 di controllo). È **disattivato per impostazione predefinita**.
+
+## Configurare
+
+<Steps>
+<Step>
+
+### Attivarlo
+
+Un amministratore apre **Impostazioni → MCP (IA)** e attiva il server. Il suo indirizzo è `<tuo indirizzo>/api/mcp`.
+
+</Step>
+<Step>
+
+### Collegare il client
+
+<Tabs items={['Claude Code', 'claude.ai, ChatGPT', 'Altri client']}>
+<Tab value="Claude Code">
+
+Crea una chiave con l'uso **Assistente IA (MCP)** in [Impostazioni → Chiavi API](/it/docs/administration/api-keys), poi:
+
+```bash
+claude mcp add --transport http kobralink http://192.168.1.20:7100/api/mcp --header "Authorization: Bearer kl_..."
+```
+
+</Tab>
+<Tab value="claude.ai, ChatGPT">
+
+Girano nel cloud, quindi Kobralink ha bisogno di un indirizzo HTTPS pubblico: vedi [HTTPS](/it/docs/administration/https). Poi
+aggiungi `https://<dominio>/api/mcp` come connettore e accedi con il tuo account Kobralink (OAuth 2.1).
+
+</Tab>
+<Tab value="Altri client">
+
+Qualsiasi client che sappia inviare un header funziona sulla rete locale. Invia `Authorization: Bearer kl_...` con una chiave
+MCP.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## Accesso
+
+Ogni chiave o app collegata è in **sola lettura** o di **controllo**. Il ruolo del proprietario viene verificato a ogni
+richiesta: un osservatore non controlla mai nulla. Le chiavi MCP coprono sempre tutte le stampanti. Le chiavi si revocano in
+**Impostazioni → Chiavi API** e le app in **Impostazioni → MCP (IA)**, con effetto immediato.
+
+## Permessi
+
+Un amministratore imposta ogni strumento su:
+
+| Modalità | Effetto |
+| --- | --- |
+| Consenti | L'assistente agisce da solo |
+| Chiedi | Ricevi una domanda sì/no nella chat, e lo strumento parte solo con un sì |
+| Rifiuta | Lo strumento è nascosto |
+
+Gli strumenti sensibili partono da *Chiedi*, gli altri da *Consenti*. Un'app che non sa fare domande riceve un rifiuto; imposta
+allora lo strumento su *Consenti* e affidati all'approvazione dell'app stessa. La risposta arriva dall'app IA: Kobralink non può
+provare chi ha fatto clic.
+
+## Sicurezza
+
+- Muovere gli assi, caricare filamento, asciugare, avviare una stampa o togliere corrente è **rifiutato mentre la stampante
+  stampa o è in pausa**.
+- Avviare una stampa richiede `bedIsClear: true`. Il server non può verificare che il piano sia davvero vuoto: tieni attiva
+  l'approvazione degli strumenti nel tuo client IA.
+- Ogni chiamata di controllo viene scritta nel log con chiave o app, strumento e stampante.
+- Le risposte non contengono mai indirizzi della fotocamera, indirizzi IP né credenziali.
+- Non esposti: utenti, chiavi, impostazioni, backup, eliminazione di file, G-code grezzo. Carica i file con la dashboard o
+  Moonraker.
+
+Queste regole riguardano solo il server MCP. Un programma sulla tua rete può comunque usare le porte Moonraker: proteggile con
+una [chiave API](/it/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Strumenti di lettura
+
+| Strumento | Funzione |
+| --- | --- |
+| `list_printers` | Stampanti e stato |
+| `get_printer_state` | Stato completo in tempo reale |
+| `get_temperature_history` | Cronologia temperature |
+| `get_camera_snapshot` | Immagine della fotocamera |
+| `get_power_state` | Stato della presa |
+| `list_files` | File G-code |
+| `get_file_objects` | Oggetti di un file |
+| `list_printer_files` | File nella stampante |
+| `list_filament_slots` | Slot filamento e ACE |
+| `list_spools` | Bobine |
+| `get_queue` | Coda di stampa |
+| `check_queue_compatibility` | Stampanti compatibili con un file |
+| `list_schedules` | Stampe ed essiccazioni pianificate |
+| `get_print_history` | Cronologia stampe |
+| `get_stats` | Statistiche e costi |
+| `get_recent_events` | Notifiche recenti |
+| `get_detection_status` | Rilevamento errori IA |
+| `list_maintenance` | Attività di manutenzione |
+| `list_macros` | Macro |
+| `list_automations` | Automazioni |
+
+## Strumenti di controllo
+
+*Predefinito* è il permesso prima che tu lo cambi. *Bloccato* significa rifiutato durante una stampa.
+
+| Strumento | Funzione | Predefinito | Bloccato |
+| --- | --- | --- | --- |
+| `start_print` | Avviare una stampa | Chiedi | Sì |
+| `start_printer_file` | Avviare un file della stampante | Chiedi | Sì |
+| `pause_print` | Mettere in pausa | Consenti |  |
+| `resume_print` | Riprendere la stampa | Consenti |  |
+| `cancel_print` | Annullare la stampa | Chiedi |  |
+| `skip_objects` | Saltare oggetti | Chiedi |  |
+| `set_print_speed` | Velocità di stampa | Consenti |  |
+| `set_temperature` | Temperatura ugello e piano | Chiedi |  |
+| `set_fan` | Ventola | Consenti |  |
+| `set_light` | Luce | Consenti |  |
+| `home_axes` | Azzerare gli assi | Consenti | Sì |
+| `move_axis` | Muovere un asse | Consenti | Sì |
+| `disable_motors` | Disattivare i motori | Consenti | Sì |
+| `set_power` | Accendere o spegnere la presa | Chiedi | A volte |
+| `set_printer_connection` | Connessione alla stampante | Consenti |  |
+| `set_filament_slot` | Materiale e colore di uno slot | Consenti |  |
+| `feed_filament` | Caricare o scaricare il filamento | Consenti | Sì |
+| `set_auto_feed` | Ricarica automatica ACE | Consenti |  |
+| `start_drying` | Avviare l'essiccazione | Consenti | Sì |
+| `stop_drying` | Fermare l'essiccazione | Consenti |  |
+| `assign_spool` | Assegnare una bobina | Consenti |  |
+| `add_to_queue` | Aggiungere alla coda | Chiedi |  |
+| `remove_from_queue` | Rimuovere dalla coda | Chiedi |  |
+| `reorder_queue` | Riordinare la coda | Consenti |  |
+| `start_next_in_queue` | Avviare il prossimo in coda | Chiedi | Sì |
+| `confirm_bed_clear` | Confermare che il piano è vuoto | Chiedi | Sì |
+| `cancel_queue_auto_start` | Annullare l'avvio automatico | Consenti |  |
+| `set_maintenance_mode` | Modalità manutenzione | Chiedi |  |
+| `schedule_print` | Pianificare una stampa | Chiedi |  |
+| `cancel_scheduled_print` | Annullare una stampa pianificata | Chiedi |  |
+| `schedule_drying` | Pianificare un'essiccazione | Consenti |  |
+| `cancel_scheduled_drying` | Annullare un'essiccazione pianificata | Chiedi |  |
+| `run_macro` | Eseguire una macro | Chiedi | A volte |
+| `set_automation_enabled` | Attivare o disattivare un'automazione | Consenti |  |
+| `complete_maintenance_task` | Completare una manutenzione | Consenti |  |
+| `annotate_print_job` | Nota o causa di errore di una stampa | Consenti |  |

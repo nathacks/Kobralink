@@ -1,0 +1,20 @@
+---
+title: Limitations
+description: What the printer does not offer over LAN.
+---
+
+Kobralink can only do what the printer's LAN protocol offers.
+
+| Not available | Detail |
+| --- | --- |
+| Raw G-code | Console commands are not sent, see [G-code scripts](/en/docs/integrations/moonraker#g-code-scripts) |
+| Free speed and flow percentages | Three speed modes only; no flow control |
+| Live position | Z is estimated from the layers |
+| Z offset command | |
+| Firmware update | Use the printer's screen |
+| The printer's own AI detection | Kobralink uses [its own](/en/docs/guide/failure-detection) |
+| The printer's own timelapse | Kobralink records [its own](/en/docs/guide/camera#timelapses) |
+| Anycubic cloud | LAN mode unbinds the printer from the account |
+| A second LAN client | The printer accepts one session |
+| More than 256 files listed | Observed on the Kobra 4 |
+| 3D preview of `.bgcode` | |

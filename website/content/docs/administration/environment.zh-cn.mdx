@@ -1,0 +1,43 @@
+---
+title: 环境变量
+description: 服务器配置。
+---
+
+## Docker
+
+在 compose 文件旁边的 `.env` 中设置。
+
+| 变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | `http://localhost:7100` | **必须设置**：浏览器使用的 URL |
+| `BETTER_AUTH_SECRET` | 在 `/data` 中生成 | 会话密钥（`openssl rand -base64 32`） |
+| `KOBRALINK_BIND` | `0.0.0.0` | 主机网卡。位于反向代理后时为 `127.0.0.1` |
+| `KOBRALINK_PORT` | `7100` | 主机上的控制台端口 |
+| `KOBRALINK_EXTRA_ORIGINS` | | 其他允许的来源，逗号分隔 |
+| `KOBRALINK_TRUSTED_PROXIES` | | 代理的 IP 或 CIDR，逗号分隔 |
+| `KOBRALINK_IP_HEADERS` | | 由代理设置、包含客户端 IP 的请求头 |
+| `KOBRALINK_DOMAIN` | | `docker-compose.https.yml` 使用的域名 |
+| `KOBRALINK_IMAGE` | `nathacks/kobralink:latest` | 镜像名，仅 `docker-compose.yml`（从源码构建）使用 |
+| `TZ` | `UTC` | 自动化和每日统计使用的时区 |
+
+## 服务器进程
+
+Docker 镜像和桌面应用中已设置。从源码运行时有用。
+
+| 变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `KOBRALINK_DATA_DIR` | `<repo>/data` | 数据目录 |
+| `DATABASE_URL` | `file:<data>/kobralink.db` | 数据库 |
+| `KOBRALINK_WEB_DIR` | `apps/web/dist` | 要提供的控制台构建产物 |
+| `KOBRALINK_CERTS_DIR` | `apps/api/certs` | `anycubic_slicer.crt` 和 `.key` |
+| `KOBRALINK_FFMPEG` | 内置，否则用 `PATH` | ffmpeg 可执行文件 |
+| `KOBRALINK_VERSION` | `package.json` | 报告的版本 |
+| `KOBRALINK_UPDATE_REPO` | `NatHacks/Kobralink` | 检查更新时查询的仓库 |
+| `KOBRALINK_DETECTION_MODEL_URL` | Obico 的模型 | 检测模型的地址 |
+
+## 桌面应用
+
+| 变量 | 作用 |
+| --- | --- |
+| `KOBRALINK_PORT` | 本地桥接程序的端口 |
+| `KOBRALINK_URL` | 打开这个桥接程序，不启动本地的 |

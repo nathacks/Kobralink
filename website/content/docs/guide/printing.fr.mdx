@@ -1,0 +1,58 @@
+---
+title: Impression
+description: La fenêtre d'impression, l'affectation des filaments, les objets ignorés et les impressions programmées.
+---
+
+## La fenêtre d'impression
+
+La fenêtre s'ouvre quand vous imprimez un fichier, et après un envoi (y compris *envoyer et imprimer* depuis OrcaSlicer).
+
+1. **Vérifiez la pièce** dans l'aperçu.
+2. **Affectez les filaments** : chaque canal du G-code va vers un slot. Kobralink propose les slots compatibles et prévient
+   quand le matériau ne correspond pas.
+3. **Vérifiez la quantité** : la fenêtre compare le filament nécessaire à ce qui reste sur la bobine affectée (assez, juste
+   assez, pas assez). Si une bobine est trop courte, vous devez confirmer pour imprimer quand même.
+4. **Ignorez les objets** que vous ne voulez pas imprimer.
+5. **Choisissez les options**, puis imprimez, ajoutez à la file ou programmez.
+
+Sans slot chargé, l'imprimante utilise le filament de la tête.
+
+### Options
+
+| Option | Effet |
+| --- | --- |
+| Auto-nivellement | Palpe le plateau avant d'imprimer |
+| Compensation des vibrations | Mesure les résonances avant d'imprimer pour réduire les vibrations |
+| Calibration du débit | Mesure le débit d'extrusion avant d'imprimer |
+| Enregistrer un timelapse | Voir [Caméra](/fr/docs/guide/camera#timelapses) |
+| Détection d'échec (IA) | Voir [Détection d'échec](/fr/docs/guide/failure-detection) |
+
+Les trois options de calibration n'apparaissent que si l'imprimante indique les prendre en charge. Leurs valeurs par défaut
+sont dans les [paramètres de l'imprimante](/fr/docs/administration/printer-settings#printing).
+
+## Pendant une impression
+
+L'impression démarre après la calibration ; la carte nomme l'étape en cours (chauffe, nivellement, calibration du débit…).
+Vous pouvez mettre en pause, reprendre, annuler, changer la vitesse, les températures et le ventilateur, et ignorer des
+objets.
+
+**Ignorer des objets** arrête d'imprimer les objets choisis à partir de la couche en cours. C'est irréversible pour cette
+impression. Le G-code doit contenir des repères d'objets (**Étiqueter les objets** dans OrcaSlicer).
+
+Quand l'imprimante se met en pause d'elle-même, le motif s'affiche dans votre langue pour les codes les plus courants. Les
+autres codes affichent le message de l'imprimante.
+
+## Impressions programmées
+
+**Programmer** lance l'impression à la date et à l'heure choisies. À ce moment :
+
+- si l'imprimante est libre, l'impression démarre
+- si l'imprimante est occupée, hors ligne, en maintenance ou attend qu'on vide son plateau, le fichier passe **en tête de la
+  file**
+- si Kobralink était arrêté, l'impression démarre quand même à son retour, sauf si elle a plus d'une heure de retard ; la
+  programmation est alors abandonnée
+
+Les impressions programmées sont listées dans l'onglet **Programmées** de la file. Vous recevez une notification avec le
+résultat.
+
+<Callout type="warn">Vérifiez que le plateau est vide avant un départ programmé.</Callout>

@@ -1,0 +1,56 @@
+---
+title: Aplicativo de desktop
+description: Instalar o Kobralink no macOS, Windows ou Linux.
+---
+
+O aplicativo de desktop roda a bridge no seu computador e mostra o painel em uma janela própria. Baixe-o nas
+[releases do GitHub](https://github.com/NatHacks/Kobralink/releases/latest).
+
+| Sistema | Arquivo |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` ou `Kobralink-<version>-amd64.deb` |
+
+## Primeira execução no macOS
+
+Se o macOS disser que o desenvolvedor não foi identificado, clique com o botão direito no aplicativo e escolha **Abrir**, ou
+execute:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## Mantenha-o rodando
+
+O Kobralink precisa estar rodando para o OrcaSlicer se conectar e para a fila, as automações e as notificações funcionarem.
+
+- No Windows e no Linux, fechar a janela encerra o aplicativo. Minimize-a.
+- No macOS, o aplicativo continua rodando com a janela fechada. Use **Encerrar** para pará-lo.
+- O ícone da barra de menus mostra o estado das impressoras e reabre a janela.
+
+Encerrar o Kobralink não interrompe uma impressão já iniciada: a impressora tem o arquivo.
+
+## Atualizações [#updates]
+
+O aplicativo procura atualizações no GitHub ao iniciar e depois a cada 6 horas. Ele pergunta antes de baixar e antes de
+reiniciar. Você também pode usar **Verificar atualizações…** no menu.
+
+## Onde ficam os dados
+
+Os dados ficam na pasta `data` do diretório do aplicativo, e o log da bridge em `logs/api.log`:
+
+| Sistema | Diretório |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+O caminho exato dos dados aparece em **Configurações → Sistema**.
+
+## Limites em relação ao Docker
+
+O aplicativo de desktop faz login em `http://localhost:7100`. Ele é feito para ser usado no computador onde roda; as portas
+Moonraker continuam acessíveis pela rede. As notificações push não estão disponíveis no aplicativo. Para usar o painel pelo
+celular ou com várias pessoas, instale o [Docker](/pt-br/docs/getting-started/docker).

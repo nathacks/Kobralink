@@ -1,0 +1,61 @@
+---
+title: Entwicklungsumgebung
+description: Kobralink aus dem Quellcode starten.
+---
+
+Sie brauchen [Bun](https://bun.sh) 1.4.2 oder neuer.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Öffnen Sie `http://localhost:5454`. Die API lauscht auf Port 7100.
+
+## Befehle
+
+| Befehl | Wirkung |
+| --- | --- |
+| `bun run dev` | API, Dashboard und Desktop-App |
+| `bun run dev:web` | API und Dashboard |
+| `bun run dev:desktop` | Desktop-App und ihre Abhängigkeiten |
+| `bun run build` | Alles bauen |
+| `bun run check-types` | Typprüfung |
+| `bun run test` | Alle Tests |
+| `bun run lint` | Biome-Prüfung |
+| `bun run format` | Biome-Formatierung |
+| `bun run db:migrate` | Eine Prisma-Migration anlegen oder anwenden |
+| `bun run db:studio` | Die Datenbank durchsuchen |
+| `bun run --filter @kobralink/desktop dist` | Desktop-Installer für das aktuelle System |
+
+Eine einzelne Testdatei starten Sie mit `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Ohne Drucker
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+Emuliert einen Kobra 4 mit einer ACE mitten im Druck, auf `127.0.0.1`. Fügen Sie im Dashboard einen Drucker mit dieser IP
+hinzu. Das ist nur für die Entwicklung und wird nie ausgeliefert.
+
+## Regeln
+
+- Nur Bun: kein npm, kein pnpm. Die Lockdatei ist `bun.lock`.
+- Keine `Bun.*`-API in `apps/api`: Sie läuft in der Desktop-App auch unter Node.
+- Keine Kommentare im Code.
+- Jeder sichtbare Text ist eine Nachricht in `packages/i18n/messages`, in **allen** Sprachen.
+- Biome formatiert mit 4 Leerzeichen und 120 Spalten. Ein Pre-Commit-Hook wendet es auf vorgemerkte Dateien an.
+
+## Zertifikate [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` ist Material von Dritten, nur für die Interoperabilität enthalten. Ändern Sie es nicht.
+Lehnt der Drucker den TLS-Handshake ab, ist ein veraltetes Zertifikat eine wahrscheinliche Ursache. Um ein neues Paar aus einer
+Anycubic-Slicer-Next-Installation zu extrahieren:
+
+```bash
+bun run certs:extract <pfad> [--out apps/api/certs] [--force]
+```

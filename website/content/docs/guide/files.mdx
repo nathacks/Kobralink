@@ -1,0 +1,44 @@
+---
+title: Files
+description: The G-code library, the printer storage and previews.
+---
+
+Every G-code sent to Kobralink, from OrcaSlicer or from the browser, is kept in **one library for every printer**. Only
+`.gcode` and `.bgcode` files are accepted.
+
+## Tabs
+
+| Tab | Content |
+| --- | --- |
+| All | Every stored file |
+| Web | Files uploaded from the browser and not yet verified |
+| Printer | Files in the printer's internal storage |
+| History | Past prints |
+| Timelapses | Recorded videos |
+
+## Add files
+
+Drop one or more files on the card, or click to browse. Files can also come from OrcaSlicer or from any
+Moonraker client.
+
+A file uploaded from the browser was not sliced for this printer by OrcaSlicer, so Kobralink asks you to confirm before
+printing it. You can turn this off with **Warn on web uploads** in the
+[printer settings](/en/docs/administration/printer-settings#printing).
+
+## File cards
+
+Each card shows the thumbnail, estimated time, filaments with the amount each colour needs, last print and the
+[estimated cost](/en/docs/guide/statistics#costs).
+
+**Preview** opens the part in 3D, layer by layer. During a print, *Follow* keeps the view on the current layer. Previews
+are not available for `.bgcode` files.
+
+## Printer storage
+
+The **Printer** tab lists the files stored on the printer itself. You can print or delete them, and see the preview made
+by the slicer. Deleting a file here does not remove it from Kobralink.
+
+- The printer lists only its newest files (256 at most on the Kobra 4).
+- *Test models* are the sample files that came with the printer. They cannot be deleted.
+
+To free the storage automatically, turn on **Delete from printer after print** in the printer settings.

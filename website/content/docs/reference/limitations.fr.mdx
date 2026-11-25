@@ -1,0 +1,20 @@
+---
+title: Limites
+description: Ce que l'imprimante ne propose pas en LAN.
+---
+
+Kobralink ne peut faire que ce que propose le protocole LAN de l'imprimante.
+
+| Non disponible | Détail |
+| --- | --- |
+| G-code brut | Les commandes de la console ne sont pas envoyées, voir [Scripts G-code](/fr/docs/integrations/moonraker#g-code-scripts) |
+| Pourcentages libres de vitesse et de débit | Trois modes de vitesse seulement ; pas de réglage du débit |
+| Position en direct | Z est estimé à partir des couches |
+| Commande de décalage Z | |
+| Mise à jour du firmware | Utilisez l'écran de l'imprimante |
+| Détection IA propre à l'imprimante | Kobralink utilise [la sienne](/fr/docs/guide/failure-detection) |
+| Timelapse propre à l'imprimante | Kobralink enregistre [le sien](/fr/docs/guide/camera#timelapses) |
+| Cloud Anycubic | Le mode LAN dissocie l'imprimante du compte |
+| Un deuxième client LAN | L'imprimante accepte une seule session |
+| Plus de 256 fichiers listés | Constaté sur la Kobra 4 |
+| Aperçu 3D des `.bgcode` | |

@@ -1,0 +1,59 @@
+---
+title: Dashboard
+description: Seguire e comandare le stampanti.
+---
+
+## Pagina Stampanti
+
+La pagina **Stampanti** mostra una scheda per stampante, con stato, avanzamento, tempo rimanente e ora di fine. I contatori in
+alto filtrano l'elenco: in stampa, in pausa, pronte, piano da liberare, manutenzione, errore e offline. La pagina indica anche
+quale stampante finisce per prima.
+
+Sul computer la navigazione è una barra laterale che si riduce a una fila di icone. Sul telefono è una barra in basso.
+
+## Pagina di una stampante
+
+| Scheda | Funzione |
+| --- | --- |
+| Stampa | Lavoro attuale: avanzamento, strato, tempo trascorso e rimanente, vista 3D, pausa, ripresa, annullamento, oggetti saltati |
+| Temperature | Grafico in diretta, obiettivi di ugello e piano, preset |
+| Fotocamera | Streaming in diretta e schermo intero, vedi [Fotocamera](/it/docs/guide/camera) |
+| Comandi | Velocità, ventola pezzo, luce, presa smart, assi |
+| Filamenti | Slot, caricamento, asciugatura, vedi [Filamento](/it/docs/guide/filament) |
+| Coda di stampa | Elementi che questa stampante può prendere, vedi [Coda](/it/docs/guide/queue) |
+| File | Libreria, memoria della stampante, timelapse, vedi [File](/it/docs/guide/files) |
+| Macro | Azioni in un clic, vedi [Macro](/it/docs/guide/macros) |
+| Manutenzione | Attività e scadenze, vedi [Manutenzione](/it/docs/guide/maintenance) |
+
+## Comandi
+
+**Temperature.** L'ugello accetta 0–320 °C e il piano 0–120 °C; la tua stampante può accettarne meno. I preset sono:
+
+| Preset | Ugello | Piano |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Spento | 0 °C | 0 °C |
+
+**Velocità.** Tre modalità: Calma, Standard e Sport. Sono le sole velocità che la stampante offre via LAN, e valgono per la
+stampa in corso.
+
+**Assi.** Muovere X, Y e Z di 1, 10 o 50 mm, homing XYZ, XY o Z, e spegnere i motori. Bloccato durante la stampa.
+
+**Luce e ventola.** Accendere la luce della fotocamera e regolare la ventola pezzo.
+
+**Alimentazione.** Disponibile dopo aver scelto una [presa smart](/it/docs/integrations/home-assistant#smart-plug-and-energy).
+
+## Annullare una stampa
+
+L'annullamento chiede un motivo facoltativo (spaghetti, adesione, intasamento, qualità…). Il motivo alimenta le statistiche dei
+fallimenti. Una stampa annullata non può essere ripresa.
+
+## Aspetto
+
+Il tema (sistema, chiaro o scuro) e la lingua dell'interfaccia sono in **Impostazioni → Generale**. Vengono salvati nel browser.
+
+## Account in sola lettura
+
+Un osservatore vede le stesse pagine con i comandi disattivati. Vedi [Utenti e ruoli](/it/docs/administration/users).

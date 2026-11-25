@@ -1,0 +1,45 @@
+---
+title: Backup and restore
+description: Save your data and move Kobralink to another machine.
+---
+
+## From the dashboard
+
+An administrator opens **Settings → System → Backup and restore**.
+
+**Download backup** gives a ZIP with the database (printers, users, settings, history, profiles) and the G-code files. Timelapses are optional,
+they can be large.
+
+**Restore** replaces all current data with the archive, then restarts the bridge. Archives up to 4 GB are accepted. With
+Docker and the desktop app the restart is automatic.
+
+<Callout type="warn">
+    The archive contains your printers' credentials, account data and integration tokens. Store it somewhere safe.
+</Callout>
+
+The archive does **not** contain the session secret, the push notification keys, the camera snapshots of failed prints or the
+detection model. After a restore on another machine, sign in again, turn push notifications back on for each device and
+download the model again.
+
+## The whole Docker volume
+
+This copies everything. Stop Kobralink first, so that the database is not written during the copy:
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+docker run --rm -v kobralink_kobralink-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/kobralink-data.tgz -C /data .
+docker compose -f docker-compose.prod.yml start
+```
+
+## Data directory
+
+| Path | Content |
+| --- | --- |
+| `kobralink.db` | SQLite database |
+| `gcodes/` | G-code files |
+| `timelapses/` | Videos |
+| `failures/` | Camera snapshots of prints |
+| `models/` | Failure detection model |
+| `.auth-secret` | Session secret, unless `BETTER_AUTH_SECRET` is set |
+| `.vapid.json` | Web push keys |

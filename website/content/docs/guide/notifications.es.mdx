@@ -1,0 +1,66 @@
+---
+title: Notificaciones
+description: Discord, Telegram, ntfy, webhook, navegador y notificaciones push.
+---
+
+Configúralas en **Ajustes → Notificaciones** y luego usa **Enviar una prueba**.
+
+## Canales
+
+| Canal | Qué introducir |
+| --- | --- |
+| Discord | La URL del webhook del canal |
+| Telegram | El token del bot y el ID del chat |
+| ntfy | La URL completa del tema, público o autoalojado |
+| Webhook | Cualquier URL que acepte un `POST` JSON |
+| Navegador | Nada. Se muestran cuando la pestaña está en segundo plano |
+| Notificaciones push | Nada. Actívalas en cada dispositivo |
+
+### Notificaciones push
+
+Las notificaciones push llegan incluso con el navegador cerrado. Requieren **HTTPS** (o localhost), consulta
+[HTTPS](/es/docs/administration/https). En iPhone, añade primero Kobralink a la pantalla de inicio. No están disponibles en la
+aplicación de escritorio.
+
+### Contenido del webhook
+
+```json
+{
+    "id": "0b5c…",
+    "type": "print_finished",
+    "printerId": "…",
+    "printerName": "Kobra del taller",
+    "title": "Kobra del taller — impresión terminada",
+    "body": "pieza.gcode terminado en 2 h 05 min.",
+    "ts": 1764000000000,
+    "url": "https://kobralink.example.com/printers/…",
+    "data": {}
+}
+```
+
+`url` solo aparece si la dirección de Kobralink está definida. `data` depende del evento.
+
+## Eventos
+
+| Evento | Por defecto | `type` |
+| --- | --- | --- |
+| Impresión iniciada | desactivado | `print_started` |
+| Impresión terminada | activado | `print_finished` |
+| Impresión cancelada | activado | `print_cancelled` |
+| En pausa | activado | `print_paused` |
+| Impresora desconectada | desactivado | `printer_offline` |
+| Impresora de nuevo conectada | desactivado | `printer_online` |
+| Secado terminado | activado | `drying_done` |
+| Alertas | activado | `alert_nozzle_temp`, `alert_bed_temp`, `alert_offline`, `alert_spool_low` |
+| Fallo de impresión detectado (IA) | activado | `alert_print_failure` |
+| Cola: siguiente archivo listo | activado | `queue_next`, `queue_filament` |
+| Impresión programada | activado | `scheduled_print` |
+| Mantenimiento pendiente | activado | `maintenance_due` |
+| Mensajes de automatizaciones | activado | `automation` |
+
+## Enlaces
+
+Las notificaciones enlazan con la pantalla adecuada una vez definida la **Dirección de Kobralink** en **Ajustes → General**. El
+idioma de los mensajes se ajusta ahí también.
+
+Los umbrales de alerta se ajustan por impresora, consulta [Alertas](/es/docs/administration/printer-settings#alerts).

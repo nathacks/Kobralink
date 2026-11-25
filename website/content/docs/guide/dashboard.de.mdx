@@ -1,0 +1,64 @@
+---
+title: Dashboard
+description: Ihre Drucker verfolgen und steuern.
+---
+
+## Seite Drucker
+
+Die Seite **Drucker** zeigt eine Karte pro Drucker mit Zustand, Fortschritt, Restzeit und Endzeit. Die Zähler oben filtern die
+Liste: druckt, pausiert, bereit, Bett räumen, Wartung, Fehler und offline. Die Seite zeigt auch, welcher Drucker als Nächstes
+fertig wird.
+
+Am Computer ist die Navigation eine Seitenleiste, die sich zu einer Symbolleiste einklappen lässt. Am Smartphone ist es eine
+Leiste unten.
+
+## Druckerseite
+
+| Karte | Funktion |
+| --- | --- |
+| Druck | Aktueller Auftrag: Fortschritt, Schicht, verstrichene und restliche Zeit, 3D-Ansicht, Pause, Fortsetzen, Abbrechen, Objekte überspringen |
+| Temperaturen | Live-Diagramm, Solltemperaturen von Düse und Bett, Voreinstellungen |
+| Kamera | Livestream und Vollbild, siehe [Kamera](/de/docs/guide/camera) |
+| Steuerung | Geschwindigkeit, Bauteillüfter, Licht, smarte Steckdose, Achsen |
+| Filamente | Slots, Laden, Trocknung, siehe [Filament](/de/docs/guide/filament) |
+| Druckwarteschlange | Einträge, die dieser Drucker übernehmen kann, siehe [Warteschlange](/de/docs/guide/queue) |
+| Dateien | Bibliothek, Druckerspeicher, Zeitraffer, siehe [Dateien](/de/docs/guide/files) |
+| Makros | Aktionen per Klick, siehe [Makros](/de/docs/guide/macros) |
+| Wartung | Aufgaben und Fälligkeiten, siehe [Wartung](/de/docs/guide/maintenance) |
+
+## Steuerung
+
+**Temperaturen.** Die Düse akzeptiert 0–320 °C und das Bett 0–120 °C; Ihr Drucker erlaubt eventuell weniger. Die
+Voreinstellungen sind:
+
+| Voreinstellung | Düse | Bett |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Aus | 0 °C | 0 °C |
+
+**Geschwindigkeit.** Drei Modi: Ruhig, Standard und Sport. Es sind die einzigen Geschwindigkeiten, die der Drucker im LAN
+anbietet, und sie gelten für den laufenden Druck.
+
+**Achsen.** X, Y und Z um 1, 10 oder 50 mm bewegen, XYZ, XY oder Z referenzieren und die Motoren abschalten. Während des
+Drucks gesperrt.
+
+**Licht und Lüfter.** Das Kameralicht schalten und den Bauteillüfter einstellen.
+
+**Stromversorgung.** Verfügbar, sobald eine [smarte Steckdose](/de/docs/integrations/home-assistant#smart-plug-and-energy)
+gewählt ist.
+
+## Einen Druck abbrechen
+
+Beim Abbrechen wird ein optionaler Grund abgefragt (Spaghetti, Haftung, Verstopfung, Qualität…). Der Grund fließt in die
+Fehlerstatistik ein. Ein abgebrochener Druck kann nicht fortgesetzt werden.
+
+## Darstellung
+
+Design (System, hell oder dunkel) und Sprache der Oberfläche finden Sie unter **Einstellungen → Allgemein**. Sie werden im
+Browser gespeichert.
+
+## Nur-Lese-Konten
+
+Ein Betrachter sieht dieselben Seiten mit deaktivierter Steuerung. Siehe [Benutzer und Rollen](/de/docs/administration/users).

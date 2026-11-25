@@ -1,0 +1,37 @@
+---
+title: 架构
+description: 项目的组织方式。
+---
+
+```text
+OrcaSlicer ──HTTP/WS──► :7125  (Moonraker, 打印机 1) ─┐
+Mainsail / Obico ─────► :7126  (Moonraker, 打印机 2) ─┤  apps/api（单进程）
+网页 / 桌面 ──────────► :7100  (UI + API + 认证) ─────┘         │ 基于 TLS 的 MQTT :9883
+                                                               ▼
+                                                   Kobra X / Kobra 4（局域网模式）
+```
+
+| 目录 | 作用 |
+| --- | --- |
+| `apps/api` | NestJS 11、Prisma 7 + SQLite（libsql）、Better Auth、MQTT 桥接、Moonraker 模拟 |
+| `apps/web` | React 19、Vite、TanStack Router、Query 和 Store、Tailwind v4、shadcn/ui |
+| `apps/desktop` | Electron，在本地启动 API，自动更新 |
+| `packages/kobra-protocol` | MQTT 客户端、凭据、G-code 上传和解析 |
+| `packages/shared` | API 与控制台共享的 Zod 模式和类型 |
+| `packages/i18n` | 7 种语言的 Paraglide 消息 |
+| `infra` | Dockerfile 和 compose 文件 |
+| `website` | 本文档 |
+
+## 主要思路
+
+**每台打印机一个桥接。** `PrinterBridge` 持有 MQTT 会话、实时状态、轮询循环和命令。`BridgeRegistry` 为数据库中的每台打印机创建一个。
+
+**每台打印机一个 Moonraker 服务器。** 每个都是在自己端口上的独立 Nest 应用，把实时状态转换为 Klipper 对象。
+
+**契约集中在一处。** `/api/v1` 的每个请求体在 `packages/shared` 中都有 Zod 模式，由 API 校验，在控制台中提供类型。
+
+**实时更新。** 控制台通过 SSE 接收事件并写入 Query 缓存。
+
+**每台打印机一个摄像头进程。** 一个 ffmpeg 同时供给控制台、Moonraker 客户端、延时摄影和检测。
+
+**启动时迁移。** API 启动时应用待处理的 Prisma 迁移。

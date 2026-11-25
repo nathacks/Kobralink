@@ -1,0 +1,46 @@
+---
+title: Sauvegarde et restauration
+description: Sauvegarder vos données et déplacer Kobralink sur une autre machine.
+---
+
+## Depuis le tableau de bord
+
+Un administrateur ouvre **Paramètres → Système → Sauvegarde et restauration**.
+
+**Télécharger la sauvegarde** donne un ZIP avec la base de données (imprimantes, utilisateurs, paramètres, historique,
+profils) et les fichiers G-code. Les timelapses sont facultatifs, ils peuvent être volumineux.
+
+**Restaurer** remplace toutes les données actuelles par l'archive, puis redémarre le bridge. Les archives jusqu'à 4 Go sont
+acceptées. Avec Docker et l'application de bureau, le redémarrage est automatique.
+
+<Callout type="warn">
+    L'archive contient les identifiants de vos imprimantes, les données des comptes et les jetons des intégrations. Rangez-la
+    en lieu sûr.
+</Callout>
+
+L'archive ne contient **pas** le secret de session, les clés des notifications push, les captures caméra des impressions
+échouées ni le modèle de détection. Après une restauration sur une autre machine, reconnectez-vous, réactivez les
+notifications push sur chaque appareil et retéléchargez le modèle.
+
+## Tout le volume Docker
+
+Cela copie tout. Arrêtez d'abord Kobralink, pour que la base ne soit pas écrite pendant la copie :
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+docker run --rm -v kobralink_kobralink-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/kobralink-data.tgz -C /data .
+docker compose -f docker-compose.prod.yml start
+```
+
+## Répertoire de données
+
+| Chemin | Contenu |
+| --- | --- |
+| `kobralink.db` | Base SQLite |
+| `gcodes/` | Fichiers G-code |
+| `timelapses/` | Vidéos |
+| `failures/` | Captures caméra des impressions |
+| `models/` | Modèle de détection d'échec |
+| `.auth-secret` | Secret de session, sauf si `BETTER_AUTH_SECRET` est défini |
+| `.vapid.json` | Clés des notifications push |

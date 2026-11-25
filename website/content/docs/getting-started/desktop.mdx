@@ -1,0 +1,55 @@
+---
+title: Desktop app
+description: Install Kobralink on macOS, Windows or Linux.
+---
+
+The desktop app runs the bridge on your computer and shows the dashboard in its own window. Download it from the
+[GitHub releases](https://github.com/NatHacks/Kobralink/releases/latest).
+
+| System | File |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` or `Kobralink-<version>-amd64.deb` |
+
+## First launch on macOS
+
+If macOS says the developer is unidentified, right-click the app and choose **Open**, or run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## Keep it running
+
+Kobralink must run for OrcaSlicer to connect, and for the queue, automations and notifications to work.
+
+- On Windows and Linux, closing the window quits the app. Minimise it instead.
+- On macOS, the app keeps running when the window is closed. Use **Quit** to stop it.
+- The tray icon shows the state of your printers and reopens the window.
+
+Quitting Kobralink does not stop a print that has already started: the printer holds the file.
+
+## Updates
+
+The app checks for updates on GitHub at launch and every 6 hours. It asks before downloading, then before restarting. You
+can also use **Check for Updates…** in the menu.
+
+## Where data is stored
+
+Data is in the `data` folder of the application directory, and the bridge log in `logs/api.log`:
+
+| System | Directory |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+The exact data path is shown in **Settings → System**.
+
+## Limits compared with Docker
+
+The desktop app signs you in on `http://localhost:7100`. It is meant to be used on the computer it runs on; its Moonraker
+ports remain reachable from the network. Web push notifications are not available in the app. To use the dashboard from
+a phone or with several users, install [Docker](/en/docs/getting-started/docker).

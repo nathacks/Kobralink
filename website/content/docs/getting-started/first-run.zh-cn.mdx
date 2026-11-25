@@ -1,0 +1,69 @@
+---
+title: 首次启动
+description: 创建管理员账号并添加第一台打印机。
+---
+
+第一次打开 Kobralink 时，向导会引导你完成设置。账号之后的所有步骤都可以稍后修改。
+
+<Steps>
+<Step>
+
+### 创建管理员账号
+
+这个账号管理打印机、用户和设置。它创建后注册即关闭：其他账号由管理员在[设置 → 用户](/zh-cn/docs/administration/users)中创建。
+
+</Step>
+<Step>
+
+### 选择语言、货币和地址
+
+地址用于通知中的链接。语言用于桥接程序发送的消息。
+
+</Step>
+<Step>
+
+### 添加打印机
+
+在打印机上打开**设置 → 网络**并开启**局域网模式**。让打印机保持开机并连接在同一网络，然后记下其网络页面上显示的 IP 地址。
+
+只输入 IP 地址，不要端口。Kobralink 会直接从打印机读取用户名、密码和设备 ID。
+
+</Step>
+<Step>
+
+### 描述打印机
+
+位置、标签、已安装的喷嘴和平均功率。它们用于报告、成本和[队列](/zh-cn/docs/guide/queue)。已知型号时会显示 Anycubic 的官方规格。
+
+</Step>
+<Step>
+
+### 连接 Spoolman（可选）
+
+如果你使用 [Spoolman](/zh-cn/docs/integrations/spoolman)，请输入其 URL 并测试。
+
+</Step>
+<Step>
+
+### 连接 OrcaSlicer
+
+向导会显示要粘贴到 OrcaSlicer 中的地址。参见 [OrcaSlicer](/zh-cn/docs/getting-started/orcaslicer)。
+
+</Step>
+</Steps>
+
+## 添加更多打印机
+
+打开**打印机 → 添加打印机**并输入 IP 地址。每台打印机都有自己的 Moonraker 端口：`7125`、`7126` 等。请在路由器中为每台打印机
+设置固定 IP（DHCP 保留），让 Kobralink 总能找到它。
+
+## 找不到打印机时
+
+| 消息 | 怎么办 |
+| --- | --- |
+| 打印机是否已开启局域网模式？ | 开启局域网模式后重试 |
+| 连接数达到上限（代码 19002） | 断开其他局域网客户端，如 Anycubic Slicer Next |
+| 网络上无法访问打印机 | 检查 IP 地址，以及两台机器是否在同一网络 |
+| 这台打印机已存在 | 打印机已在 Kobralink 中 |
+
+更多情况见[故障排除](/zh-cn/docs/troubleshooting)。

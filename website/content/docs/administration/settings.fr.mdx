@@ -1,0 +1,35 @@
+---
+title: Paramètres
+description: Le contenu de chaque page de paramètres.
+---
+
+Le champ de recherche en haut des paramètres trouve n'importe quelle option, y compris celles des imprimantes.
+
+| Page | Contenu |
+| --- | --- |
+| Général | Thème, langue de l'interface, devise, coûts, adresse, mises à jour |
+| Notifications | [Canaux et événements](/fr/docs/guide/notifications) |
+| Détection IA | [Modèle, action, sensibilité](/fr/docs/guide/failure-detection) |
+| Intégrations | [Spoolman](/fr/docs/integrations/spoolman), [Home Assistant](/fr/docs/integrations/home-assistant) |
+| OrcaSlicer | [Adresses](/fr/docs/getting-started/orcaslicer), exigence de clé API |
+| MCP (IA) | [Serveur, outils, applications connectées](/fr/docs/integrations/mcp) |
+| Clés API | [Clés](/fr/docs/administration/api-keys) |
+| Prometheus | [Adresse des métriques](/fr/docs/integrations/prometheus) |
+| Macros | [Macros](/fr/docs/guide/macros) |
+| Utilisateurs | [Comptes](/fr/docs/administration/users), administrateurs seulement |
+| Système | Version, durée de fonctionnement, [sauvegarde](/fr/docs/administration/backup), redémarrage |
+| Journal | Journal en direct, filtre par niveau et par source, téléchargement |
+
+## Général
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Thème, langue de l'interface | | Gardés dans ce navigateur |
+| Langue des notifications | Français | Langue des messages envoyés par le bridge |
+| Devise | `EUR` | Code ISO utilisé pour afficher les coûts |
+| Prix filament par défaut | 0 | Au kg. 0 = non chiffré |
+| Prix de l'électricité | 0 | Au kWh. 0 ignore l'énergie |
+| Puissance moyenne de l'imprimante | 0 | En watts, utilisée quand l'imprimante n'en a pas |
+| Adresse de Kobralink | | Cible des liens dans les notifications |
+| Vérifier les mises à jour | activé | Demande à GitHub la dernière version |
+| Journal HTTP détaillé | désactivé | Journalise chaque requête |

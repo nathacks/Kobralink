@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Connect Mainsail, Fluidd, Obico and other Moonraker clients.
+---
+
+Each printer has its own Moonraker server on its own port (`7125`, `7126`, …), over HTTP and WebSocket (`/websocket`). The
+port is shown on the printer page and can be changed in its settings.
+
+Opening the port in a browser leads to the printer's page in Kobralink.
+
+## Authentication
+
+By default the Moonraker ports are **open to the local network**, like Moonraker itself. To lock them, see
+[Lock the Moonraker ports](/en/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## What is supported
+
+| Feature | Support |
+| --- | --- |
+| Printer objects: query and subscribe | Yes |
+| Upload, and upload with print | Yes, `.gcode` and `.bgcode`. OctoPrint-style uploads work too |
+| Start, pause, resume, cancel | Yes |
+| Files: list, metadata, thumbnails | Yes |
+| Print history | Yes |
+| Job queue | Yes, backed by the [Kobralink queue](/en/docs/guide/queue). Pause and jump do nothing |
+| Webcams | Yes, one webcam announced automatically |
+| Filament slots | Yes, read by OrcaSlicer |
+| G-code scripts | A small subset, see below |
+
+## G-code scripts
+
+| Command | Effect |
+| --- | --- |
+| `PAUSE`, `M25` | Pause |
+| `RESUME`, `M24` | Resume |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Cancel |
+| `M104 S<temp>` | Nozzle target |
+| `M140 S<temp>` | Bed target |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Nozzle or bed target |
+| The name of a [macro](/en/docs/guide/macros) | Runs the macro |
+
+Any other command answers `ok` and **does nothing**: the printer does not accept raw G-code over LAN.
+
+## Values to know
+
+- `gcode_move.speed_factor` reflects the speed mode: Calm 0.5, Standard 1.0, Sport 1.3.
+- `motion_report.live_velocity` is always 0.
+- The position is not reported by the printer. Z is estimated from the layers.
+
+## Clients
+
+**Mainsail** has no API key field and cannot connect while a key is required. **Fluidd**, **Obico**, **OrcaSlicer** and
+**Home Assistant** can send one.

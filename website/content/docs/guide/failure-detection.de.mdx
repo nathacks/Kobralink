@@ -1,0 +1,42 @@
+---
+title: KI-Fehlererkennung
+description: Die Kamera auf Spaghetti und gelöste Teile überwachen.
+---
+
+Ein Bildmodell (von Obico) analysiert während des Drucks in regelmäßigen Abständen ein Kamerabild. Es läuft auf dem Rechner,
+auf dem Kobralink läuft: **Es wird kein Bild ins Internet gesendet**.
+
+## Einschalten
+
+1. Öffnen Sie **Einstellungen → KI-Erkennung** und laden Sie das Modell herunter (etwa 200 MB).
+2. Schalten Sie **Erkennung aktivieren** ein.
+3. Wählen Sie Aktion und Empfindlichkeit.
+
+Alle Drucker werden standardmäßig überwacht. Sie können einen in seinen Einstellungen ausschließen oder die Erkennung im
+Druckdialog für einen einzelnen Druck abschalten.
+
+## Einstellungen
+
+| Einstellung | Standard | Wirkung |
+| --- | --- | --- |
+| Aktion bei Fehler | Nur benachrichtigen | Benachrichtigen, benachrichtigen und pausieren, oder benachrichtigen und abbrechen |
+| Kameralicht einschalten | an | Schaltet das Licht während der Überwachung ein. Kobralink schaltet es am Ende aus, wenn es es eingeschaltet hat |
+| Empfindlichkeit | 1 | 0,5 bis 2. Höher bedeutet frühere Alarme und mehr Fehlalarme |
+| Analyseintervall | 10 s | 5 bis 60 s. Die Schwellen sind auf 10 s abgestimmt |
+
+Pausieren und Abbrechen erfordern eine höhere Sicherheit als eine bloße Benachrichtigung. Die ersten 30 Bilder eines Drucks
+lösen nie einen Alarm aus, beim Standardintervall etwa 5 Minuten.
+
+Pausiert oder bricht Kobralink einen Druck selbst ab, lässt es das Licht an, damit Sie das Teil sehen.
+
+## Live-Überwachung
+
+**Einstellungen → KI-Erkennung** zeigt den Wert jedes überwachten Drucks. Die Kamerakarte zeigt ein Abzeichen: *KI* während
+der Überwachung, *Fehler vermutet* bei hohem Wert.
+
+<Callout type="warn">
+    Die Erkennung begrenzt Schäden, ersetzt aber keine Aufsicht. Sie kann einen Fehler übersehen und sich irren. Beginnen Sie
+    mit *Nur benachrichtigen*, um zu sehen, wie sie sich mit Ihrer Kamera verhält.
+</Callout>
+
+Das Modell nutzt die CPU. Ist die Inferenz-Engine auf Ihrer Plattform nicht verfügbar, zeigt die Seite das an.

@@ -1,0 +1,59 @@
+---
+title: Panel
+description: Seguir y controlar tus impresoras.
+---
+
+## Página Impresoras
+
+La página **Impresoras** muestra una tarjeta por impresora, con su estado, progreso, tiempo restante y hora de fin. Los
+contadores de arriba filtran la lista: imprimiendo, en pausa, lista, cama por vaciar, mantenimiento, error y desconectada. La
+página indica también qué impresora termina antes.
+
+En el ordenador, la navegación es una barra lateral que se pliega en una franja de iconos. En el móvil, es una barra inferior.
+
+## Página de una impresora
+
+| Tarjeta | Función |
+| --- | --- |
+| Impresión | Trabajo actual: progreso, capa, tiempo transcurrido y restante, vista 3D, pausar, reanudar, cancelar, omitir objetos |
+| Temperaturas | Gráfico en directo, objetivos de boquilla y cama, preajustes |
+| Cámara | Vídeo en directo y pantalla completa, ver [Cámara](/es/docs/guide/camera) |
+| Controles | Velocidad, ventilador de pieza, luz, enchufe inteligente, ejes |
+| Filamentos | Ranuras, carga, secado, ver [Filamento](/es/docs/guide/filament) |
+| Cola de impresión | Elementos que esta impresora puede tomar, ver [Cola](/es/docs/guide/queue) |
+| Archivos | Biblioteca, almacenamiento de la impresora, timelapses, ver [Archivos](/es/docs/guide/files) |
+| Macros | Acciones en un clic, ver [Macros](/es/docs/guide/macros) |
+| Mantenimiento | Tareas y vencimientos, ver [Mantenimiento](/es/docs/guide/maintenance) |
+
+## Controles
+
+**Temperaturas.** La boquilla acepta 0–320 °C y la cama 0–120 °C; tu impresora puede admitir menos. Los preajustes son:
+
+| Preajuste | Boquilla | Cama |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Apagado | 0 °C | 0 °C |
+
+**Velocidad.** Tres modos: Calma, Estándar y Sport. Son las únicas velocidades que la impresora ofrece por LAN, y se aplican a
+la impresión en curso.
+
+**Ejes.** Mover X, Y y Z 1, 10 o 50 mm, llevar al origen XYZ, XY o Z, y apagar los motores. Bloqueado durante la impresión.
+
+**Luz y ventilador.** Encender la luz de la cámara y ajustar el ventilador de pieza.
+
+**Alimentación.** Disponible al elegir un [enchufe inteligente](/es/docs/integrations/home-assistant#smart-plug-and-energy).
+
+## Cancelar una impresión
+
+Al cancelar se pide un motivo opcional (spaghetti, adherencia, atasco, calidad…). El motivo alimenta las estadísticas de
+fallos. Una impresión cancelada no se puede reanudar.
+
+## Apariencia
+
+El tema (sistema, claro u oscuro) y el idioma de la interfaz están en **Ajustes → General**. Se guardan en el navegador.
+
+## Cuentas de solo lectura
+
+Un observador ve las mismas páginas con los controles desactivados. Consulta [Usuarios y roles](/es/docs/administration/users).

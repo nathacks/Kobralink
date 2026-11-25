@@ -1,0 +1,16 @@
+{
+    "pages": [
+        "index",
+        "---开始---",
+        "getting-started",
+        "---使用---",
+        "guide",
+        "integrations",
+        "---运维---",
+        "administration",
+        "troubleshooting",
+        "---深入---",
+        "reference",
+        "development"
+    ]
+}

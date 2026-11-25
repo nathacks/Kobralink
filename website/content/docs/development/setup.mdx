@@ -1,0 +1,60 @@
+---
+title: Development setup
+description: Run Kobralink from source.
+---
+
+You need [Bun](https://bun.sh) 1.4.2 or later.
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+Open `http://localhost:5454`. The API listens on port 7100.
+
+## Commands
+
+| Command | Effect |
+| --- | --- |
+| `bun run dev` | API, dashboard and desktop app |
+| `bun run dev:web` | API and dashboard |
+| `bun run dev:desktop` | Desktop app and its dependencies |
+| `bun run build` | Build everything |
+| `bun run check-types` | Type check |
+| `bun run test` | All tests |
+| `bun run lint` | Biome check |
+| `bun run format` | Biome format |
+| `bun run db:migrate` | Create or apply a Prisma migration |
+| `bun run db:studio` | Browse the database |
+| `bun run --filter @kobralink/desktop dist` | Desktop installer for the current system |
+
+Run one test file with `cd apps/api && bun test test/queue-service.test.ts`.
+
+## Without a printer
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+This emulates a Kobra 4 with an ACE in the middle of a print, on `127.0.0.1`. Add a printer with that IP in the dashboard. It is for
+development only and never shipped.
+
+## Rules
+
+- Bun only: no npm, no pnpm. The lockfile is `bun.lock`.
+- No `Bun.*` API in `apps/api`: it also runs under Node in the desktop app.
+- No comments in the code.
+- Every visible string is a message in `packages/i18n/messages`, added to **all** languages.
+- Biome formats with 4 spaces and 120 columns. A pre-commit hook runs it on staged files.
+
+## Certificates
+
+`apps/api/certs/anycubic_slicer.*` is third-party material, included only for interoperability. Do not edit it. If the printer refuses the
+TLS handshake, an outdated certificate is a likely cause. To extract a fresh pair from an Anycubic Slicer Next install:
+
+```bash
+bun run certs:extract <path> [--out apps/api/certs] [--force]
+```

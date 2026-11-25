@@ -1,0 +1,56 @@
+---
+title: Aplicación de escritorio
+description: Instalar Kobralink en macOS, Windows o Linux.
+---
+
+La aplicación de escritorio ejecuta el bridge en tu ordenador y muestra el panel en su propia ventana. Descárgala desde las
+[releases de GitHub](https://github.com/NatHacks/Kobralink/releases/latest).
+
+| Sistema | Archivo |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` o `Kobralink-<version>-amd64.deb` |
+
+## Primer arranque en macOS
+
+Si macOS dice que el desarrollador no está identificado, haz clic derecho en la aplicación y elige **Abrir**, o ejecuta:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## Mantenerla en marcha
+
+Kobralink debe estar en marcha para que OrcaSlicer se conecte, y para que funcionen la cola, las automatizaciones y las
+notificaciones.
+
+- En Windows y Linux, cerrar la ventana cierra la aplicación. Minimízala en su lugar.
+- En macOS, la aplicación sigue en marcha con la ventana cerrada. Usa **Salir** para detenerla.
+- El icono de la barra de menús muestra el estado de tus impresoras y vuelve a abrir la ventana.
+
+Cerrar Kobralink no detiene una impresión ya iniciada: la impresora tiene el archivo.
+
+## Actualizaciones [#updates]
+
+La aplicación busca actualizaciones en GitHub al arrancar y luego cada 6 horas. Pregunta antes de descargar y antes de
+reiniciar. También puedes usar **Buscar actualizaciones…** en el menú.
+
+## Dónde están los datos
+
+Los datos están en la carpeta `data` del directorio de la aplicación, y el registro del bridge en `logs/api.log`:
+
+| Sistema | Directorio |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+La ruta exacta de los datos aparece en **Ajustes → Sistema**.
+
+## Límites frente a Docker
+
+La aplicación de escritorio inicia sesión en `http://localhost:7100`. Está pensada para usarse en el ordenador donde se ejecuta;
+sus puertos Moonraker siguen accesibles desde la red. Las notificaciones push no están disponibles en la aplicación. Para usar
+el panel desde un móvil o entre varias personas, instala [Docker](/es/docs/getting-started/docker).

@@ -1,0 +1,46 @@
+---
+title: Makros
+description: Aktionsfolgen per Klick.
+---
+
+Ein Makro ist eine Liste von Aktionen (bis zu 30), die nacheinander auf einem Drucker ausgeführt werden. Makros sind kein
+G-Code: Der Drucker nimmt im LAN keinen rohen G-Code an.
+
+Legen Sie sie unter **Einstellungen → Makros** an und starten Sie sie über die Karte **Makros** eines Druckers.
+
+## Aktionen
+
+| Aktion | Parameter |
+| --- | --- |
+| Temperaturen | Düse 0–320 °C, Bett 0–120 °C |
+| Auf Temperatur warten | Düse und/oder Bett, höchstens 15 Minuten |
+| Lüfter | 0–100 % |
+| Licht | An oder aus |
+| Geschwindigkeit | Ruhig, Standard oder Sport |
+| Referenzfahrt | Alle, XY oder Z |
+| Bewegen | X, Y oder Z, bis zu 300 mm in beide Richtungen |
+| Motoren aus | |
+| Filament | Einen Slot laden oder entladen |
+| Trocknung | 30–80 °C, 10–1440 min |
+| Trocknung stoppen | |
+| Warten | Bis zu 600 s |
+
+Auf einem Drucker läuft immer nur ein Makro gleichzeitig.
+
+## Beispiel: für PLA vorheizen
+
+1. Temperaturen: Düse 210 °C, Bett 60 °C
+2. Auf Temperatur warten: Bett 60 °C
+3. Licht: an
+
+## Ein Makro aus einem anderen Programm aufrufen
+
+Der Makroname funktioniert als G-Code-Befehl am [Moonraker](/de/docs/integrations/moonraker)-Port. Groß- und Kleinschreibung,
+Leerzeichen und Bindestriche spielen keine Rolle:
+
+```bash
+curl -X POST "http://192.168.1.20:7125/printer/gcode/script?script=PREHEAT_PLA"
+```
+
+Makros können auch von [Automatisierungen](/de/docs/guide/automations) und einem [KI-Assistenten](/de/docs/integrations/mcp)
+ausgeführt werden.

@@ -1,0 +1,35 @@
+---
+title: Aggiornamenti
+description: Aggiornare Kobralink.
+---
+
+**Impostazioni → Sistema** mostra la versione attuale e cerca una versione più recente su GitHub. Puoi disattivare il controllo
+in **Impostazioni → Generale**.
+
+[Fai un backup](/it/docs/administration/backup) prima di aggiornare. Le migrazioni del database sono applicate automaticamente
+all'avvio; tornare a una versione precedente non è possibile senza backup.
+
+## Docker
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Se hai fissato una versione, cambia prima la riga `image:`.
+
+## App desktop
+
+L'app propone l'aggiornamento da sola, vedi [App desktop](/it/docs/getting-started/desktop#updates).
+
+## Dai sorgenti
+
+```bash
+git pull
+bun install
+bun run build
+```
+
+## Durante una stampa
+
+Riavviare Kobralink non ferma una stampa. La connessione alla stampante si interrompe per qualche secondo.

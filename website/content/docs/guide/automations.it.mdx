@@ -1,0 +1,52 @@
+---
+title: Automazioni
+description: Regole che agiscono sulle stampanti quando succede qualcosa.
+---
+
+Una regola dice **quando** succede qualcosa, **su** quali stampanti, e **poi** cosa fare. Gestiscile nella pagina
+**Automazioni**.
+
+## Attivatori
+
+| Attivatore | Quando |
+| --- | --- |
+| Una stampa finisce | La stampa è terminata normalmente |
+| Una stampa viene annullata o fallisce | La stampa è terminata prima del previsto |
+| Il piano viene liberato | Lo hai confermato, o hai usato l'attivatore luce |
+| Una bobina sta finendo | Scatta l'allarme di bobina quasi vuota della stampante |
+| Ogni giorno a un'ora | Ora del server, `HH:MM` |
+
+L'attivatore della bobina richiede una soglia negli [allarmi](/it/docs/administration/printer-settings#alerts) della stampante.
+L'attivatore orario usa il fuso orario del server, impostato con `TZ` in Docker.
+
+## Destinazioni
+
+Tutte le stampanti, una stampante, o le stampanti che portano tutti i tag indicati.
+
+## Azioni
+
+Una regola ha da 1 a 10 azioni, eseguite in ordine:
+
+| Azione | Note |
+| --- | --- |
+| Esegui una macro | |
+| Luce | Accesa o spenta |
+| Filamento (ACE) | Caricare o scaricare uno slot; fallisce su una stampante senza ACE |
+| Presa smart | Accesa o spenta |
+| Notifica | Messaggio di massimo 200 caratteri |
+| Attendi | Da 1 a 3600 s |
+
+Se un'azione fallisce, la regola si ferma lì. L'errore viene mostrato sulla regola.
+
+**Spegnere la presa** è rifiutato durante una stampa in corso o in pausa. Altrimenti Kobralink attende che l'ugello scenda sotto
+i 50 °C, e rinuncia dopo 30 minuti.
+
+## Esempi
+
+| Obiettivo | Quando | Poi |
+| --- | --- | --- |
+| Spegnere dopo la stampa | Una stampa finisce | Presa smart: spenta |
+| Luce spenta di notte | Ogni giorno alle 23:00 | Luce: spenta |
+| Avvisare il laboratorio | Una stampa viene annullata o fallisce | Notifica: «Controlla la stampante» |
+
+**Esegui ora** prova una regola su una stampante. La regola mostra la sua ultima esecuzione.

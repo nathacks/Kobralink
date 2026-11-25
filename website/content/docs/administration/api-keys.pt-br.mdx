@@ -1,0 +1,37 @@
+---
+title: Chaves de API
+description: Chaves para clientes Moonraker, Prometheus e assistentes de IA.
+---
+
+Todas as chaves são gerenciadas em **Configurações → Chaves de API**. Crie uma chave por aplicativo, para poder revogá-la
+separadamente. Uma chave só é mostrada uma vez. Ela começa com `kl_`.
+
+| Uso | Libera |
+| --- | --- |
+| Moonraker | Controle total da impressora pela porta Moonraker, câmera inclusa |
+| Métricas do Prometheus | Acesso de leitura a `/api/v1/metrics` |
+| Assistente de IA (MCP) | O servidor MCP, somente leitura ou de controle |
+
+Uma chave pode ter vários usos e cobre uma impressora ou todas. Uma chave com uso MCP sempre cobre todas as impressoras.
+Visualizadores não podem criar chaves.
+
+## Trancar as portas Moonraker [#lock-the-moonraker-ports]
+
+Por padrão as portas Moonraker aceitam qualquer um na rede. Ative **Exigir chave de API nas portas Moonraker** em
+**Configurações → OrcaSlicer** para exigir uma chave em todas as impressoras, câmera inclusa.
+
+Os clientes enviam a chave de uma destas formas:
+
+| Forma | Usada por |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Scripts |
+| `?api_key=kl_…` na URL | Tags `<img>` da câmera |
+| `/access/oneshot_token` e depois `?token=…` | Clientes WebSocket |
+
+Duas coisas a saber:
+
+- O **Mainsail** não tem campo de chave de API e não consegue se conectar com a opção ligada.
+- Os endereços em `/serve/` continuam abertos, porque a impressora baixa os arquivos por ali.
+
+Uma chave vinculada a uma impressora só libera essa impressora.

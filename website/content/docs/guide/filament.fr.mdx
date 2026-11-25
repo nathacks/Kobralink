@@ -1,0 +1,63 @@
+---
+title: Filament
+description: Slots, unités ACE, séchage, profils et bobines.
+---
+
+## Slots
+
+La carte **Filaments** montre ce que l'imprimante signale. Trois câblages sont détectés automatiquement :
+
+| Mode | Slots |
+| --- | --- |
+| Tête (tampon) | Les slots de la tête |
+| ACE direct | Quatre slots par unité ACE |
+| Tête + ACE (hub) | Trois slots de tête, plus les slots des unités ACE branchées sur le quatrième |
+
+Sans ACE, choisissez la **bobine externe** montée sur le support de l'imprimante ; sa consommation y est déduite.
+
+Cliquez sur un slot pour régler son matériau et sa couleur (écrits sur l'écran de l'imprimante), son profil OrcaSlicer et sa
+bobine, et pour charger ou décharger le filament. Le filament lu sur une puce RFID est reconnu.
+
+## Séchage
+
+Lancez un cycle depuis la section ACE de la carte : 30–80 °C pendant 10 à 1440 minutes. Votre ACE peut refuser les
+températures les plus hautes. Vous pouvez aussi programmer un cycle pour plus tard.
+
+Les préréglages se modifient dans la page **Filament**. Par défaut :
+
+| Préréglage | Température | Durée |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Alimentation automatique** active ou désactive la recharge automatique d'une unité ACE.
+
+## Profils OrcaSlicer [#orcaslicer-profiles]
+
+Chaque slot peut porter un profil OrcaSlicer, envoyé à OrcaSlicer comme marque et nom de préréglage lors de la
+synchronisation des filaments. Sans choix, Kobralink en prend un d'après le matériau.
+
+Pour ajouter vos propres profils, ouvrez **Filament** et importez un ZIP ou des fichiers `.json` d'OrcaSlicer. Ils sont
+marqués d'une ★. Pour raccourcir la liste, choisissez les marques visibles dans les paramètres de l'imprimante.
+
+## Bobines
+
+Deux façons de suivre le filament :
+
+| | Spoolman | Inventaire local |
+| --- | --- | --- |
+| Où sont les bobines | Dans [Spoolman](/fr/docs/integrations/spoolman) | Dans Kobralink |
+| Prix | Depuis Spoolman | Prix par défaut au kg |
+| À utiliser si | Vous voulez une source unique partagée avec d'autres outils | Vous n'utilisez pas Spoolman |
+
+L'inventaire local est utilisé tant qu'aucune URL Spoolman n'est définie. Ajoutez des bobines avec leur matériau, leur couleur
+et leur poids net initial ; le poids restant est estimé d'après la consommation signalée par l'imprimante.
+
+Affectez une bobine à un slot dans la fenêtre du slot. Dès lors, sa consommation est déduite pendant l'impression, la fenêtre
+d'impression prévient quand elle est trop courte, et la file d'attente en tient compte.
+
+Une alerte de bobine presque vide est envoyée sous le seuil défini dans les paramètres de l'imprimante (*Bobine presque vide*,
+désactivé par défaut).

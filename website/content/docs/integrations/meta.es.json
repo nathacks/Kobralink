@@ -1,0 +1,4 @@
+{
+    "title": "Integraciones",
+    "pages": ["moonraker", "home-assistant", "spoolman", "prometheus", "mcp"]
+}

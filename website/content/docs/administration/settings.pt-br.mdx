@@ -1,0 +1,35 @@
+---
+title: Configurações
+description: O que cada página de configurações contém.
+---
+
+O campo de busca no topo das configurações encontra qualquer opção, inclusive as das impressoras.
+
+| Página | Conteúdo |
+| --- | --- |
+| Geral | Tema, idioma da interface, moeda, custos, endereço, atualizações |
+| Notificações | [Canais e eventos](/pt-br/docs/guide/notifications) |
+| Detecção por IA | [Modelo, ação, sensibilidade](/pt-br/docs/guide/failure-detection) |
+| Integrações | [Spoolman](/pt-br/docs/integrations/spoolman), [Home Assistant](/pt-br/docs/integrations/home-assistant) |
+| OrcaSlicer | [Endereços](/pt-br/docs/getting-started/orcaslicer), exigência de chave de API |
+| MCP (IA) | [Servidor, ferramentas, aplicativos conectados](/pt-br/docs/integrations/mcp) |
+| Chaves de API | [Chaves](/pt-br/docs/administration/api-keys) |
+| Prometheus | [Endereço das métricas](/pt-br/docs/integrations/prometheus) |
+| Macros | [Macros](/pt-br/docs/guide/macros) |
+| Usuários | [Contas](/pt-br/docs/administration/users), só administradores |
+| Sistema | Versão, tempo ativo, [backup](/pt-br/docs/administration/backup), reinício |
+| Logs | Log ao vivo, filtro por nível e origem, download |
+
+## Geral
+
+| Configuração | Padrão | Efeito |
+| --- | --- | --- |
+| Tema, idioma da interface | | Salvos neste navegador |
+| Idioma das notificações | Francês | Idioma das mensagens enviadas pela bridge |
+| Moeda | `EUR` | Código ISO usado para mostrar os custos |
+| Preço padrão do filamento | 0 | Por kg. 0 = sem preço |
+| Preço da energia | 0 | Por kWh. 0 ignora a energia |
+| Potência média da impressora | 0 | Em watts, quando a impressora não tem a sua |
+| Endereço do Kobralink | | Destino dos links nas notificações |
+| Verificar atualizações | ativado | Pergunta ao GitHub pela versão mais recente |
+| Log HTTP detalhado | desativado | Registra cada requisição |

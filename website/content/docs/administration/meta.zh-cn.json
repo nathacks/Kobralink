@@ -1,0 +1,4 @@
+{
+    "title": "管理",
+    "pages": ["settings", "printer-settings", "users", "api-keys", "backup", "updates", "https", "environment"]
+}

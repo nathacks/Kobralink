@@ -1,0 +1,42 @@
+---
+title: Détection d'échec par IA
+description: Surveiller la caméra pour repérer les spaghettis et les pièces décollées.
+---
+
+Un modèle de vision (issu d'Obico) analyse une image de la caméra à intervalle régulier pendant l'impression. Il tourne sur
+la machine qui héberge Kobralink : **aucune image n'est envoyée en ligne**.
+
+## L'activer
+
+1. Ouvrez **Paramètres → Détection IA** et téléchargez le modèle (environ 200 Mo).
+2. Activez **Activer la détection**.
+3. Choisissez l'action et la sensibilité.
+
+Toutes les imprimantes sont surveillées par défaut. Vous pouvez en exclure une dans ses paramètres, ou désactiver la détection
+dans la fenêtre d'impression pour une seule impression.
+
+## Paramètres
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Action en cas d'échec | Notifier seulement | Notifier, notifier et mettre en pause, ou notifier et annuler |
+| Allumer la lumière de la caméra | activé | Allume la caméra pendant la surveillance. Kobralink l'éteint à la fin s'il l'a allumée |
+| Sensibilité | 1 | 0,5 à 2. Plus haut = alertes plus tôt et plus de faux positifs |
+| Intervalle d'analyse | 10 s | 5 à 60 s. Les seuils sont réglés pour 10 s |
+
+Mettre en pause ou annuler demande une confiance plus élevée qu'une simple notification. Les 30 premières images d'une
+impression ne déclenchent jamais d'alerte, soit environ 5 minutes avec l'intervalle par défaut.
+
+Quand Kobralink met en pause ou annule une impression de lui-même, il laisse la lumière allumée pour que vous voyiez la pièce.
+
+## Surveillance en direct
+
+**Paramètres → Détection IA** affiche le score de chaque impression surveillée. La carte caméra affiche un badge : *IA*
+pendant la surveillance, *Échec suspecté* quand le score est élevé.
+
+<Callout type="warn">
+    La détection limite les dégâts, elle ne remplace pas la surveillance. Elle peut rater un échec, et elle peut se tromper.
+    Commencez par *Notifier seulement* pour voir comment elle se comporte avec votre caméra.
+</Callout>
+
+Le modèle utilise le processeur. Si le moteur d'inférence n'est pas disponible sur votre plateforme, la page l'indique.

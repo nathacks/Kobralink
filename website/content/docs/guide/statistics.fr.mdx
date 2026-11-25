@@ -1,0 +1,49 @@
+---
+title: Historique, statistiques et coûts
+description: Ce qui a été imprimé, ce qui a échoué et ce que ça a coûté.
+---
+
+## Historique
+
+La page **Historique** liste chaque impression avec son aperçu, sa durée, son filament, son énergie et son coût. Pour une
+impression échouée, vous pouvez :
+
+- choisir un motif : spaghetti, adhérence au plateau, bouchage, fin de filament, décalage de couche, coupure de courant,
+  annulée volontairement, qualité refusée, autre
+- ajouter une note
+- voir la capture de la caméra prise à la fin, si la caméra tournait
+- lire le code d'erreur signalé par l'imprimante
+
+## Statistiques
+
+Choisissez une imprimante et une période : 7, 30, 90 ou 365 jours, ou tout. La page affiche :
+
+- impressions, taux de réussite, temps d'impression et filament, comparés à la période précédente
+- impressions, heures et coût par jour ou par mois, par jour de la semaine et par heure de départ
+- l'usage par matériau et les fichiers les plus imprimés
+- pour chaque imprimante : taux d'utilisation, temps moyen entre échecs, temps d'inactivité après une impression, précision de
+  l'estimation du slicer, énergie mesurée
+- les échecs par motif, du plus fréquent au moins fréquent
+- le filament gâché par les impressions jamais terminées
+
+**Exporter en CSV** télécharge les impressions de la sélection.
+
+## Coûts [#costs]
+
+Coût = filament + énergie.
+
+**Filament.** Le prix vient de la bobine Spoolman. Sans elle, le *prix filament par défaut* s'applique
+(**Paramètres → Général**). Le filament sans aucun prix est affiché comme *non chiffré*.
+
+**Énergie.** Mesurée par le compteur de la prise quand [Home Assistant](/fr/docs/integrations/home-assistant#smart-plug-and-energy)
+est configuré. Sinon estimée :
+
+```text
+puissance moyenne (W) ÷ 1000 × heures × prix du kWh
+```
+
+La puissance moyenne est celle de l'imprimante, dans son profil, ou la valeur par défaut de **Paramètres → Général**. Laissez
+le prix de l'électricité à 0 pour ignorer l'énergie.
+
+Un coût estimé s'affiche avant l'impression sur la carte du fichier, dans l'aperçu et dans la fenêtre d'impression. Le coût
+réel est calculé à la fin.

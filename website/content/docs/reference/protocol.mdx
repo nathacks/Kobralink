@@ -1,0 +1,15 @@
+---
+title: LAN protocol
+description: How Kobralink talks to the printer.
+---
+
+| Port of the printer | Use |
+| --- | --- |
+| `18910` (HTTP) | Reads the model and the MQTT credentials, receives the G-code upload |
+| `9883` (MQTT over TLS) | State and commands, one session at a time |
+| `18088` (HTTP-FLV) | H.264 camera stream, one consumer at a time |
+
+When a print starts, the printer may also download the file from Kobralink, on the Moonraker port (`/serve/…`).
+
+The full survey (requests, reports, states, error codes, differences with Anycubic's own client) is in
+[`docs/protocol.md`](https://github.com/NatHacks/Kobralink/blob/main/docs/protocol.md).

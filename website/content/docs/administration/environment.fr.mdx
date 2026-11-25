@@ -1,0 +1,43 @@
+---
+title: Variables d'environnement
+description: La configuration du serveur.
+---
+
+## Docker
+
+À définir dans `.env`, à côté du fichier compose.
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | `http://localhost:7100` | **À définir** : l'URL utilisée par le navigateur |
+| `BETTER_AUTH_SECRET` | généré dans `/data` | Secret de session (`openssl rand -base64 32`) |
+| `KOBRALINK_BIND` | `0.0.0.0` | Interface de l'hôte. `127.0.0.1` derrière un reverse proxy |
+| `KOBRALINK_PORT` | `7100` | Port du tableau de bord sur l'hôte |
+| `KOBRALINK_EXTRA_ORIGINS` | | Autres origines autorisées, séparées par des virgules |
+| `KOBRALINK_TRUSTED_PROXIES` | | IP ou CIDR des proxies, séparés par des virgules |
+| `KOBRALINK_IP_HEADERS` | | En-tête contenant l'IP du client, posé par le proxy |
+| `KOBRALINK_DOMAIN` | | Domaine pour `docker-compose.https.yml` |
+| `KOBRALINK_IMAGE` | `nathacks/kobralink:latest` | Nom de l'image, utilisé seulement par `docker-compose.yml` (compilation depuis les sources) |
+| `TZ` | `UTC` | Fuseau horaire des automatisations et des statistiques par jour |
+
+## Processus serveur
+
+Déjà définies dans l'image Docker et l'application de bureau. Utiles pour lancer depuis les sources.
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `KOBRALINK_DATA_DIR` | `<repo>/data` | Répertoire de données |
+| `DATABASE_URL` | `file:<data>/kobralink.db` | Base de données |
+| `KOBRALINK_WEB_DIR` | `apps/web/dist` | Build du tableau de bord à servir |
+| `KOBRALINK_CERTS_DIR` | `apps/api/certs` | `anycubic_slicer.crt` et `.key` |
+| `KOBRALINK_FFMPEG` | inclus, sinon `PATH` | Binaire ffmpeg |
+| `KOBRALINK_VERSION` | `package.json` | Version affichée |
+| `KOBRALINK_UPDATE_REPO` | `NatHacks/Kobralink` | Dépôt interrogé pour les mises à jour |
+| `KOBRALINK_DETECTION_MODEL_URL` | le modèle d'Obico | Adresse du modèle de détection |
+
+## Application de bureau
+
+| Variable | Rôle |
+| --- | --- |
+| `KOBRALINK_PORT` | Port du bridge local |
+| `KOBRALINK_URL` | Ouvre ce bridge sans en démarrer un en local |

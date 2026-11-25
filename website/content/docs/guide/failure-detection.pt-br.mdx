@@ -1,0 +1,42 @@
+---
+title: Detecção de falhas por IA
+description: Vigiar a câmera para pegar spaghetti e peças soltas.
+---
+
+Um modelo de visão (do Obico) analisa uma imagem da câmera em intervalos regulares durante a impressão. Ele roda na máquina que
+hospeda o Kobralink: **nenhuma imagem é enviada para a internet**.
+
+## Ativar
+
+1. Abra **Configurações → Detecção por IA** e baixe o modelo (cerca de 200 MB).
+2. Ative **Ativar detecção**.
+3. Escolha a ação e a sensibilidade.
+
+Todas as impressoras são monitoradas por padrão. Você pode excluir uma nas configurações dela, ou desativar a detecção na janela
+de impressão para uma única impressão.
+
+## Configurações
+
+| Configuração | Padrão | Efeito |
+| --- | --- | --- |
+| Ação em caso de falha | Só notificar | Notificar, notificar e pausar, ou notificar e cancelar |
+| Acender a luz da câmera | ativado | Acende a luz durante o monitoramento. O Kobralink a apaga no fim se foi ele que acendeu |
+| Sensibilidade | 1 | 0,5 a 2. Mais alto significa alertas mais cedo e mais falsos positivos |
+| Intervalo de análise | 10 s | 5 a 60 s. Os limites são ajustados para 10 s |
+
+Pausar e cancelar exigem mais confiança do que uma simples notificação. As primeiras 30 imagens de uma impressão nunca geram
+alerta, cerca de 5 minutos no intervalo padrão.
+
+Quando o Kobralink pausa ou cancela uma impressão sozinho, ele deixa a luz acesa para você ver a peça.
+
+## Monitoramento ao vivo
+
+**Configurações → Detecção por IA** mostra a pontuação de cada impressão monitorada. O cartão da câmera mostra um selo: *IA*
+durante o monitoramento, *Suspeita de falha* quando a pontuação está alta.
+
+<Callout type="warn">
+    A detecção reduz o estrago, mas não substitui a supervisão. Ela pode deixar passar uma falha e pode errar. Comece com *Só
+    notificar* para ver como ela se comporta com a sua câmera.
+</Callout>
+
+O modelo usa a CPU. Se o mecanismo de inferência não estiver disponível na sua plataforma, a página avisa.

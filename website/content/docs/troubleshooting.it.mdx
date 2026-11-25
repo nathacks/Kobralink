@@ -1,0 +1,70 @@
+---
+title: Risoluzione dei problemi
+description: Problemi comuni e cosa fare.
+---
+
+Inizia da **Impostazioni → Log**: filtra per stampante, poi scarica il log se devi condividerlo. Togli gli indirizzi IP e i
+nomi di file che vuoi tenere privati prima di pubblicarlo.
+
+## La stampante resta offline
+
+| Messaggio | Causa | Soluzione |
+| --- | --- | --- |
+| Porta MQTT chiusa | La modalità LAN è disattivata | Attivala nelle impostazioni della stampante |
+| Credenziali MQTT rifiutate | Le credenziali sono cambiate | Impostazioni della stampante → **Aggiorna credenziali** |
+| Stampante non raggiungibile in rete | IP errato, stampante spenta, altra rete | Controlla l'IP; prenotalo nel router |
+| Limite di connessioni (codice 19002) | Un altro client LAN è collegato | Chiudi Anycubic Slicer Next, le integrazioni di Home Assistant… |
+| Disconnessa manualmente | Hai chiuso la sessione | Ricollegati |
+
+La stampante accetta **una sola sessione LAN**: due istanze di Kobralink sulla stessa stampante si scollegano a vicenda.
+
+## Non riesco ad accedere
+
+`BETTER_AUTH_URL` deve essere l'indirizzo che digiti nel browser, con protocollo e porta. Aggiungi gli altri indirizzi a
+`KOBRALINK_EXTRA_ORIGINS`, poi ricrea il container con `docker compose up -d`. Con un indirizzo HTTPS, l'accesso in HTTP
+semplice non funziona.
+
+## OrcaSlicer non si collega
+
+- Controlla che l'host contenga `http://` e la porta della stampante.
+- Controlla che Kobralink sia in esecuzione e che il firewall consenta la porta.
+- Se le chiavi sono richieste, incollane una con l'uso Moonraker.
+- Dalla 17ª stampante, [pubblica più porte](/it/docs/getting-started/docker#ports).
+
+## La stampa non parte dopo *invia e stampa*
+
+La finestra di stampa aspetta nella dashboard. Conferma lì, oppure disattiva **Finestra dopo il caricamento** nelle impostazioni
+della stampante.
+
+## Il caricamento viene rifiutato
+
+| Messaggio | Soluzione |
+| --- | --- |
+| Spazio insufficiente sulla stampante | Elimina file nella scheda **Stampante** |
+| La stampante ha rifiutato il nome o il tipo del file | Usa un nome semplice che finisca con `.gcode` |
+| La stampante non ha fornito un URL di caricamento | Ricollega la stampante |
+
+## La fotocamera non si vede
+
+- *Nessuna fotocamera collegata*: la stampante indica che non ce n'è nessuna collegata.
+- *429*: un altro client usa lo streaming. Chiudilo e riavvia lo streaming.
+- Con un'installazione personalizzata, controlla che ffmpeg sia disponibile.
+
+## La coda non avanza
+
+Leggi il motivo mostrato sull'elemento, vedi [Perché un elemento attende](/it/docs/guide/queue#why-an-item-waits). Il più delle
+volte il piano non è stato confermato libero.
+
+## Le automazioni partono all'ora sbagliata
+
+Usano il fuso orario del server, indicato in **Impostazioni → Sistema**. Imposta `TZ` in `.env`.
+
+## L'app desktop non avvia il bridge
+
+La schermata di errore dà accesso al log. Una causa frequente è la porta 7100 già usata da un'altra istanza.
+
+## L'handshake TLS viene rifiutato
+
+Dopo un aggiornamento del firmware Anycubic, il certificato incluso può essere superato. Apri una
+[issue](https://github.com/NatHacks/Kobralink/issues) o estraine uno nuovo: vedi
+[Certificati](/it/docs/development/setup#certificates).

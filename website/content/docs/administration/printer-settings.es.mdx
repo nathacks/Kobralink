@@ -1,0 +1,86 @@
+---
+title: Ajustes de la impresora
+description: Todas las opciones de una impresora.
+---
+
+Abre una impresora y luego **Ajustes**.
+
+## Perfil [#profile]
+
+| Ajuste | Efecto |
+| --- | --- |
+| Ubicación | Texto libre |
+| Etiquetas | Hasta 20. Agrupan impresoras para dirigir elementos de la cola y automatizaciones |
+| Boquilla instalada | Los archivos laminados para otra boquilla no van a esta impresora |
+| Consumo medio | Sustituye al valor por defecto en el coste de la energía |
+
+Las especificaciones oficiales se muestran cuando Anycubic las publica para el modelo.
+
+## Conexión
+
+| Ajuste | Efecto |
+| --- | --- |
+| Nombre, dirección IP | |
+| Puerto Moonraker | 1024 a 65535, único |
+| Actualizar credenciales | Vuelve a leer las credenciales de la impresora |
+| Reiniciar sesión MQTT | Se reconecta |
+| Desconectar | Cierra la sesión hasta que vuelvas a conectar. Útil para dejar entrar a otro cliente LAN |
+
+## Impresión [#printing]
+
+| Ajuste | Por defecto | Efecto |
+| --- | --- | --- |
+| Nivelación automática de la cama | activado | Antes de cada impresión |
+| Compensación de vibraciones | desactivado | Antes de cada impresión |
+| Calibración de flujo | activado | Antes de cada impresión |
+| Cámara siempre activa | activado | Mantiene la cámara en marcha |
+| Cámara al iniciar la impresión | desactivado | Inicia el vídeo cuando empieza una impresión |
+| Ranura AMS por defecto | auto | *auto* usa todas las ranuras que necesita el G-code |
+| Avisar en subidas web | activado | Confirmar antes de imprimir un archivo subido desde el navegador |
+| Diálogo tras la subida | activado | Abre el diálogo de impresión tras una subida. Desactivado, la impresión empieza directamente |
+| Iniciar el siguiente archivo automáticamente | desactivado | Ver [Cola](/es/docs/guide/queue#automatic-start) |
+| Confirmar cama vacía | activado | Ver [Cola](/es/docs/guide/queue#clearing-the-bed) |
+| Esperar antes de iniciar | 15 s | 0 a 3600 s |
+| Disparador de luz | desactivado | Ver [Cola](/es/docs/guide/queue#light-trigger) |
+| Eliminar de la impresora tras imprimir | desactivado | Libera el almacenamiento de la impresora |
+| Intervalo de sondeo | 3 s | 1 a 60 s entre dos consultas de estado |
+
+## Timelapse
+
+| Ajuste | Por defecto |
+| --- | --- |
+| Grabar un timelapse | desactivado |
+| Imágenes por segundo | 15 (5 a 60) |
+
+## Detección de fallos
+
+| Ajuste | Por defecto |
+| --- | --- |
+| Vigilar esta impresora | activado |
+
+Surte efecto cuando la [detección](/es/docs/guide/failure-detection) está activada globalmente.
+
+## Alertas [#alerts]
+
+0 desactiva una alerta.
+
+| Alerta | Por defecto |
+| --- | --- |
+| Boquilla máx. | 300 °C |
+| Cama máx. | 110 °C |
+| Desconectada durante | 0 min (desactivado) |
+| Bobina casi vacía | 0 g (desactivado) |
+
+## Enchufe (Home Assistant)
+
+Se muestra una vez configurada la [API de Home Assistant](/es/docs/integrations/home-assistant#smart-plug-and-energy):
+interruptor del enchufe y medidor de energía.
+
+## Marcas visibles
+
+Filtra los perfiles de OrcaSlicer que se ofrecen en cada ranura. Sin selección se muestran todas las marcas. Tus perfiles
+importados se muestran siempre.
+
+## Eliminar la impresora
+
+Los archivos G-code guardados en Kobralink se conservan.

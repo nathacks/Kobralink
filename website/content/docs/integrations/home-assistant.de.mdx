@@ -1,0 +1,61 @@
+---
+title: Home Assistant
+description: Sensoren und Steuerung über MQTT, smarte Steckdose und Energiemessung.
+---
+
+Drei unabhängige Wege, Kobralink mit Home Assistant zu nutzen:
+
+| Weg | Liefert |
+| --- | --- |
+| [MQTT-Discovery](#mqtt-discovery) | Sensoren, Licht, Tasten, Kamerabild, Miniatur in Home Assistant |
+| [Home-Assistant-API](#smart-plug-and-energy) | Smarte Steckdose und gemessene Energie in Kobralink |
+| [Moonraker-Integration (HACS)](#moonraker-integration) | Den Drucker als Moonraker-Gerät |
+
+## MQTT-Discovery [#mqtt-discovery]
+
+Schalten Sie unter **Einstellungen → Integrationen** die MQTT-Veröffentlichung ein und geben Sie die Broker-URL (zum Beispiel
+`mqtt://192.168.1.10:1883`), den Benutzernamen und das Passwort ein. Die Geräte erscheinen von selbst in Home Assistant.
+
+| Entität | Typ |
+| --- | --- |
+| Zustand, Fortschritt, Datei, Schicht | Sensor |
+| Temperatur und Sollwert von Düse und Bett | Sensor |
+| Rest- und verstrichene Zeit, Lüfter | Sensor |
+| Verbunden, druckt | Binärsensor |
+| Licht | Schalter |
+| Pause, Fortsetzen, Abbrechen | Taste |
+| Kamera | Kamera |
+| Miniatur | Bild |
+
+| Einstellung | Standard |
+| --- | --- |
+| Discovery-Präfix | `homeassistant` |
+| Topic-Präfix | `kobralink` |
+
+Die Topics sind `<präfix>/<printerId>/state`, `/availability`, `/camera`, `/thumbnail` und
+`/cmd/{light,pause,resume,cancel}`.
+
+### Live-Kamera
+
+Die Kamera-Entität zeigt alle 5 Sekunden das neueste Bild, solange die Kamera läuft. Sie schaltet die Kamera nie selbst ein.
+Für Live-Video fügen Sie die Integration **MJPEG IP Camera** mit dem Moonraker-Port des Druckers hinzu:
+
+- MJPEG-URL: `http://<bridge-ip>:7125/api/camera/stream`
+- Standbild-URL: `http://<bridge-ip>:7125/api/camera/snapshot`
+
+## Smarte Steckdose und Energie [#smart-plug-and-energy]
+
+1. Öffnen Sie in Home Assistant Ihr Profil → **Sicherheit** → **Langlebige Zugriffstoken** → **Token erstellen**.
+2. Geben Sie unter **Einstellungen → Integrationen** die Adresse von Home Assistant und das Token ein und testen Sie.
+3. Wählen Sie in den Einstellungen jedes Druckers den **Schalter der Steckdose** und den **Energiezähler** (einen
+   kWh-Sensor).
+
+Der Schalter schaltet den Drucker aus dem Dashboard und aus Automatisierungen ein und aus. Der Zähler wird zu Beginn und am Ende
+jedes Drucks gelesen, damit die [Kosten](/de/docs/guide/statistics#costs) die echte Energie statt einer Schätzung verwenden.
+
+## Moonraker-Integration [#moonraker-integration]
+
+Die HACS-Integration **Moonraker** funktioniert mit Host = Bridge-Adresse und Port = Moonraker-Port des Druckers.
+
+Sie holt die Miniatur immer über Port `7125`. Ab dem zweiten Drucker setzen Sie dessen Option **Thumbnail Port** auf den Port
+des Druckers, sonst zeigt sie die Miniatur des ersten Druckers.

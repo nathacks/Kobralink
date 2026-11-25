@@ -1,0 +1,51 @@
+---
+title: Automations
+description: Rules that act on your printers when something happens.
+---
+
+A rule says **when** something happens, **on** which printers, **then** what to do. Manage them in the **Automations** page.
+
+## Triggers
+
+| Trigger | When |
+| --- | --- |
+| A print finishes | The print ended normally |
+| A print is cancelled or fails | The print ended early |
+| The bed is cleared | You confirmed it, or used the light trigger |
+| A spool runs low | The low-spool alert of the printer fires |
+| Every day at a time | Server time, `HH:MM` |
+
+The low-spool trigger needs a threshold in the printer's [alerts](/en/docs/administration/printer-settings#alerts). The time trigger
+uses the server time zone, set by `TZ` with Docker.
+
+## Targets
+
+Every printer, one printer, or the printers carrying all the given tags.
+
+## Actions
+
+A rule has 1 to 10 actions, run in order:
+
+| Action | Notes |
+| --- | --- |
+| Run a macro | |
+| Light | On or off |
+| Filament (ACE) | Load or unload a slot; fails on a printer without an ACE |
+| Smart plug | On or off |
+| Notify | Message of up to 200 characters |
+| Wait | 1 to 3600 s |
+
+If an action fails, the rule stops there. The error is shown on the rule.
+
+**Turning the plug off** is refused while a print is running or paused. Otherwise Kobralink waits for the nozzle to cool
+below 50 °C, and gives up after 30 minutes.
+
+## Examples
+
+| Goal | When | Then |
+| --- | --- | --- |
+| Switch off after printing | A print finishes | Smart plug: off |
+| Light off at night | Every day at 23:00 | Light: off |
+| Warn the workshop | A print is cancelled or fails | Notify: "Check the printer" |
+
+**Run now** tests a rule on one printer. The rule shows its last run.

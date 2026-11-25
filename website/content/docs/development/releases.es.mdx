@@ -1,0 +1,21 @@
+---
+title: Publicación
+description: Cómo se publica una versión.
+---
+
+Subir una etiqueta `v*` lanza `.github/workflows/release.yml`, que publica:
+
+- una imagen Docker para amd64 y arm64, etiquetada `<versión>`, `<mayor>.<menor>` y `latest`
+- una release de GitHub con las aplicaciones de escritorio para macOS, Windows y Linux
+
+`bun run version:set <x.y.z|major|minor|patch>` fija la versión de todos los paquetes.
+
+## Secretos
+
+| Secreto | Uso |
+| --- | --- |
+| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Obligatorios, Docker Hub |
+| `CSC_LINK`, `CSC_KEY_PASSWORD` | Opcionales, firmar la aplicación de macOS |
+| `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Opcionales, notarizar la aplicación de macOS |
+
+Sin certificado de Apple, la aplicación de macOS se firma ad hoc y Gatekeeper muestra un aviso en el primer arranque.

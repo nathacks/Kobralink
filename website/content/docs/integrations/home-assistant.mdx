@@ -1,0 +1,60 @@
+---
+title: Home Assistant
+description: Sensors and controls by MQTT, smart plug and energy metering.
+---
+
+Three independent ways to use Kobralink with Home Assistant:
+
+| Way | Gives |
+| --- | --- |
+| [MQTT discovery](#mqtt-discovery) | Sensors, light, buttons, camera image, thumbnail in Home Assistant |
+| [Home Assistant API](#smart-plug-and-energy) | Smart plug and measured energy in Kobralink |
+| [Moonraker integration (HACS)](#moonraker-integration) | The printer as a Moonraker device |
+
+## MQTT discovery
+
+In **Settings → Integrations**, turn on MQTT publishing and enter the broker URL (for example `mqtt://192.168.1.10:1883`),
+the username and the password. Devices appear by themselves in Home Assistant.
+
+| Entity | Type |
+| --- | --- |
+| State, progress, file, layer | Sensor |
+| Nozzle and bed temperature and target | Sensor |
+| Remaining and elapsed time, fan | Sensor |
+| Connected, printing | Binary sensor |
+| Light | Switch |
+| Pause, resume, cancel | Button |
+| Camera | Camera |
+| Thumbnail | Image |
+
+| Setting | Default |
+| --- | --- |
+| Discovery prefix | `homeassistant` |
+| Topic prefix | `kobralink` |
+
+The topics are `<prefix>/<printerId>/state`, `/availability`, `/camera`, `/thumbnail` and
+`/cmd/{light,pause,resume,cancel}`.
+
+### Live camera
+
+The camera entity shows the latest frame every 5 seconds while the camera runs. It never turns the camera on. For live video, add the
+**MJPEG IP Camera** integration with the printer's own Moonraker port:
+
+- MJPEG URL: `http://<bridge-ip>:7125/api/camera/stream`
+- Still image URL: `http://<bridge-ip>:7125/api/camera/snapshot`
+
+## Smart plug and energy
+
+1. In Home Assistant, open your profile → **Security** → **Long-lived access tokens** → **Create token**.
+2. In **Settings → Integrations**, enter the address of Home Assistant and the token, then test.
+3. In the settings of each printer, choose its **plug switch** and its **energy meter** (a kWh sensor).
+
+The switch turns the printer on and off from the dashboard and automations. The meter is read at the start and at the end of
+each print, so that the [cost](/en/docs/guide/statistics#costs) uses the real energy instead of an estimate.
+
+## Moonraker integration
+
+The HACS **Moonraker** integration works with host = the bridge address and port = the printer's Moonraker port.
+
+It always fetches the thumbnail on port `7125`. From the second printer on, set its **Thumbnail Port** option to the printer's
+port, otherwise it shows the first printer's thumbnail.

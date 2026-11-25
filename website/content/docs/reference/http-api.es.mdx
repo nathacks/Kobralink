@@ -1,0 +1,48 @@
+---
+title: API HTTP
+description: Los puntos de acceso del servidor.
+---
+
+| Dirección | Función | Autenticación |
+| --- | --- | --- |
+| `:7100/api/v1/*` | API del panel | Cookie de sesión |
+| `:7100/api/v1/metrics` | [Prometheus](/es/docs/integrations/prometheus) | Clave API o sesión |
+| `:7100/api/v1/setup/status` | Indica si existe la primera cuenta | Ninguna |
+| `:7100/api/auth/*` | Inicio de sesión (Better Auth) | |
+| `:7100/api/auth/ok` | Comprobación de estado | Ninguna |
+| `:7100/api/mcp` | [Servidor MCP](/es/docs/integrations/mcp) | Clave API u OAuth |
+| `:7125+` | [Moonraker](/es/docs/integrations/moonraker), un puerto por impresora | Ninguna, o clave API |
+
+<Callout type="warn" title="Para tus propios scripts, usa Moonraker o MCP">
+    `/api/v1` está hecha para el panel. No tiene garantía de estabilidad y no acepta claves API, salvo para las métricas.
+</Callout>
+
+## API del panel
+
+Los cuerpos de las peticiones se validan con los esquemas Zod de `packages/shared`. Los observadores solo pueden leer.
+
+| Ruta | Función |
+| --- | --- |
+| `/printers`, `/printers/:id` | Listar, añadir, modificar, eliminar |
+| `/printers/:id/{connect,disconnect,reconnect,refresh-credentials}` | Conexión |
+| `/printers/:id/power` | Enchufe inteligente |
+| `/printers/:id/{state,samples}` | Estado en directo y temperaturas recientes |
+| `/printers/:id/{temperature,fan,light,speed,axis,axis/off}` | Controles |
+| `/printers/:id/{ams/slot,ams/feed,ace/auto-feed,ace/dry}` | Filamento |
+| `/printers/:id/print`, `/printers/:id/print/{pause,resume,cancel}` | Impresión |
+| `/printers/:id/skip`, `/printers/:id/skip/{query,state}` | Omitir objetos |
+| `/printers/:id/files`, `/printers/:id/printer-files` | Archivos |
+| `/printers/:id/camera/{stream,h264,snapshot,start,stop,reset}` | Cámara |
+| `/printers/:id/{schedule,dry-schedule,maintenance,history,detection}` | Datos por impresora |
+| `/printers/:id/queue`, `/printers/:id/queue/{status,start,bed-clear,auto-start,maintenance}` | Cola de una impresora |
+| `/printers/:id/filament/slots`, `/printers/:id/{spools,spoolman}` | Ranuras y bobinas |
+| `/queue`, `/queue/{check,reorder}` | Cola |
+| `/files`, `/history`, `/stats`, `/stats/export.csv`, `/timelapses` | Biblioteca y estadísticas |
+| `/macros`, `/automations`, `/spools`, `/filament/profiles` | Configuración |
+| `/settings`, `/users`, `/notifications`, `/push`, `/detection` | Administración |
+| `/system`, `/system/{backup,restore,restart,update-check}`, `/logs/download` | Sistema |
+
+## Eventos en directo
+
+`/api/v1/events/multiplexed?channels=printers,logs` es un flujo Server-Sent Events. Cada mensaje es un sobre JSON
+`{ channel, event, data }`, con un latido cada 25 segundos. Los canales disponibles son `printers` y `logs`.

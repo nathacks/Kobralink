@@ -1,0 +1,37 @@
+---
+title: Chiavi API
+description: Chiavi per i client Moonraker, Prometheus e gli assistenti IA.
+---
+
+Tutte le chiavi si gestiscono in **Impostazioni → Chiavi API**. Crea una chiave per app, così puoi revocarla separatamente. Una
+chiave viene mostrata una sola volta. Inizia con `kl_`.
+
+| Uso | Apre |
+| --- | --- |
+| Moonraker | Il controllo completo della stampante dalla sua porta Moonraker, fotocamera inclusa |
+| Metriche Prometheus | L'accesso in lettura a `/api/v1/metrics` |
+| Assistente IA (MCP) | Il server MCP, in sola lettura o di controllo |
+
+Una chiave può avere più usi e copre una stampante o tutte. Una chiave con uso MCP copre sempre tutte le stampanti. Gli
+osservatori non possono creare chiavi.
+
+## Proteggere le porte Moonraker [#lock-the-moonraker-ports]
+
+Per impostazione predefinita le porte Moonraker accettano chiunque sulla rete. Attiva **Richiedi una chiave API sulle porte
+Moonraker** in **Impostazioni → OrcaSlicer** per richiedere una chiave su tutte le stampanti, fotocamera inclusa.
+
+I client inviano la chiave in uno di questi modi:
+
+| Modo | Usato da |
+| --- | --- |
+| `X-Api-Key: kl_…` | OrcaSlicer, Fluidd, Obico, Home Assistant |
+| `Authorization: Bearer kl_…` | Script |
+| `?api_key=kl_…` nell'URL | Tag `<img>` della fotocamera |
+| `/access/oneshot_token`, poi `?token=…` | Client WebSocket |
+
+Due cose da sapere:
+
+- **Mainsail** non ha un campo per la chiave API e non può collegarsi quando l'opzione è attiva.
+- Gli indirizzi sotto `/serve/` restano aperti, perché la stampante vi scarica i suoi file.
+
+Una chiave legata a una stampante sblocca solo quella stampante.

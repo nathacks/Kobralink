@@ -1,0 +1,35 @@
+---
+title: Mises à jour
+description: Mettre à jour Kobralink.
+---
+
+**Paramètres → Système** affiche la version actuelle et cherche une version plus récente sur GitHub. Vous pouvez désactiver
+cette vérification dans **Paramètres → Général**.
+
+[Sauvegardez](/fr/docs/administration/backup) avant de mettre à jour. Les migrations de la base sont appliquées automatiquement
+au démarrage ; revenir à une version plus ancienne n'est pas possible sans sauvegarde.
+
+## Docker
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Si vous avez figé une version, modifiez d'abord la ligne `image:`.
+
+## Application de bureau
+
+L'application propose la mise à jour d'elle-même, voir [Application de bureau](/fr/docs/getting-started/desktop#updates).
+
+## Depuis les sources
+
+```bash
+git pull
+bun install
+bun run build
+```
+
+## Pendant une impression
+
+Redémarrer Kobralink n'arrête pas une impression. La connexion à l'imprimante coupe quelques secondes.

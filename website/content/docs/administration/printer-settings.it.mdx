@@ -1,0 +1,86 @@
+---
+title: Impostazioni della stampante
+description: Tutte le opzioni di una stampante.
+---
+
+Apri una stampante, poi **Impostazioni**.
+
+## Profilo [#profile]
+
+| Impostazione | Effetto |
+| --- | --- |
+| Posizione | Testo libero |
+| Tag | Fino a 20. Raggruppano le stampanti per indirizzare elementi della coda e automazioni |
+| Ugello installato | I file slicati per un altro ugello non vanno a questa stampante |
+| Potenza media assorbita | Sostituisce il valore predefinito nel costo dell'energia |
+
+Le specifiche ufficiali compaiono quando Anycubic le pubblica per il modello.
+
+## Connessione
+
+| Impostazione | Effetto |
+| --- | --- |
+| Nome, indirizzo IP | |
+| Porta Moonraker | Da 1024 a 65535, univoca |
+| Aggiorna credenziali | Rilegge le credenziali dalla stampante |
+| Riavvia sessione MQTT | Si ricollega |
+| Disconnetti | Chiude la sessione finché non ti ricolleghi. Utile per lasciare entrare un altro client LAN |
+
+## Stampa [#printing]
+
+| Impostazione | Predefinito | Effetto |
+| --- | --- | --- |
+| Livellamento automatico del piano | attivo | Prima di ogni stampa |
+| Compensazione delle vibrazioni | disattivato | Prima di ogni stampa |
+| Calibrazione del flusso | attivo | Prima di ogni stampa |
+| Fotocamera sempre attiva | attivo | Tiene la fotocamera accesa |
+| Fotocamera all'avvio della stampa | disattivato | Avvia lo streaming quando inizia una stampa |
+| Slot AMS predefinito | auto | *auto* usa tutti gli slot di cui il G-code ha bisogno |
+| Avvisa sui caricamenti web | attivo | Chiedere conferma prima di stampare un file caricato dal browser |
+| Finestra dopo il caricamento | attivo | Apre la finestra di stampa dopo un caricamento. Disattivato, la stampa parte subito |
+| Avvia il file successivo automaticamente | disattivato | Vedi [Coda](/it/docs/guide/queue#automatic-start) |
+| Conferma piano libero | attivo | Vedi [Coda](/it/docs/guide/queue#clearing-the-bed) |
+| Attendi prima di avviare | 15 s | Da 0 a 3600 s |
+| Attivatore luce | disattivato | Vedi [Coda](/it/docs/guide/queue#light-trigger) |
+| Elimina dalla stampante dopo la stampa | disattivato | Libera la memoria della stampante |
+| Intervallo di polling | 3 s | Da 1 a 60 s tra due richieste di stato |
+
+## Timelapse
+
+| Impostazione | Predefinito |
+| --- | --- |
+| Registra un timelapse | disattivato |
+| Fotogrammi al secondo | 15 (da 5 a 60) |
+
+## Rilevamento fallimenti
+
+| Impostazione | Predefinito |
+| --- | --- |
+| Sorveglia questa stampante | attivo |
+
+Ha effetto una volta attivato il [rilevamento](/it/docs/guide/failure-detection) a livello globale.
+
+## Allarmi [#alerts]
+
+0 disattiva un allarme.
+
+| Allarme | Predefinito |
+| --- | --- |
+| Ugello max | 300 °C |
+| Piano max | 110 °C |
+| Offline da | 0 min (disattivato) |
+| Bobina quasi vuota | 0 g (disattivato) |
+
+## Presa (Home Assistant)
+
+Mostrata una volta configurata l'[API di Home Assistant](/it/docs/integrations/home-assistant#smart-plug-and-energy): interruttore
+della presa e contatore di energia.
+
+## Marche visibili
+
+Filtra i profili OrcaSlicer proposti per ogni slot. Senza selezione compaiono tutte le marche. I profili importati sono sempre
+mostrati.
+
+## Eliminare la stampante
+
+I file G-code salvati in Kobralink vengono conservati.

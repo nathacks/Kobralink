@@ -1,0 +1,44 @@
+---
+title: Arquivos
+description: A biblioteca de G-code, o armazenamento da impressora e as prévias.
+---
+
+Todo G-code enviado ao Kobralink, pelo OrcaSlicer ou pelo navegador, fica em **uma única biblioteca para todas as
+impressoras**. Só arquivos `.gcode` e `.bgcode` são aceitos.
+
+## Abas
+
+| Aba | Conteúdo |
+| --- | --- |
+| Todos | Todos os arquivos salvos |
+| Web | Arquivos enviados pelo navegador e ainda não verificados |
+| Impressora | Arquivos no armazenamento interno da impressora |
+| Histórico | Impressões anteriores |
+| Timelapses | Vídeos gravados |
+
+## Adicionar arquivos
+
+Solte um ou mais arquivos no cartão, ou clique para procurar. Os arquivos também podem vir do OrcaSlicer ou de qualquer cliente
+Moonraker.
+
+Um arquivo enviado pelo navegador não foi fatiado para esta impressora pelo OrcaSlicer, então o Kobralink pede confirmação antes
+de imprimi-lo. Você pode desativar isso com **Avisar sobre envios pela web** nas
+[configurações da impressora](/pt-br/docs/administration/printer-settings#printing).
+
+## Cartões de arquivo
+
+Cada cartão mostra a miniatura, o tempo estimado, os filamentos com a quantidade necessária por cor, a última impressão e o
+[custo estimado](/pt-br/docs/guide/statistics#costs).
+
+**Prévia** abre a peça em 3D, camada por camada. Durante uma impressão, *Seguir* mantém a visão na camada atual. Não há prévia
+para arquivos `.bgcode`.
+
+## Armazenamento da impressora
+
+A aba **Impressora** lista os arquivos guardados na própria impressora. Você pode imprimi-los ou excluí-los e ver a prévia
+gerada pelo fatiador. Excluir um arquivo aqui não o remove do Kobralink.
+
+- A impressora só lista seus arquivos mais recentes (no máximo 256 na Kobra 4).
+- Os *Modelos de teste* são os arquivos de exemplo que vieram com a impressora. Eles não podem ser excluídos.
+
+Para liberar o armazenamento automaticamente, ative **Excluir da impressora após imprimir** nas configurações da impressora.

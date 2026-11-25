@@ -1,0 +1,42 @@
+---
+title: Rilevamento fallimenti con IA
+description: Sorvegliare la fotocamera per individuare spaghetti e pezzi staccati.
+---
+
+Un modello di visione (di Obico) analizza un'immagine della fotocamera a intervalli regolari durante la stampa. Gira sulla
+macchina che ospita Kobralink: **nessuna immagine viene inviata online**.
+
+## Attivarlo
+
+1. Apri **Impostazioni → Rilevamento IA** e scarica il modello (circa 200 MB).
+2. Attiva **Attiva rilevamento**.
+3. Scegli l'azione e la sensibilità.
+
+Tutte le stampanti sono sorvegliate per impostazione predefinita. Puoi escluderne una nelle sue impostazioni, o disattivare il
+rilevamento nella finestra di stampa per una sola stampa.
+
+## Impostazioni
+
+| Impostazione | Predefinito | Effetto |
+| --- | --- | --- |
+| Azione in caso di fallimento | Solo notifica | Notificare, notificare e mettere in pausa, o notificare e annullare |
+| Accendi la luce della fotocamera | attivo | Accende la luce durante la sorveglianza. Kobralink la spegne alla fine se l'ha accesa |
+| Sensibilità | 1 | Da 0,5 a 2. Più alta significa avvisi prima e più falsi positivi |
+| Intervallo di analisi | 10 s | Da 5 a 60 s. Le soglie sono tarate per 10 s |
+
+Mettere in pausa e annullare richiedono una sicurezza maggiore di una semplice notifica. Le prime 30 immagini di una stampa non
+generano mai avvisi, circa 5 minuti con l'intervallo predefinito.
+
+Quando Kobralink mette in pausa o annulla una stampa da solo, lascia la luce accesa perché tu veda il pezzo.
+
+## Sorveglianza in diretta
+
+**Impostazioni → Rilevamento IA** mostra il punteggio di ogni stampa sorvegliata. La scheda della fotocamera mostra un badge:
+*IA* durante la sorveglianza, *Fallimento sospetto* quando il punteggio è alto.
+
+<Callout type="warn">
+    Il rilevamento limita i danni, non sostituisce la sorveglianza. Può non accorgersi di un fallimento e può sbagliare.
+    Inizia con *Solo notifica* per vedere come si comporta con la tua fotocamera.
+</Callout>
+
+Il modello usa la CPU. Se il motore di inferenza non è disponibile sulla tua piattaforma, la pagina lo indica.

@@ -1,0 +1,59 @@
+---
+title: Home Assistant
+description: Sensores e controles por MQTT, tomada inteligente e medição de energia.
+---
+
+Três formas independentes de usar o Kobralink com o Home Assistant:
+
+| Forma | Oferece |
+| --- | --- |
+| [Descoberta MQTT](#mqtt-discovery) | Sensores, luz, botões, imagem da câmera, miniatura no Home Assistant |
+| [API do Home Assistant](#smart-plug-and-energy) | Tomada inteligente e energia medida no Kobralink |
+| [Integração Moonraker (HACS)](#moonraker-integration) | A impressora como dispositivo Moonraker |
+
+## Descoberta MQTT [#mqtt-discovery]
+
+Em **Configurações → Integrações**, ative a publicação MQTT e informe a URL do broker (por exemplo `mqtt://192.168.1.10:1883`),
+o usuário e a senha. Os dispositivos aparecem sozinhos no Home Assistant.
+
+| Entidade | Tipo |
+| --- | --- |
+| Estado, progresso, arquivo, camada | Sensor |
+| Temperatura e alvo do bico e da mesa | Sensor |
+| Tempo restante e decorrido, ventoinha | Sensor |
+| Conectada, imprimindo | Sensor binário |
+| Luz | Interruptor |
+| Pausar, retomar, cancelar | Botão |
+| Câmera | Câmera |
+| Miniatura | Imagem |
+
+| Configuração | Padrão |
+| --- | --- |
+| Prefixo de descoberta | `homeassistant` |
+| Prefixo dos tópicos | `kobralink` |
+
+Os tópicos são `<prefixo>/<printerId>/state`, `/availability`, `/camera`, `/thumbnail` e `/cmd/{light,pause,resume,cancel}`.
+
+### Câmera ao vivo
+
+A entidade de câmera mostra a imagem mais recente a cada 5 segundos enquanto a câmera está ligada. Ela nunca liga a câmera. Para
+vídeo ao vivo, adicione a integração **MJPEG IP Camera** com a porta Moonraker da impressora:
+
+- URL MJPEG: `http://<ip-da-bridge>:7125/api/camera/stream`
+- URL da imagem estática: `http://<ip-da-bridge>:7125/api/camera/snapshot`
+
+## Tomada inteligente e energia [#smart-plug-and-energy]
+
+1. No Home Assistant, abra seu perfil → **Segurança** → **Tokens de acesso de longa duração** → **Criar token**.
+2. Em **Configurações → Integrações**, informe o endereço do Home Assistant e o token, e teste.
+3. Nas configurações de cada impressora, escolha o **interruptor da tomada** e o **medidor de energia** (um sensor em kWh).
+
+O interruptor liga e desliga a impressora pelo painel e pelas automações. O medidor é lido no início e no fim de cada impressão,
+para que o [custo](/pt-br/docs/guide/statistics#costs) use a energia real em vez de uma estimativa.
+
+## Integração Moonraker [#moonraker-integration]
+
+A integração **Moonraker** do HACS funciona com host = o endereço da bridge e porta = a porta Moonraker da impressora.
+
+Ela sempre busca a miniatura na porta `7125`. A partir da segunda impressora, ajuste a opção **Thumbnail Port** para a porta da
+impressora; caso contrário, ela mostra a miniatura da primeira.

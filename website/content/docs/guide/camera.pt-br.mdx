@@ -1,0 +1,43 @@
+---
+title: Câmera e timelapses
+description: Transmissão ao vivo, capturas e vídeos timelapse.
+---
+
+O Kobralink lê a câmera da impressora uma única vez e a compartilha com todos os espectadores: o painel, os clientes Moonraker,
+os timelapses e a detecção de falhas. A transmissão é MJPEG na resolução e na taxa de quadros originais.
+
+## Configurações
+
+| Configuração | Padrão | Efeito |
+| --- | --- | --- |
+| Câmera sempre ligada | ativado | Mantém a câmera ligada, para a visão ao vivo estar sempre disponível |
+| Câmera ao iniciar a impressão | desativado | Inicia a transmissão quando uma impressão começa |
+
+Sem *sempre ligada*, a transmissão para depois de 60 segundos sem espectadores.
+
+## Endereços
+
+Os clientes Moonraker recebem estes endereços automaticamente. Use a porta Moonraker da impressora:
+
+| Endereço | Conteúdo |
+| --- | --- |
+| `http://<host>:7125/api/camera/stream` | Transmissão MJPEG |
+| `http://<host>:7125/api/camera/snapshot` | Imagem estática (JPEG) |
+| `http://<host>:7125/api/camera/h264` | Transmissão H.264 |
+
+Se as portas Moonraker exigirem uma chave, adicione `?api_key=<chave>` ao endereço.
+
+## Timelapses [#timelapses]
+
+Ative **Gravar timelapse** nas configurações da impressora, ou na janela de impressão para uma única impressão. O Kobralink
+captura uma imagem por camada e monta um MP4 no fim da impressão, a 15 quadros por segundo por padrão (5 a 60).
+
+- Uma impressão com menos de 5 imagens é descartada.
+- Os vídeos ficam na aba **Timelapses** dos arquivos, onde você pode assistir, baixar e excluir.
+- Eles são guardados no diretório de dados, em `timelapses/`.
+
+Os timelapses são gravados pelo Kobralink. O timelapse da própria impressora, que precisa de um pendrive, não é usado.
+
+## ffmpeg
+
+O Docker e o aplicativo de desktop incluem o ffmpeg. Para usar outro executável, defina `KOBRALINK_FFMPEG`.

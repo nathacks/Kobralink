@@ -1,0 +1,68 @@
+---
+title: OrcaSlicer
+description: Collegare OrcaSlicer a Kobralink e inviare stampe.
+---
+
+Kobralink espone ogni stampante come server Moonraker, quindi OrcaSlicer si collega come a una macchina Klipper. L'indirizzo
+esatto di ogni stampante è in **Impostazioni → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Aprire le impostazioni di connessione
+
+Nella scheda **Prepara**, fai clic sull'icona di connessione (spina) accanto al profilo stampante, oppure apri
+**Impostazioni stampante → Generale → Stampante fisica**.
+
+</Step>
+<Step>
+
+### Scegliere il tipo di host
+
+Scegli **Moonraker**.
+
+</Step>
+<Step>
+
+### Compilare l'host
+
+Inserisci l'indirizzo della stampante, con protocollo e porta:
+
+```text
+http://192.168.1.20:7125
+```
+
+Se OrcaSlicer gira sulla stessa macchina di Kobralink, usa `http://localhost:7125`. Lascia vuota la chiave API, a meno che tu
+non abbia attivato [Richiedi una chiave API](/it/docs/administration/api-keys#lock-the-moonraker-ports).
+
+</Step>
+<Step>
+
+### Provare, poi salvare
+
+**Prova** deve indicare che la connessione è riuscita. La scheda **Dispositivo** ora mostra la tua Kobra e **Stampa** invia il
+G-code a Kobralink.
+
+</Step>
+</Steps>
+
+## Cosa fa la scheda Dispositivo
+
+La scheda Dispositivo riguarda solo la stampante: avviare una stampa, seguire l'avanzamento, mettere in pausa o annullare e
+sincronizzare i filamenti dell'ACE. Tutto il resto (coda, file, macro, fotocamera, rilevamento fallimenti, statistiche,
+notifiche) è nella dashboard di Kobralink.
+
+## Inviare una stampa
+
+Per impostazione predefinita, un file inviato da OrcaSlicer apre la finestra di stampa nella dashboard, anche con *invia e
+stampa*. Lì controlli filamenti e slot, poi avvii. Per partire subito, disattiva **Finestra dopo il caricamento** nelle
+[impostazioni della stampante](/it/docs/administration/printer-settings#printing).
+
+## Sincronizzare i filamenti
+
+Il pulsante di sincronizzazione dei filamenti nella scheda Dispositivo recupera gli slot indicati dalla stampante. Marca e
+profilo inviati per ogni slot si impostano nella [finestra dello slot](/it/docs/guide/filament#orcaslicer-profiles).
+
+## Saltare oggetti
+
+Per saltare oggetti, il G-code deve contenere i marcatori degli oggetti. Attiva **Etichetta oggetti** in OrcaSlicer.

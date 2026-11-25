@@ -1,0 +1,55 @@
+---
+title: Impressão
+description: A janela de impressão, o mapeamento de filamentos, pular objetos e impressões agendadas.
+---
+
+## A janela de impressão
+
+A janela abre quando você imprime um arquivo e depois de um envio (inclusive *enviar e imprimir* pelo OrcaSlicer).
+
+1. **Confira a peça** na prévia.
+2. **Mapeie os filamentos**: cada canal do G-code vai para um slot. O Kobralink sugere slots compatíveis e avisa quando o
+   material não confere.
+3. **Confira a quantidade**: a janela compara o filamento necessário com o que resta no carretel atribuído (suficiente, no
+   limite, insuficiente). Se um carretel não for suficiente, você precisa confirmar para imprimir mesmo assim.
+4. **Pule os objetos** que não quer imprimir.
+5. **Escolha as opções** e depois imprima, coloque na fila ou agende.
+
+Sem slot carregado, a impressora usa o filamento do cabeçote.
+
+### Opções
+
+| Opção | Efeito |
+| --- | --- |
+| Nivelamento automático da mesa | Sonda a mesa antes de imprimir |
+| Compensação de vibração | Mede as ressonâncias antes de imprimir para reduzir vibrações |
+| Calibração de fluxo | Mede o fluxo de extrusão antes de imprimir |
+| Gravar timelapse | Veja [Câmera](/pt-br/docs/guide/camera#timelapses) |
+| Detecção de falhas (IA) | Veja [Detecção de falhas](/pt-br/docs/guide/failure-detection) |
+
+As três opções de calibração só aparecem se a impressora informar que as suporta. Os valores padrão ficam nas
+[configurações da impressora](/pt-br/docs/administration/printer-settings#printing).
+
+## Durante a impressão
+
+A impressão começa depois da calibração; o cartão mostra a etapa atual (aquecimento, nivelamento, calibração de fluxo…). Você
+pode pausar, retomar, cancelar, mudar velocidade, temperaturas e ventoinha, e pular objetos.
+
+**Pular objetos** deixa de imprimir os objetos escolhidos a partir da camada atual. Não dá para desfazer nesta impressão. O
+G-code precisa ter marcadores de objeto (**Rotular objetos** no OrcaSlicer).
+
+Quando a impressora pausa sozinha, o motivo aparece no seu idioma para os códigos mais comuns. Os outros códigos mostram a
+mensagem da impressora.
+
+## Impressões agendadas
+
+**Agendar** inicia a impressão na data e hora escolhidas. Nesse momento:
+
+- se a impressora estiver livre, a impressão começa
+- se a impressora estiver ocupada, offline, em manutenção ou esperando a mesa ser limpa, o arquivo vai para o **início da fila**
+- se o Kobralink estava desligado, a impressão começa quando ele voltar, a menos que esteja mais de uma hora atrasada; nesse
+  caso ela é descartada
+
+As impressões agendadas ficam na aba **Agendadas** da fila. Você recebe uma notificação com o resultado.
+
+<Callout type="warn">Confira se a mesa está vazia antes de um início agendado.</Callout>

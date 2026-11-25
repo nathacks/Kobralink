@@ -1,0 +1,52 @@
+---
+title: Automatisierungen
+description: Regeln, die auf Ihre Drucker wirken, wenn etwas passiert.
+---
+
+Eine Regel sagt, **wann** etwas passiert, **auf** welchen Druckern, und **dann** was zu tun ist. Verwalten Sie sie auf der Seite
+**Automatisierungen**.
+
+## Auslöser
+
+| Auslöser | Wann |
+| --- | --- |
+| Ein Druck ist fertig | Der Druck endete normal |
+| Ein Druck wird abgebrochen oder schlägt fehl | Der Druck endete vorzeitig |
+| Das Bett ist geräumt | Sie haben es bestätigt oder den Licht-Auslöser verwendet |
+| Eine Spule wird knapp | Der Spulenalarm des Druckers löst aus |
+| Jeden Tag zu einer Uhrzeit | Serverzeit, `HH:MM` |
+
+Der Spulen-Auslöser braucht eine Schwelle in den [Alarmen](/de/docs/administration/printer-settings#alerts) des Druckers. Der
+Zeit-Auslöser nutzt die Zeitzone des Servers, bei Docker über `TZ` gesetzt.
+
+## Ziele
+
+Alle Drucker, ein Drucker oder die Drucker, die alle angegebenen Tags tragen.
+
+## Aktionen
+
+Eine Regel hat 1 bis 10 Aktionen, nacheinander ausgeführt:
+
+| Aktion | Hinweise |
+| --- | --- |
+| Makro ausführen | |
+| Licht | An oder aus |
+| Filament (ACE) | Einen Slot laden oder entladen; schlägt auf einem Drucker ohne ACE fehl |
+| Smarte Steckdose | An oder aus |
+| Benachrichtigen | Nachricht mit bis zu 200 Zeichen |
+| Warten | 1 bis 3600 s |
+
+Schlägt eine Aktion fehl, stoppt die Regel dort. Der Fehler wird an der Regel angezeigt.
+
+**Ausschalten der Steckdose** wird abgelehnt, solange ein Druck läuft oder pausiert ist. Sonst wartet Kobralink, bis die Düse
+unter 50 °C abgekühlt ist, und gibt nach 30 Minuten auf.
+
+## Beispiele
+
+| Ziel | Wann | Dann |
+| --- | --- | --- |
+| Nach dem Druck abschalten | Ein Druck ist fertig | Smarte Steckdose: aus |
+| Nachts Licht aus | Jeden Tag um 23:00 | Licht: aus |
+| Die Werkstatt warnen | Ein Druck wird abgebrochen oder schlägt fehl | Benachrichtigen: „Drucker prüfen" |
+
+**Jetzt ausführen** testet eine Regel auf einem Drucker. Die Regel zeigt ihre letzte Ausführung.

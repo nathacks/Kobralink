@@ -1,0 +1,44 @@
+---
+title: Kamera und Zeitraffer
+description: Livestream, Schnappschüsse und Zeitraffer-Videos.
+---
+
+Kobralink liest die Druckerkamera einmal und teilt sie mit allen Zuschauern: Dashboard, Moonraker-Clients, Zeitraffer und
+Fehlererkennung. Der Stream ist MJPEG in nativer Auflösung und Bildrate.
+
+## Einstellungen
+
+| Einstellung | Standard | Wirkung |
+| --- | --- | --- |
+| Kamera immer an | an | Hält die Kamera aktiv, damit die Liveansicht immer verfügbar ist |
+| Kamera bei Druckstart | aus | Startet den Stream, wenn ein Druck beginnt |
+
+Ohne *immer an* stoppt der Stream nach 60 Sekunden ohne Zuschauer.
+
+## Adressen
+
+Moonraker-Clients erhalten diese Adressen automatisch. Verwenden Sie den Moonraker-Port des Druckers:
+
+| Adresse | Inhalt |
+| --- | --- |
+| `http://<host>:7125/api/camera/stream` | MJPEG-Stream |
+| `http://<host>:7125/api/camera/snapshot` | Standbild (JPEG) |
+| `http://<host>:7125/api/camera/h264` | H.264-Stream |
+
+Verlangen die Moonraker-Ports einen Schlüssel, hängen Sie `?api_key=<schlüssel>` an die Adresse.
+
+## Zeitraffer [#timelapses]
+
+Schalten Sie **Zeitraffer aufnehmen** in den Druckereinstellungen ein, oder im Druckdialog für einen einzelnen Druck.
+Kobralink nimmt ein Bild pro Schicht auf und erstellt am Ende des Drucks ein MP4, standardmäßig mit 15 Bildern pro Sekunde
+(5 bis 60).
+
+- Ein Druck mit weniger als 5 Bildern wird verworfen.
+- Die Videos liegen im Tab **Zeitraffer** der Dateien, wo Sie sie abspielen, herunterladen und löschen können.
+- Sie werden im Datenverzeichnis unter `timelapses/` gespeichert.
+
+Zeitraffer werden von Kobralink aufgenommen. Der druckereigene Zeitraffer, der einen USB-Stick braucht, wird nicht verwendet.
+
+## ffmpeg
+
+Docker und die Desktop-App enthalten ffmpeg. Für eine andere Binärdatei setzen Sie `KOBRALINK_FFMPEG`.

@@ -1,0 +1,101 @@
+---
+title: Docker
+description: Install Kobralink on a server with Docker Compose.
+---
+
+You need Docker with Docker Compose, on a machine on the same network as the printer. The image
+[`nathacks/kobralink`](https://hub.docker.com/r/nathacks/kobralink) runs on linux/amd64 and linux/arm64.
+
+<Steps>
+<Step>
+
+### Download the files
+
+```bash
+mkdir kobralink && cd kobralink
+curl -fsSLO https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/docker-compose.prod.yml
+curl -fsSL https://raw.githubusercontent.com/NatHacks/Kobralink/main/infra/.env.example -o .env
+```
+
+</Step>
+<Step>
+
+### Set the address
+
+Edit `.env` and set `BETTER_AUTH_URL` to the URL you will type in the browser:
+
+```bash title=".env"
+BETTER_AUTH_URL=http://192.168.1.20:7100
+TZ=Europe/Paris
+```
+
+Sign-in is tied to this address. If you also open Kobralink through another address, add it to
+`KOBRALINK_EXTRA_ORIGINS`. `TZ` sets the time zone used by time-based automations and daily statistics (UTC otherwise).
+
+</Step>
+<Step>
+
+### Start
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Open `http://<host>:7100` and follow the [first run](/en/docs/getting-started/first-run).
+
+</Step>
+</Steps>
+
+<Callout type="warn" title="Create your account right away">
+    The first account created becomes the administrator. Create it before you make Kobralink reachable from outside your
+    network.
+</Callout>
+
+## Ports
+
+| Port | Use |
+| --- | --- |
+| `7100` | Dashboard, API, MCP server |
+| `7125`–`7140` | Moonraker, one port per printer (16 printers) |
+
+Kobralink assigns Moonraker ports without limit (`7125`, `7126`, …), but the compose file only publishes
+`7125-7140`. From the 17th printer, widen the range:
+
+```yaml title="docker-compose.prod.yml"
+ports:
+  - "${KOBRALINK_BIND:-0.0.0.0}:${KOBRALINK_PORT:-7100}:7100"
+  - "${KOBRALINK_BIND:-0.0.0.0}:7125-7224:7125-7224"
+```
+
+On Linux you can use `network_mode: host` instead and remove the `ports:` block. `KOBRALINK_BIND` then no longer
+applies: every port listens on all interfaces.
+
+## Data
+
+The database, G-code files, timelapses and the session secret live in the `kobralink-data` volume, mounted on `/data`.
+See [Backup](/en/docs/administration/backup).
+
+## Run a specific version
+
+`docker-compose.prod.yml` runs `nathacks/kobralink:latest`. To pin a version, edit its `image:` line:
+
+```yaml title="docker-compose.prod.yml"
+image: nathacks/kobralink:1.1.0
+```
+
+Published tags are `<version>`, `<major>.<minor>` and `latest`.
+
+## Build from source
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink/infra
+cp .env.example .env
+docker compose up -d --build
+```
+
+## Next steps
+
+- [All environment variables](/en/docs/administration/environment)
+- [HTTPS and reverse proxy](/en/docs/administration/https)
+- [Updating](/en/docs/administration/updates)

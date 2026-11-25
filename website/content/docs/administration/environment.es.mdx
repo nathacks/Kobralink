@@ -1,0 +1,43 @@
+---
+title: Variables de entorno
+description: La configuración del servidor.
+---
+
+## Docker
+
+Se definen en `.env`, junto al archivo compose.
+
+| Variable | Por defecto | Función |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | `http://localhost:7100` | **Defínela**: la URL que usa el navegador |
+| `BETTER_AUTH_SECRET` | generado en `/data` | Secreto de sesión (`openssl rand -base64 32`) |
+| `KOBRALINK_BIND` | `0.0.0.0` | Interfaz del host. `127.0.0.1` detrás de un proxy inverso |
+| `KOBRALINK_PORT` | `7100` | Puerto del panel en el host |
+| `KOBRALINK_EXTRA_ORIGINS` | | Otros orígenes permitidos, separados por comas |
+| `KOBRALINK_TRUSTED_PROXIES` | | IP o CIDR de los proxies, separados por comas |
+| `KOBRALINK_IP_HEADERS` | | Cabecera con la IP del cliente, puesta por el proxy |
+| `KOBRALINK_DOMAIN` | | Dominio para `docker-compose.https.yml` |
+| `KOBRALINK_IMAGE` | `nathacks/kobralink:latest` | Nombre de la imagen, solo lo usa `docker-compose.yml` (compilación desde el código) |
+| `TZ` | `UTC` | Zona horaria de las automatizaciones y de las estadísticas diarias |
+
+## Proceso del servidor
+
+Ya definidas en la imagen Docker y en la aplicación de escritorio. Útiles al arrancar desde el código fuente.
+
+| Variable | Por defecto | Función |
+| --- | --- | --- |
+| `KOBRALINK_DATA_DIR` | `<repo>/data` | Directorio de datos |
+| `DATABASE_URL` | `file:<data>/kobralink.db` | Base de datos |
+| `KOBRALINK_WEB_DIR` | `apps/web/dist` | Compilación del panel que se sirve |
+| `KOBRALINK_CERTS_DIR` | `apps/api/certs` | `anycubic_slicer.crt` y `.key` |
+| `KOBRALINK_FFMPEG` | incluido, si no `PATH` | Binario de ffmpeg |
+| `KOBRALINK_VERSION` | `package.json` | Versión mostrada |
+| `KOBRALINK_UPDATE_REPO` | `NatHacks/Kobralink` | Repositorio consultado para las actualizaciones |
+| `KOBRALINK_DETECTION_MODEL_URL` | el modelo de Obico | Dirección del modelo de detección |
+
+## Aplicación de escritorio
+
+| Variable | Función |
+| --- | --- |
+| `KOBRALINK_PORT` | Puerto del bridge local |
+| `KOBRALINK_URL` | Abre este bridge sin arrancar uno local |

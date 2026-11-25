@@ -1,0 +1,5 @@
+{
+    "title": "Primeiros passos",
+    "defaultOpen": true,
+    "pages": ["docker", "desktop", "first-run", "orcaslicer"]
+}

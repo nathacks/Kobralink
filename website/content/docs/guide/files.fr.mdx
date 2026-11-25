@@ -1,0 +1,45 @@
+---
+title: Fichiers
+description: La bibliothèque G-code, le stockage de l'imprimante et les aperçus.
+---
+
+Chaque G-code envoyé à Kobralink, depuis OrcaSlicer ou le navigateur, est gardé dans **une seule bibliothèque pour toutes les
+imprimantes**. Seuls les fichiers `.gcode` et `.bgcode` sont acceptés.
+
+## Onglets
+
+| Onglet | Contenu |
+| --- | --- |
+| Tous | Tous les fichiers stockés |
+| Web | Fichiers envoyés depuis le navigateur et pas encore vérifiés |
+| Imprimante | Fichiers du stockage interne de l'imprimante |
+| Historique | Impressions passées |
+| Timelapses | Vidéos enregistrées |
+
+## Ajouter des fichiers
+
+Déposez un ou plusieurs fichiers sur la carte, ou cliquez pour parcourir. Les fichiers peuvent aussi venir d'OrcaSlicer ou de
+n'importe quel client Moonraker.
+
+Un fichier envoyé depuis le navigateur n'a pas été tranché pour cette imprimante par OrcaSlicer : Kobralink demande une
+confirmation avant de l'imprimer. Vous pouvez désactiver cela avec **Avertir pour les envois web** dans les
+[paramètres de l'imprimante](/fr/docs/administration/printer-settings#printing).
+
+## Cartes de fichier
+
+Chaque carte affiche la miniature, le temps estimé, les filaments avec la quantité nécessaire par couleur, la dernière
+impression et le [coût estimé](/fr/docs/guide/statistics#costs).
+
+**Aperçu** ouvre la pièce en 3D, couche par couche. Pendant une impression, *Suivre* garde la vue sur la couche en cours.
+Les aperçus ne sont pas disponibles pour les fichiers `.bgcode`.
+
+## Stockage de l'imprimante
+
+L'onglet **Imprimante** liste les fichiers stockés sur l'imprimante elle-même. Vous pouvez les imprimer ou les supprimer, et
+voir l'aperçu créé par le slicer. Supprimer un fichier ici ne le retire pas de Kobralink.
+
+- L'imprimante ne liste que ses fichiers les plus récents (256 au maximum sur la Kobra 4).
+- Les *Modèles de test* sont les fichiers d'exemple fournis avec l'imprimante. Ils ne peuvent pas être supprimés.
+
+Pour libérer le stockage automatiquement, activez **Supprimer de l'imprimante après impression** dans les paramètres de
+l'imprimante.

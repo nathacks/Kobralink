@@ -1,0 +1,35 @@
+---
+title: Actualizaciones
+description: Actualizar Kobralink.
+---
+
+**Ajustes → Sistema** muestra la versión actual y busca una más reciente en GitHub. Puedes desactivar la comprobación en
+**Ajustes → General**.
+
+[Haz una copia de seguridad](/es/docs/administration/backup) antes de actualizar. Las migraciones de la base de datos se aplican
+automáticamente al arrancar; volver a una versión anterior no es posible sin copia de seguridad.
+
+## Docker
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Si fijaste una versión, cambia antes la línea `image:`.
+
+## Aplicación de escritorio
+
+La aplicación ofrece la actualización por sí sola, consulta [Aplicación de escritorio](/es/docs/getting-started/desktop#updates).
+
+## Desde el código fuente
+
+```bash
+git pull
+bun install
+bun run build
+```
+
+## Durante una impresión
+
+Reiniciar Kobralink no detiene una impresión. La conexión con la impresora se corta unos segundos.

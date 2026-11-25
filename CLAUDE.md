@@ -32,6 +32,10 @@ payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT 
   propres runtime + messages pour l'API ; le web recompile les mêmes messages dans `apps/web/src/paraglide`.
 - Les trois packages : tsdown, sortie ESM + CJS. `build` des packages requis avant `dev`/`check-types`/`test` des apps (turbo `^build`).
 - `infra/` — `Dockerfile` (+ `Dockerfile.dockerignore`), `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`. Pas de Dockerfile à la racine.
+- `website/` — doc publique Fumadocs (Next.js export statique, 7 langues), hors workspace Bun (son propre `bun.lock`), publiée sur
+  GitHub Pages par `.github/workflows/docs.yml` sur tag `docs-v*` (ou lancement manuel). Pages dans `website/content/docs` : `page.mdx` (anglais) + `page.<lang>.mdx` pour les 6 autres
+  langues de l'app (URL `/<lang>/docs/…`, liens écrits `/<lang>/docs/…`, ancres ciblées fixées par `## Titre [#id]`). À mettre à jour dans les 7 langues avec
+  toute fonctionnalité visible.
 - `.github/workflows/release.yml` — sur tag `v*` : image Docker Hub multi-arch (`DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN`)
   + release GitHub avec les builds Electron mac/win/linux (`bun run --filter @kobralink/desktop dist -- --mac|--win|--linux`).
   macOS = arm64 + x64 dans un seul job (`KOBRALINK_BUNDLE_ARCHS=arm64,x64` fait installer les natifs libsql/ffmpeg des deux archs dans `apps/api/bundle`).
@@ -102,6 +106,8 @@ Pas de pnpm/npm : lockfile = `bun.lock`, scripts de workspace via `bun run --fil
 ## Règles
 
 - Ne jamais committer sans demande explicite.
+- Toute nouvelle fonctionnalité ou tout changement de comportement visible (UI, réglage, endpoint, variable d'env, Moonraker, MCP…)
+  = mettre à jour la doc `website/content/docs` dans le même changement, dans les 7 langues (`page.mdx` + `page.<lang>.mdx`).
 - Les certificats `apps/api/certs/*` (cert client Anycubic Slicer) sont du matériel tiers :
   ne pas les modifier. Ils sont embarqués tels quels dans le repo, l'image Docker et le bundle Electron pour que
   l'utilisateur n'ait rien à fournir ; pas de génération possible (le broker MQTT de l'imprimante vérifie ce cert précis).

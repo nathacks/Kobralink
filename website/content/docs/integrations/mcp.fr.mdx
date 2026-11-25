@@ -1,0 +1,150 @@
+---
+title: Serveur MCP (IA)
+description: Laisser un assistant IA surveiller et piloter vos imprimantes.
+---
+
+Kobralink est un serveur [MCP](https://modelcontextprotocol.io) : Claude, ChatGPT ou n'importe quel client MCP peut surveiller
+et piloter les imprimantes grâce à 56 outils (20 en lecture, 36 de contrôle). Il est **désactivé par défaut**.
+
+## Configurer
+
+<Steps>
+<Step>
+
+### L'activer
+
+Un administrateur ouvre **Paramètres → MCP (IA)** et active le serveur. Son adresse est `<votre adresse>/api/mcp`.
+
+</Step>
+<Step>
+
+### Connecter le client
+
+<Tabs items={['Claude Code', 'claude.ai, ChatGPT', 'Autres clients']}>
+<Tab value="Claude Code">
+
+Créez une clé avec l'usage **Assistant IA (MCP)** dans [Paramètres → Clés API](/fr/docs/administration/api-keys), puis :
+
+```bash
+claude mcp add --transport http kobralink http://192.168.1.20:7100/api/mcp --header "Authorization: Bearer kl_..."
+```
+
+</Tab>
+<Tab value="claude.ai, ChatGPT">
+
+Ils tournent dans le cloud : Kobralink a besoin d'une adresse HTTPS publique, voir [HTTPS](/fr/docs/administration/https).
+Ajoutez ensuite `https://<domaine>/api/mcp` comme connecteur et connectez-vous avec votre compte Kobralink (OAuth 2.1).
+
+</Tab>
+<Tab value="Autres clients">
+
+Tout client capable d'envoyer un en-tête fonctionne sur le réseau local. Envoyez `Authorization: Bearer kl_...` avec une clé
+MCP.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## Accès
+
+Chaque clé ou application connectée est en **lecture seule** ou en **contrôle**. Le rôle de son propriétaire est vérifié à
+chaque requête : un compte en lecture seule ne contrôle jamais rien. Les clés MCP couvrent toujours toutes les imprimantes.
+Les clés se révoquent dans **Paramètres → Clés API** et les applications dans **Paramètres → MCP (IA)**, avec effet immédiat.
+
+## Autorisations
+
+Un administrateur règle chaque outil sur :
+
+| Mode | Effet |
+| --- | --- |
+| Autoriser | L'assistant agit seul |
+| Demander | Vous recevez une question oui/non dans la conversation, et l'outil ne s'exécute que sur oui |
+| Refuser | L'outil est masqué |
+
+Les outils sensibles démarrent sur *Demander*, les autres sur *Autoriser*. Une application qui ne sait pas poser de question
+reçoit un refus ; passez alors l'outil sur *Autoriser* et comptez sur la validation propre à l'application. La réponse vient
+de l'application d'IA : Kobralink ne peut pas prouver qui a cliqué.
+
+## Sécurité
+
+- Déplacer les axes, charger du filament, sécher, lancer une impression ou couper l'alimentation est **refusé pendant que
+  l'imprimante imprime ou est en pause**.
+- Lancer une impression exige `bedIsClear: true`. Le serveur ne peut pas vérifier que le plateau est vraiment vide : gardez la
+  validation des outils active dans votre client IA.
+- Chaque appel de contrôle est écrit dans le journal avec la clé ou l'application, l'outil et l'imprimante.
+- Les réponses ne contiennent jamais d'adresses de caméra, d'adresses IP ni d'identifiants.
+- Non exposé : utilisateurs, clés, paramètres, sauvegardes, suppression de fichiers, G-code brut. Envoyez les fichiers avec le
+  tableau de bord ou Moonraker.
+
+Ces règles ne concernent que le serveur MCP. Un programme de votre réseau peut toujours utiliser les ports Moonraker :
+verrouillez-les avec une [clé API](/fr/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Outils de lecture
+
+| Outil | Rôle |
+| --- | --- |
+| `list_printers` | Imprimantes et état |
+| `get_printer_state` | État complet en direct |
+| `get_temperature_history` | Courbes de température |
+| `get_camera_snapshot` | Image de la caméra |
+| `get_power_state` | État de la prise |
+| `list_files` | Fichiers G-code |
+| `get_file_objects` | Objets d'un fichier |
+| `list_printer_files` | Fichiers dans l'imprimante |
+| `list_filament_slots` | Slots de filament et ACE |
+| `list_spools` | Bobines |
+| `get_queue` | File d'attente |
+| `check_queue_compatibility` | Imprimantes compatibles avec un fichier |
+| `list_schedules` | Impressions et séchages planifiés |
+| `get_print_history` | Historique des impressions |
+| `get_stats` | Statistiques et coûts |
+| `get_recent_events` | Notifications récentes |
+| `get_detection_status` | Détection d'échec IA |
+| `list_maintenance` | Tâches d'entretien |
+| `list_macros` | Macros |
+| `list_automations` | Automatisations |
+
+## Outils de contrôle
+
+*Défaut* est l'autorisation avant toute modification. *Bloqué* signifie refusé pendant une impression.
+
+| Outil | Rôle | Défaut | Bloqué |
+| --- | --- | --- | --- |
+| `start_print` | Lancer une impression | Demander | Oui |
+| `start_printer_file` | Lancer un fichier de l'imprimante | Demander | Oui |
+| `pause_print` | Mettre en pause | Autoriser |  |
+| `resume_print` | Reprendre l'impression | Autoriser |  |
+| `cancel_print` | Annuler l'impression | Demander |  |
+| `skip_objects` | Exclure des objets | Demander |  |
+| `set_print_speed` | Vitesse d'impression | Autoriser |  |
+| `set_temperature` | Température de la buse et du plateau | Demander |  |
+| `set_fan` | Ventilateur | Autoriser |  |
+| `set_light` | Lumière | Autoriser |  |
+| `home_axes` | Retour à l'origine | Autoriser | Oui |
+| `move_axis` | Déplacer un axe | Autoriser | Oui |
+| `disable_motors` | Couper les moteurs | Autoriser | Oui |
+| `set_power` | Allumer ou couper la prise | Demander | Parfois |
+| `set_printer_connection` | Connexion à l'imprimante | Autoriser |  |
+| `set_filament_slot` | Matière et couleur d'un slot | Autoriser |  |
+| `feed_filament` | Charger ou décharger le filament | Autoriser | Oui |
+| `set_auto_feed` | Recharge automatique ACE | Autoriser |  |
+| `start_drying` | Démarrer le séchage | Autoriser | Oui |
+| `stop_drying` | Arrêter le séchage | Autoriser |  |
+| `assign_spool` | Associer une bobine | Autoriser |  |
+| `add_to_queue` | Ajouter à la file | Demander |  |
+| `remove_from_queue` | Retirer de la file | Demander |  |
+| `reorder_queue` | Réordonner la file | Autoriser |  |
+| `start_next_in_queue` | Lancer le suivant de la file | Demander | Oui |
+| `confirm_bed_clear` | Confirmer que le plateau est vide | Demander | Oui |
+| `cancel_queue_auto_start` | Annuler le démarrage automatique | Autoriser |  |
+| `set_maintenance_mode` | Mode maintenance | Demander |  |
+| `schedule_print` | Planifier une impression | Demander |  |
+| `cancel_scheduled_print` | Annuler une impression planifiée | Demander |  |
+| `schedule_drying` | Planifier un séchage | Autoriser |  |
+| `cancel_scheduled_drying` | Annuler un séchage planifié | Demander |  |
+| `run_macro` | Lancer une macro | Demander | Parfois |
+| `set_automation_enabled` | Activer ou désactiver une automatisation | Autoriser |  |
+| `complete_maintenance_task` | Valider un entretien | Autoriser |  |
+| `annotate_print_job` | Note ou cause d'échec d'une impression | Autoriser |  |

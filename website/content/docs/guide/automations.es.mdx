@@ -1,0 +1,52 @@
+---
+title: Automatizaciones
+description: Reglas que actúan sobre tus impresoras cuando pasa algo.
+---
+
+Una regla dice **cuándo** pasa algo, **en** qué impresoras, y **entonces** qué hacer. Gestiónalas en la página
+**Automatizaciones**.
+
+## Disparadores
+
+| Disparador | Cuándo |
+| --- | --- |
+| Termina una impresión | La impresión acabó con normalidad |
+| Se cancela o falla una impresión | La impresión acabó antes de tiempo |
+| Se vacía la cama | Lo confirmaste, o usaste el disparador de luz |
+| Una bobina se acaba | Salta la alerta de bobina casi vacía de la impresora |
+| Cada día a una hora | Hora del servidor, `HH:MM` |
+
+El disparador de bobina necesita un umbral en las [alertas](/es/docs/administration/printer-settings#alerts) de la impresora. El
+disparador horario usa la zona horaria del servidor, definida con `TZ` en Docker.
+
+## Destinos
+
+Todas las impresoras, una impresora, o las impresoras que llevan todas las etiquetas indicadas.
+
+## Acciones
+
+Una regla tiene de 1 a 10 acciones, ejecutadas en orden:
+
+| Acción | Notas |
+| --- | --- |
+| Ejecutar una macro | |
+| Luz | Encendida o apagada |
+| Filamento (ACE) | Cargar o descargar una ranura; falla en una impresora sin ACE |
+| Enchufe inteligente | Encendido o apagado |
+| Notificar | Mensaje de hasta 200 caracteres |
+| Esperar | 1 a 3600 s |
+
+Si una acción falla, la regla se detiene ahí. El error se muestra en la regla.
+
+**Apagar el enchufe** se rechaza mientras hay una impresión en curso o en pausa. Si no, Kobralink espera a que la boquilla baje
+de 50 °C, y se rinde a los 30 minutos.
+
+## Ejemplos
+
+| Objetivo | Cuándo | Entonces |
+| --- | --- | --- |
+| Apagar tras imprimir | Termina una impresión | Enchufe inteligente: apagado |
+| Luz apagada de noche | Cada día a las 23:00 | Luz: apagada |
+| Avisar al taller | Se cancela o falla una impresión | Notificar: «Revisa la impresora» |
+
+**Ejecutar ahora** prueba una regla en una impresora. La regla muestra su última ejecución.

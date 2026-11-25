@@ -1,0 +1,18 @@
+{
+    "title": "Guide d'utilisation",
+    "defaultOpen": true,
+    "pages": [
+        "dashboard",
+        "files",
+        "printing",
+        "queue",
+        "filament",
+        "camera",
+        "failure-detection",
+        "macros",
+        "automations",
+        "maintenance",
+        "statistics",
+        "notifications"
+    ]
+}

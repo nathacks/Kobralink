@@ -1,0 +1,63 @@
+---
+title: Home Assistant
+description: Capteurs et commandes par MQTT, prise connectée et mesure de l'énergie.
+---
+
+Trois façons indépendantes d'utiliser Kobralink avec Home Assistant :
+
+| Méthode | Apporte |
+| --- | --- |
+| [Découverte MQTT](#mqtt-discovery) | Capteurs, lumière, boutons, image de la caméra, miniature dans Home Assistant |
+| [API Home Assistant](#smart-plug-and-energy) | Prise connectée et énergie mesurée dans Kobralink |
+| [Intégration Moonraker (HACS)](#moonraker-integration) | L'imprimante comme appareil Moonraker |
+
+## Découverte MQTT [#mqtt-discovery]
+
+Dans **Paramètres → Intégrations**, activez la publication MQTT et saisissez l'URL du broker (par exemple
+`mqtt://192.168.1.10:1883`), le nom d'utilisateur et le mot de passe. Les appareils apparaissent tout seuls dans Home
+Assistant.
+
+| Entité | Type |
+| --- | --- |
+| État, progression, fichier, couche | Capteur |
+| Température et consigne de la buse et du plateau | Capteur |
+| Temps restant et écoulé, ventilateur | Capteur |
+| Connectée, en impression | Capteur binaire |
+| Lumière | Interrupteur |
+| Pause, reprise, annulation | Bouton |
+| Caméra | Caméra |
+| Miniature | Image |
+
+| Paramètre | Défaut |
+| --- | --- |
+| Préfixe de découverte | `homeassistant` |
+| Préfixe des topics | `kobralink` |
+
+Les topics sont `<préfixe>/<printerId>/state`, `/availability`, `/camera`, `/thumbnail` et
+`/cmd/{light,pause,resume,cancel}`.
+
+### Caméra en direct
+
+L'entité caméra affiche la dernière image toutes les 5 secondes quand la caméra tourne. Elle n'allume jamais la caméra. Pour
+la vidéo en direct, ajoutez l'intégration **MJPEG IP Camera** avec le port Moonraker de l'imprimante :
+
+- URL MJPEG : `http://<ip-du-bridge>:7125/api/camera/stream`
+- URL de l'image fixe : `http://<ip-du-bridge>:7125/api/camera/snapshot`
+
+## Prise connectée et énergie [#smart-plug-and-energy]
+
+1. Dans Home Assistant, ouvrez votre profil → **Sécurité** → **Jetons d'accès longue durée** → **Créer un jeton**.
+2. Dans **Paramètres → Intégrations**, saisissez l'adresse de Home Assistant et le jeton, puis testez.
+3. Dans les paramètres de chaque imprimante, choisissez son **interrupteur de la prise** et son **compteur d'énergie** (un
+   capteur en kWh).
+
+L'interrupteur allume et éteint l'imprimante depuis le tableau de bord et les automatisations. Le compteur est lu au début et
+à la fin de chaque impression, pour que le [coût](/fr/docs/guide/statistics#costs) utilise l'énergie réelle plutôt qu'une
+estimation.
+
+## Intégration Moonraker [#moonraker-integration]
+
+L'intégration HACS **Moonraker** fonctionne avec hôte = l'adresse du bridge et port = le port Moonraker de l'imprimante.
+
+Elle récupère toujours la miniature sur le port `7125`. À partir de la deuxième imprimante, réglez son option
+**Thumbnail Port** sur le port de l'imprimante, sinon elle affiche la miniature de la première imprimante.

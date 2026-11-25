@@ -1,0 +1,70 @@
+---
+title: Fehlerbehebung
+description: Häufige Probleme und was zu tun ist.
+---
+
+Beginnen Sie mit **Einstellungen → Protokolle**: Filtern Sie nach Drucker und laden Sie das Protokoll herunter, wenn Sie es
+teilen müssen. Entfernen Sie vor dem Veröffentlichen IP-Adressen und Dateinamen, die privat bleiben sollen.
+
+## Der Drucker bleibt offline
+
+| Meldung | Ursache | Lösung |
+| --- | --- | --- |
+| MQTT-Port geschlossen | Der LAN-Modus ist aus | In den Druckereinstellungen einschalten |
+| MQTT-Zugangsdaten abgelehnt | Die Zugangsdaten haben sich geändert | Druckereinstellungen → **Zugangsdaten aktualisieren** |
+| Drucker im Netzwerk nicht erreichbar | Falsche IP, Drucker aus, anderes Netzwerk | IP prüfen; im Router reservieren |
+| Verbindungslimit (Code 19002) | Ein anderer LAN-Client ist verbunden | Anycubic Slicer Next, Home-Assistant-Integrationen … schließen |
+| Manuell getrennt | Sie haben die Sitzung geschlossen | Neu verbinden |
+
+Der Drucker akzeptiert **nur eine LAN-Sitzung**: Zwei Kobralink-Instanzen am selben Drucker trennen sich gegenseitig.
+
+## Ich kann mich nicht anmelden
+
+`BETTER_AUTH_URL` muss die Adresse sein, die Sie im Browser eingeben, mit Protokoll und Port. Tragen Sie andere Adressen in
+`KOBRALINK_EXTRA_ORIGINS` ein und erstellen Sie den Container mit `docker compose up -d` neu. Mit einer HTTPS-Adresse
+funktioniert die Anmeldung über einfaches HTTP nicht.
+
+## OrcaSlicer verbindet sich nicht
+
+- Prüfen Sie, dass der Host `http://` und den Port des Druckers enthält.
+- Prüfen Sie, dass Kobralink läuft und die Firewall den Port erlaubt.
+- Werden Schlüssel verlangt, fügen Sie einen mit der Verwendung Moonraker ein.
+- Ab dem 17. Drucker [veröffentlichen Sie mehr Ports](/de/docs/getting-started/docker#ports).
+
+## Der Druck startet nach *Senden und drucken* nicht
+
+Der Druckdialog wartet im Dashboard. Bestätigen Sie dort, oder schalten Sie **Dialog nach dem Upload** in den
+Druckereinstellungen aus.
+
+## Der Upload wird abgelehnt
+
+| Meldung | Lösung |
+| --- | --- |
+| Nicht genug Speicherplatz auf dem Drucker | Dateien im Tab **Drucker** löschen |
+| Der Drucker hat Dateiname oder -typ abgelehnt | Einen einfachen Namen mit `.gcode` am Ende verwenden |
+| Der Drucker hat keine Upload-URL geliefert | Den Drucker neu verbinden |
+
+## Die Kamera wird nicht angezeigt
+
+- *Keine Kamera verbunden*: Der Drucker meldet, dass keine angeschlossen ist.
+- *429*: Ein anderer Client nutzt den Stream. Schließen Sie ihn und starten Sie den Stream neu.
+- Bei einer eigenen Installation prüfen Sie, ob ffmpeg verfügbar ist.
+
+## Die Warteschlange bewegt sich nicht
+
+Lesen Sie den am Eintrag angezeigten Grund, siehe [Warum ein Eintrag wartet](/de/docs/guide/queue#why-an-item-waits). Meist wurde
+das Bett nicht als frei bestätigt.
+
+## Automatisierungen laufen zur falschen Zeit
+
+Sie nutzen die Zeitzone des Servers, angezeigt unter **Einstellungen → System**. Setzen Sie `TZ` in `.env`.
+
+## Die Desktop-App startet die Bridge nicht
+
+Der Fehlerbildschirm führt zum Protokoll. Eine häufige Ursache ist, dass Port 7100 schon von einer anderen Instanz belegt ist.
+
+## Der TLS-Handshake wird abgelehnt
+
+Nach einem Anycubic-Firmware-Update kann das mitgelieferte Zertifikat veraltet sein. Eröffnen Sie ein
+[Issue](https://github.com/NatHacks/Kobralink/issues) oder extrahieren Sie ein neues: siehe
+[Zertifikate](/de/docs/development/setup#certificates).

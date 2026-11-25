@@ -1,0 +1,44 @@
+---
+title: Fotocamera e timelapse
+description: Streaming in diretta, istantanee e video timelapse.
+---
+
+Kobralink legge la fotocamera della stampante una sola volta e la condivide con tutti gli spettatori: la dashboard, i client
+Moonraker, i timelapse e il rilevamento fallimenti. Lo streaming è MJPEG alla risoluzione e alla frequenza native.
+
+## Impostazioni
+
+| Impostazione | Predefinito | Effetto |
+| --- | --- | --- |
+| Fotocamera sempre attiva | attivo | Tiene la fotocamera accesa, così la vista in diretta è sempre disponibile |
+| Fotocamera all'avvio della stampa | disattivato | Avvia lo streaming quando inizia una stampa |
+
+Senza *sempre attiva*, lo streaming si ferma dopo 60 secondi senza spettatori.
+
+## Indirizzi
+
+I client Moonraker ricevono questi indirizzi automaticamente. Usa la porta Moonraker della stampante:
+
+| Indirizzo | Contenuto |
+| --- | --- |
+| `http://<host>:7125/api/camera/stream` | Streaming MJPEG |
+| `http://<host>:7125/api/camera/snapshot` | Immagine fissa (JPEG) |
+| `http://<host>:7125/api/camera/h264` | Streaming H.264 |
+
+Se le porte Moonraker richiedono una chiave, aggiungi `?api_key=<chiave>` all'indirizzo.
+
+## Timelapse [#timelapses]
+
+Attiva **Registra un timelapse** nelle impostazioni della stampante, o nella finestra di stampa per una sola stampa. Kobralink
+scatta un'immagine per strato e crea un MP4 alla fine della stampa, a 15 fotogrammi al secondo per impostazione predefinita
+(da 5 a 60).
+
+- Una stampa che dà meno di 5 immagini viene scartata.
+- I video sono nella scheda **Timelapse** dei file, dove puoi guardarli, scaricarli ed eliminarli.
+- Sono salvati nella directory dei dati, in `timelapses/`.
+
+I timelapse sono registrati da Kobralink. Il timelapse proprio della stampante, che richiede una chiavetta USB, non viene usato.
+
+## ffmpeg
+
+Docker e l'app desktop includono ffmpeg. Per usare un altro eseguibile, imposta `KOBRALINK_FFMPEG`.

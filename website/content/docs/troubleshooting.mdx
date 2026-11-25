@@ -1,0 +1,69 @@
+---
+title: Troubleshooting
+description: Common problems and what to do.
+---
+
+Start with **Settings → Logs**: filter by printer, then download the log if you need to share it. Remove IP addresses and file names you want to keep
+private before posting it.
+
+## The printer stays offline
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| MQTT port closed | LAN mode is off | Turn it on in the printer settings |
+| MQTT credentials refused | The credentials changed | Printer settings → **Refresh credentials** |
+| Printer unreachable on the network | Wrong IP, printer off, other network | Check the IP; reserve it in your router |
+| Connection limit (code 19002) | Another LAN client is connected | Close Anycubic Slicer Next, Home Assistant integrations… |
+| Disconnected manually | You closed the session | Reconnect |
+
+The printer accepts a **single LAN session**: two Kobralink instances on the same printer disconnect each other.
+
+## I cannot sign in
+
+`BETTER_AUTH_URL` must be the address you type in the browser, protocol and port included. Add other addresses to
+`KOBRALINK_EXTRA_ORIGINS`, then recreate the container with `docker compose up -d`. With an HTTPS address, signing in over plain HTTP
+does not work.
+
+## OrcaSlicer cannot connect
+
+- Check that the host includes `http://` and the printer's port.
+- Check that Kobralink is running and that the firewall allows the port.
+- If keys are required, paste one with the Moonraker use.
+- From the 17th printer, [publish more ports](/en/docs/getting-started/docker#ports).
+
+## The print does not start after *send and print*
+
+The print dialog is waiting in the dashboard. Confirm there, or turn off **Dialog after upload** in the printer settings.
+
+## The upload is refused
+
+| Message | Fix |
+| --- | --- |
+| Not enough space on the printer | Delete files in the **Printer** tab |
+| The printer refused the file name or type | Use a simple name ending in `.gcode` |
+| The printer did not provide an upload URL | Reconnect the printer |
+
+## The camera does not show
+
+- *No camera connected*: the printer reports that none is plugged in.
+- *429*: another client uses the stream. Close it and restart the stream.
+- With a custom install, check that ffmpeg is available.
+
+## The queue does not move
+
+Read the reason shown on the item, see [Why an item waits](/en/docs/guide/queue#why-an-item-waits). Most often the bed has not been
+confirmed clear.
+
+## Automations run at the wrong time
+
+They use the server time zone, shown in **Settings → System**. Set `TZ` in `.env`.
+
+## The desktop app does not start the bridge
+
+The error screen gives access to the log. A common cause is port 7100 already in use by another instance.
+
+## The TLS handshake is refused
+
+After an Anycubic firmware update, the bundled certificate may be outdated. Open an
+[issue](https://github.com/NatHacks/Kobralink/issues), or extract a fresh one: see
+[Certificates](/en/docs/development/setup#certificates).

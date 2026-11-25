@@ -1,0 +1,63 @@
+---
+title: OrcaSlicer
+description: 将 OrcaSlicer 连接到 Kobralink 并发送打印。
+---
+
+Kobralink 把每台打印机提供为一个 Moonraker 服务器，所以 OrcaSlicer 就像连接 Klipper 机器一样连接它。每台打印机的确切地址列在
+**设置 → OrcaSlicer** 中。
+
+<Steps>
+<Step>
+
+### 打开连接设置
+
+在**准备**页签中，点击打印机预设旁的连接（插头）图标，或打开**打印机设置 → 常规 → 物理打印机**。
+
+</Step>
+<Step>
+
+### 选择主机类型
+
+选择 **Moonraker**。
+
+</Step>
+<Step>
+
+### 填写主机
+
+输入打印机的地址，包括协议和端口：
+
+```text
+http://192.168.1.20:7125
+```
+
+如果 OrcaSlicer 与 Kobralink 在同一台机器上，使用 `http://localhost:7125`。API 密钥留空，除非你开启了
+[需要 API 密钥](/zh-cn/docs/administration/api-keys#lock-the-moonraker-ports)。
+
+</Step>
+<Step>
+
+### 测试并保存
+
+**测试**应显示连接成功。**设备**页签现在会显示你的 Kobra，**打印**会把 G-code 发送到 Kobralink。
+
+</Step>
+</Steps>
+
+## 设备页签能做什么
+
+设备页签只针对打印机：开始打印、查看进度、暂停或取消，以及同步 ACE 耗材。其余一切（队列、文件、宏、摄像头、失败检测、统计、
+通知）都在 Kobralink 控制台中。
+
+## 发送打印
+
+默认情况下，从 OrcaSlicer 发送的文件会在控制台中打开打印窗口，即使选择了*发送并打印*。你在那里检查耗材和槽位，然后开始。要直接
+开始，请在[打印机设置](/zh-cn/docs/administration/printer-settings#printing)中关闭**上传后弹窗**。
+
+## 同步耗材
+
+设备页签中的耗材同步按钮会获取打印机报告的槽位。每个槽位发送的品牌和预设在[槽位窗口](/zh-cn/docs/guide/filament#orcaslicer-profiles)中设置。
+
+## 跳过对象
+
+要跳过对象，G-code 必须包含对象标记。在 OrcaSlicer 中开启**标记对象**。

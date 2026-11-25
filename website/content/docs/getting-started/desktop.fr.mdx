@@ -1,0 +1,57 @@
+---
+title: Application de bureau
+description: Installer Kobralink sur macOS, Windows ou Linux.
+---
+
+L'application de bureau fait tourner le bridge sur votre ordinateur et affiche le tableau de bord dans sa propre fenêtre.
+Téléchargez-la depuis les [releases GitHub](https://github.com/NatHacks/Kobralink/releases/latest).
+
+| Système | Fichier |
+| --- | --- |
+| macOS, Apple Silicon | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` ou `Kobralink-<version>-amd64.deb` |
+
+## Premier lancement sur macOS
+
+Si macOS indique que le développeur n'est pas identifié, faites un clic droit sur l'application et choisissez **Ouvrir**, ou
+lancez :
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## La laisser tourner
+
+Kobralink doit tourner pour qu'OrcaSlicer s'y connecte, et pour que la file d'attente, les automatisations et les
+notifications fonctionnent.
+
+- Sous Windows et Linux, fermer la fenêtre quitte l'application. Réduisez-la plutôt.
+- Sous macOS, l'application continue de tourner quand la fenêtre est fermée. Utilisez **Quitter** pour l'arrêter.
+- L'icône de la barre des menus montre l'état de vos imprimantes et rouvre la fenêtre.
+
+Quitter Kobralink n'arrête pas une impression déjà lancée : l'imprimante a le fichier.
+
+## Mises à jour [#updates]
+
+L'application cherche les mises à jour sur GitHub au lancement puis toutes les 6 heures. Elle demande avant de télécharger,
+puis avant de redémarrer. Vous pouvez aussi utiliser **Rechercher des mises à jour…** dans le menu.
+
+## Où sont les données
+
+Les données sont dans le dossier `data` du répertoire de l'application, et le journal du bridge dans `logs/api.log` :
+
+| Système | Répertoire |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+Le chemin exact des données est affiché dans **Paramètres → Système**.
+
+## Limites par rapport à Docker
+
+L'application de bureau vous connecte sur `http://localhost:7100`. Elle est faite pour être utilisée sur l'ordinateur où elle
+tourne ; ses ports Moonraker restent accessibles depuis le réseau. Les notifications push ne sont pas disponibles dans
+l'application. Pour utiliser le tableau de bord depuis un téléphone ou à plusieurs, installez [Docker](/fr/docs/getting-started/docker).

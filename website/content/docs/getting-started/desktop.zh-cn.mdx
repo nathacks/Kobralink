@@ -1,0 +1,53 @@
+---
+title: 桌面应用
+description: 在 macOS、Windows 或 Linux 上安装 Kobralink。
+---
+
+桌面应用在你的电脑上运行桥接程序，并在自己的窗口中显示控制台。请从
+[GitHub releases](https://github.com/NatHacks/Kobralink/releases/latest) 下载。
+
+| 系统 | 文件 |
+| --- | --- |
+| macOS，Apple 芯片 | `Kobralink-<version>-mac-arm64.dmg` |
+| macOS，Intel | `Kobralink-<version>-mac-x64.dmg` |
+| Windows | `Kobralink-<version>-Installer-win-x64.exe` |
+| Linux | `Kobralink-<version>-x86_64.AppImage` 或 `Kobralink-<version>-amd64.deb` |
+
+## 在 macOS 上首次启动
+
+如果 macOS 提示开发者身份不明，请右键点击应用并选择**打开**，或者运行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Kobralink.app
+```
+
+## 保持运行
+
+Kobralink 必须保持运行，OrcaSlicer 才能连接，队列、自动化和通知也才能工作。
+
+- 在 Windows 和 Linux 上，关闭窗口会退出应用。请改为最小化。
+- 在 macOS 上，关闭窗口后应用仍在运行。用**退出**来停止它。
+- 菜单栏图标显示打印机状态，并可重新打开窗口。
+
+退出 Kobralink 不会停止已经开始的打印：文件已在打印机上。
+
+## 更新 [#updates]
+
+应用在启动时以及之后每 6 小时在 GitHub 上检查更新。下载前和重启前都会询问。你也可以使用菜单中的**检查更新…**。
+
+## 数据位置
+
+数据位于应用目录下的 `data` 文件夹，桥接程序日志位于 `logs/api.log`：
+
+| 系统 | 目录 |
+| --- | --- |
+| macOS | `~/Library/Application Support/Kobralink` |
+| Windows | `%APPDATA%\Kobralink` |
+| Linux | `~/.config/Kobralink` |
+
+数据的确切路径显示在**设置 → 系统**中。
+
+## 与 Docker 相比的限制
+
+桌面应用在 `http://localhost:7100` 上为你登录。它适合在运行它的那台电脑上使用；它的 Moonraker 端口仍可从网络访问。应用中不支持
+网页推送通知。如需在手机上或多人使用控制台，请安装 [Docker](/zh-cn/docs/getting-started/docker)。

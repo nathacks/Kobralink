@@ -1,0 +1,59 @@
+---
+title: Painel
+description: Acompanhar e controlar suas impressoras.
+---
+
+## Página Impressoras
+
+A página **Impressoras** mostra um cartão por impressora, com estado, progresso, tempo restante e horário de término. Os
+contadores no topo filtram a lista: imprimindo, pausadas, prontas, mesa a limpar, manutenção, erro e offline. A página também
+mostra qual impressora termina primeiro.
+
+No computador, a navegação é uma barra lateral que se recolhe em uma faixa de ícones. No celular, é uma barra na parte de baixo.
+
+## Página de uma impressora
+
+| Cartão | Função |
+| --- | --- |
+| Impressão | Trabalho atual: progresso, camada, tempo decorrido e restante, visão 3D, pausar, retomar, cancelar, pular objetos |
+| Temperaturas | Gráfico ao vivo, alvos do bico e da mesa, predefinições |
+| Câmera | Transmissão ao vivo e tela cheia, veja [Câmera](/pt-br/docs/guide/camera) |
+| Controles | Velocidade, ventoinha da peça, luz, tomada inteligente, eixos |
+| Filamentos | Slots, carregamento, secagem, veja [Filamento](/pt-br/docs/guide/filament) |
+| Fila de impressão | Itens que esta impressora pode pegar, veja [Fila](/pt-br/docs/guide/queue) |
+| Arquivos | Biblioteca, armazenamento da impressora, timelapses, veja [Arquivos](/pt-br/docs/guide/files) |
+| Macros | Ações em um clique, veja [Macros](/pt-br/docs/guide/macros) |
+| Manutenção | Tarefas e vencimentos, veja [Manutenção](/pt-br/docs/guide/maintenance) |
+
+## Controles
+
+**Temperaturas.** O bico aceita 0–320 °C e a mesa 0–120 °C; sua impressora pode aceitar menos. As predefinições são:
+
+| Predefinição | Bico | Mesa |
+| --- | --- | --- |
+| PLA | 210 °C | 60 °C |
+| PETG | 235 °C | 75 °C |
+| ABS | 250 °C | 95 °C |
+| Desligado | 0 °C | 0 °C |
+
+**Velocidade.** Três modos: Silencioso, Padrão e Esportivo. São as únicas velocidades que a impressora oferece pela LAN, e valem
+para a impressão em andamento.
+
+**Eixos.** Mover X, Y e Z em 1, 10 ou 50 mm, levar à origem XYZ, XY ou Z e desligar os motores. Bloqueado durante a impressão.
+
+**Luz e ventoinha.** Ligar a luz da câmera e ajustar a ventoinha da peça.
+
+**Energia.** Disponível depois de escolher uma [tomada inteligente](/pt-br/docs/integrations/home-assistant#smart-plug-and-energy).
+
+## Cancelar uma impressão
+
+Ao cancelar, um motivo opcional é pedido (spaghetti, aderência, entupimento, qualidade…). O motivo alimenta as estatísticas de
+falhas. Uma impressão cancelada não pode ser retomada.
+
+## Aparência
+
+O tema (sistema, claro ou escuro) e o idioma da interface ficam em **Configurações → Geral**. Eles são salvos no navegador.
+
+## Contas somente leitura
+
+Um visualizador vê as mesmas páginas com os controles desativados. Veja [Usuários e funções](/pt-br/docs/administration/users).

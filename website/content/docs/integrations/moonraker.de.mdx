@@ -1,0 +1,53 @@
+---
+title: Moonraker
+description: Mainsail, Fluidd, Obico und andere Moonraker-Clients verbinden.
+---
+
+Jeder Drucker hat einen eigenen Moonraker-Server auf einem eigenen Port (`7125`, `7126`, …), über HTTP und WebSocket
+(`/websocket`). Der Port steht auf der Druckerseite und lässt sich in seinen Einstellungen ändern.
+
+Wer den Port im Browser öffnet, landet auf der Druckerseite in Kobralink.
+
+## Authentifizierung
+
+Standardmäßig sind die Moonraker-Ports **im lokalen Netzwerk offen**, wie Moonraker selbst. Zum Absichern siehe
+[Moonraker-Ports absichern](/de/docs/administration/api-keys#lock-the-moonraker-ports).
+
+## Was unterstützt wird
+
+| Funktion | Unterstützung |
+| --- | --- |
+| Druckerobjekte: abfragen und abonnieren | Ja |
+| Upload und Upload mit Druck | Ja, `.gcode` und `.bgcode`. Uploads im OctoPrint-Stil funktionieren auch |
+| Starten, pausieren, fortsetzen, abbrechen | Ja |
+| Dateien: Liste, Metadaten, Miniaturen | Ja |
+| Druckverlauf | Ja |
+| Job-Warteschlange | Ja, verbunden mit der [Kobralink-Warteschlange](/de/docs/guide/queue). Pause und Sprung tun nichts |
+| Webcams | Ja, eine Webcam wird automatisch gemeldet |
+| Filament-Slots | Ja, von OrcaSlicer gelesen |
+| G-Code-Skripte | Eine kleine Auswahl, siehe unten |
+
+## G-Code-Skripte [#g-code-scripts]
+
+| Befehl | Wirkung |
+| --- | --- |
+| `PAUSE`, `M25` | Pause |
+| `RESUME`, `M24` | Fortsetzen |
+| `CANCEL_PRINT`, `M0`, `M1`, `M524`, `ABORT` | Abbrechen |
+| `M104 S<temp>` | Solltemperatur der Düse |
+| `M140 S<temp>` | Solltemperatur des Betts |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | Solltemperatur von Düse oder Bett |
+| Der Name eines [Makros](/de/docs/guide/macros) | Führt das Makro aus |
+
+Jeder andere Befehl antwortet `ok` und **bewirkt nichts**: Der Drucker nimmt im LAN keinen rohen G-Code an.
+
+## Wissenswerte Werte
+
+- `gcode_move.speed_factor` spiegelt den Geschwindigkeitsmodus: Ruhig 0,5, Standard 1,0, Sport 1,3.
+- `motion_report.live_velocity` ist immer 0.
+- Die Position meldet der Drucker nicht. Z wird aus den Schichten geschätzt.
+
+## Clients
+
+**Mainsail** hat kein Feld für einen API-Schlüssel und kann sich nicht verbinden, solange ein Schlüssel verlangt wird.
+**Fluidd**, **Obico**, **OrcaSlicer** und **Home Assistant** können einen senden.

@@ -1,0 +1,86 @@
+---
+title: Druckereinstellungen
+description: Alle Optionen eines Druckers.
+---
+
+Öffnen Sie einen Drucker und dann **Einstellungen**.
+
+## Profil [#profile]
+
+| Einstellung | Wirkung |
+| --- | --- |
+| Standort | Freitext |
+| Tags | Bis zu 20. Gruppieren Drucker, um Warteschlangeneinträge und Automatisierungen gezielt zuzuordnen |
+| Eingebaute Düse | Für eine andere Düse geslicte Dateien gehen nicht an diesen Drucker |
+| Durchschnittliche Leistungsaufnahme | Ersetzt den Standardwert bei den Energiekosten |
+
+Die offiziellen Daten werden angezeigt, wenn Anycubic sie für das Modell veröffentlicht.
+
+## Verbindung
+
+| Einstellung | Wirkung |
+| --- | --- |
+| Name, IP-Adresse | |
+| Moonraker-Port | 1024 bis 65535, eindeutig |
+| Zugangsdaten aktualisieren | Liest die Zugangsdaten erneut vom Drucker |
+| MQTT-Sitzung neu starten | Verbindet neu |
+| Trennen | Schließt die Sitzung bis zur erneuten Verbindung. Praktisch, um einen anderen LAN-Client zuzulassen |
+
+## Drucken [#printing]
+
+| Einstellung | Standard | Wirkung |
+| --- | --- | --- |
+| Automatische Bettnivellierung | an | Vor jedem Druck |
+| Vibrationskompensation | aus | Vor jedem Druck |
+| Flusskalibrierung | an | Vor jedem Druck |
+| Kamera immer an | an | Hält die Kamera aktiv |
+| Kamera bei Druckstart | aus | Startet den Stream bei Druckbeginn |
+| Standard-AMS-Slot | auto | *auto* nutzt alle Slots, die der G-Code braucht |
+| Bei Web-Uploads warnen | an | Vor dem Druck einer aus dem Browser hochgeladenen Datei nachfragen |
+| Dialog nach dem Upload | an | Öffnet nach einem Upload den Druckdialog. Aus: Der Druck startet direkt |
+| Nächste Datei automatisch starten | aus | Siehe [Warteschlange](/de/docs/guide/queue#automatic-start) |
+| Freies Druckbett bestätigen | an | Siehe [Warteschlange](/de/docs/guide/queue#clearing-the-bed) |
+| Vor dem Start warten | 15 s | 0 bis 3600 s |
+| Licht-Auslöser | aus | Siehe [Warteschlange](/de/docs/guide/queue#light-trigger) |
+| Nach dem Druck vom Drucker löschen | aus | Gibt den Druckerspeicher frei |
+| Abfrageintervall | 3 s | 1 bis 60 s zwischen zwei Zustandsabfragen |
+
+## Zeitraffer
+
+| Einstellung | Standard |
+| --- | --- |
+| Zeitraffer aufnehmen | aus |
+| Bilder pro Sekunde | 15 (5 bis 60) |
+
+## Fehlererkennung
+
+| Einstellung | Standard |
+| --- | --- |
+| Diesen Drucker überwachen | an |
+
+Wirkt erst, wenn die [Erkennung](/de/docs/guide/failure-detection) global aktiviert ist.
+
+## Alarme [#alerts]
+
+0 schaltet einen Alarm aus.
+
+| Alarm | Standard |
+| --- | --- |
+| Düse max. | 300 °C |
+| Bett max. | 110 °C |
+| Offline seit | 0 min (aus) |
+| Spule fast leer | 0 g (aus) |
+
+## Steckdose (Home Assistant)
+
+Wird angezeigt, sobald die [Home-Assistant-API](/de/docs/integrations/home-assistant#smart-plug-and-energy) eingerichtet ist:
+Schalter der Steckdose und Energiezähler.
+
+## Sichtbare Marken
+
+Filtert die pro Slot angebotenen OrcaSlicer-Profile. Ohne Auswahl werden alle Marken gezeigt. Ihre importierten Profile werden
+immer gezeigt.
+
+## Den Drucker löschen
+
+Die in Kobralink gespeicherten G-Code-Dateien bleiben erhalten.

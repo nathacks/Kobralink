@@ -1,0 +1,45 @@
+---
+title: Archivos
+description: La biblioteca G-code, el almacenamiento de la impresora y las vistas previas.
+---
+
+Cada G-code enviado a Kobralink, desde OrcaSlicer o desde el navegador, se guarda en **una sola biblioteca para todas las
+impresoras**. Solo se aceptan archivos `.gcode` y `.bgcode`.
+
+## Pestañas
+
+| Pestaña | Contenido |
+| --- | --- |
+| Todos | Todos los archivos guardados |
+| Web | Archivos subidos desde el navegador y aún no verificados |
+| Impresora | Archivos del almacenamiento interno de la impresora |
+| Historial | Impresiones pasadas |
+| Timelapses | Vídeos grabados |
+
+## Añadir archivos
+
+Suelta uno o varios archivos sobre la tarjeta, o haz clic para buscarlos. Los archivos también pueden venir de OrcaSlicer o de
+cualquier cliente Moonraker.
+
+Un archivo subido desde el navegador no fue laminado para esta impresora por OrcaSlicer, así que Kobralink pide confirmación
+antes de imprimirlo. Puedes desactivarlo con **Avisar en subidas web** en los
+[ajustes de la impresora](/es/docs/administration/printer-settings#printing).
+
+## Tarjetas de archivo
+
+Cada tarjeta muestra la miniatura, el tiempo estimado, los filamentos con la cantidad que necesita cada color, la última
+impresión y el [coste estimado](/es/docs/guide/statistics#costs).
+
+**Vista previa** abre la pieza en 3D, capa por capa. Durante una impresión, *Seguir* mantiene la vista en la capa actual. No
+hay vista previa para los archivos `.bgcode`.
+
+## Almacenamiento de la impresora
+
+La pestaña **Impresora** lista los archivos guardados en la propia impresora. Puedes imprimirlos o borrarlos, y ver la vista
+previa creada por el laminador. Borrar un archivo aquí no lo quita de Kobralink.
+
+- La impresora solo lista sus archivos más recientes (256 como máximo en la Kobra 4).
+- Los *Modelos de prueba* son los archivos de ejemplo incluidos con la impresora. No se pueden borrar.
+
+Para liberar el almacenamiento automáticamente, activa **Eliminar de la impresora tras imprimir** en los ajustes de la
+impresora.

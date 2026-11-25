@@ -1,0 +1,68 @@
+---
+title: OrcaSlicer
+description: Conectar OrcaSlicer a Kobralink y enviar impresiones.
+---
+
+Kobralink expone cada impresora como un servidor Moonraker, así que OrcaSlicer se conecta como a una máquina Klipper. La
+dirección exacta de cada impresora aparece en **Ajustes → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Abrir los ajustes de conexión
+
+En la pestaña **Preparar**, haz clic en el icono de conexión (enchufe) junto al perfil de impresora, o abre
+**Ajustes de impresora → General → Impresora física**.
+
+</Step>
+<Step>
+
+### Elegir el tipo de host
+
+Elige **Moonraker**.
+
+</Step>
+<Step>
+
+### Rellenar el host
+
+Introduce la dirección de la impresora, con el protocolo y el puerto:
+
+```text
+http://192.168.1.20:7125
+```
+
+Si OrcaSlicer se ejecuta en la misma máquina que Kobralink, usa `http://localhost:7125`. Deja la clave API vacía, salvo que
+hayas activado [Requerir una clave API](/es/docs/administration/api-keys#lock-the-moonraker-ports).
+
+</Step>
+<Step>
+
+### Probar y guardar
+
+**Probar** debe indicar que la conexión funciona. La pestaña **Dispositivo** muestra ahora tu Kobra e **Imprimir** envía el
+G-code a Kobralink.
+
+</Step>
+</Steps>
+
+## Qué hace la pestaña Dispositivo
+
+La pestaña Dispositivo solo se ocupa de la impresora: iniciar una impresión, seguir el progreso, pausar o cancelar y
+sincronizar los filamentos del ACE. Todo lo demás (cola, archivos, macros, cámara, detección de fallos, estadísticas,
+notificaciones) está en el panel de Kobralink.
+
+## Enviar una impresión
+
+Por defecto, un archivo enviado desde OrcaSlicer abre el diálogo de impresión en el panel, incluso con *enviar e imprimir*.
+Allí revisas los filamentos y las ranuras y luego inicias. Para empezar directamente, desactiva **Diálogo tras la subida** en
+los [ajustes de la impresora](/es/docs/administration/printer-settings#printing).
+
+## Sincronizar filamentos
+
+El botón de sincronización de filamentos de la pestaña Dispositivo obtiene las ranuras que indica la impresora. La marca y el
+perfil enviados por ranura se ajustan en el [diálogo de la ranura](/es/docs/guide/filament#orcaslicer-profiles).
+
+## Omitir objetos
+
+Para omitir objetos, el G-code debe contener marcas de objeto. Activa **Etiquetar objetos** en OrcaSlicer.

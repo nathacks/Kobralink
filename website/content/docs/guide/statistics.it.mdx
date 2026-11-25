@@ -1,0 +1,48 @@
+---
+title: Cronologia, statistiche e costi
+description: Cosa è stato stampato, cosa è fallito e quanto è costato.
+---
+
+## Cronologia
+
+La pagina **Cronologia** elenca ogni stampa con anteprima, durata, filamento, energia e costo. Per una stampa fallita puoi:
+
+- scegliere un motivo: spaghetti, adesione al piano, intasamento, filamento esaurito, spostamento degli strati, interruzione di
+  corrente, annullata di proposito, qualità rifiutata, altro
+- aggiungere una nota
+- vedere l'istantanea della fotocamera scattata alla fine, se la fotocamera era attiva
+- leggere il codice di errore segnalato dalla stampante
+
+## Statistiche
+
+Scegli una stampante e un periodo: 7, 30, 90 o 365 giorni, oppure tutto. La pagina mostra:
+
+- stampe, tasso di successo, tempo di stampa e filamento, a confronto con il periodo precedente
+- stampe, ore e costo per giorno o per mese, per giorno della settimana e per ora di avvio
+- utilizzo per materiale e i file più stampati
+- per ogni stampante: utilizzo, tempo medio tra fallimenti, inattività dopo una stampa, precisione della stima dello slicer,
+  energia misurata
+- i fallimenti per motivo, dal più frequente
+- il filamento sprecato dalle stampe mai terminate
+
+**Esporta CSV** scarica le stampe della selezione.
+
+## Costi [#costs]
+
+Costo = filamento + energia.
+
+**Filamento.** Il prezzo viene dalla bobina Spoolman. Senza, si applica il *prezzo del filamento predefinito*
+(**Impostazioni → Generale**). Il filamento senza alcun prezzo è indicato come *senza prezzo*.
+
+**Energia.** Misurata dal contatore della presa quando [Home Assistant](/it/docs/integrations/home-assistant#smart-plug-and-energy)
+è configurato. Altrimenti stimata:
+
+```text
+potenza media (W) ÷ 1000 × ore × prezzo al kWh
+```
+
+La potenza media è quella della stampante, dal suo profilo, oppure quella predefinita in **Impostazioni → Generale**. Lascia il
+prezzo dell'elettricità a 0 per ignorare l'energia.
+
+Prima della stampa viene mostrato un costo stimato sulla scheda del file, nell'anteprima e nella finestra di stampa. Il costo
+reale viene calcolato alla fine.

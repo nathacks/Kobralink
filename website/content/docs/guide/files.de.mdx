@@ -1,0 +1,44 @@
+---
+title: Dateien
+description: Die G-Code-Bibliothek, der Druckerspeicher und die Vorschauen.
+---
+
+Jeder an Kobralink gesendete G-Code, aus OrcaSlicer oder dem Browser, liegt in **einer Bibliothek für alle Drucker**. Nur
+`.gcode`- und `.bgcode`-Dateien werden angenommen.
+
+## Tabs
+
+| Tab | Inhalt |
+| --- | --- |
+| Alle | Alle gespeicherten Dateien |
+| Web | Aus dem Browser hochgeladene, noch nicht geprüfte Dateien |
+| Drucker | Dateien im internen Speicher des Druckers |
+| Verlauf | Vergangene Drucke |
+| Zeitraffer | Aufgenommene Videos |
+
+## Dateien hinzufügen
+
+Ziehen Sie eine oder mehrere Dateien auf die Karte oder klicken Sie zum Auswählen. Dateien können auch aus OrcaSlicer oder
+einem beliebigen Moonraker-Client kommen.
+
+Eine aus dem Browser hochgeladene Datei wurde nicht von OrcaSlicer für diesen Drucker gesliced, daher fragt Kobralink vor dem
+Drucken nach. Das lässt sich mit **Bei Web-Uploads warnen** in den
+[Druckereinstellungen](/de/docs/administration/printer-settings#printing) abschalten.
+
+## Dateikarten
+
+Jede Karte zeigt Miniatur, geschätzte Zeit, Filamente mit der benötigten Menge je Farbe, den letzten Druck und die
+[geschätzten Kosten](/de/docs/guide/statistics#costs).
+
+**Vorschau** öffnet das Teil in 3D, Schicht für Schicht. Während eines Drucks hält *Folgen* die Ansicht auf der aktuellen
+Schicht. Für `.bgcode`-Dateien gibt es keine Vorschau.
+
+## Druckerspeicher
+
+Der Tab **Drucker** listet die Dateien im Speicher des Druckers selbst. Sie können sie drucken oder löschen und die Vorschau des
+Slicers ansehen. Eine Datei hier zu löschen entfernt sie nicht aus Kobralink.
+
+- Der Drucker listet nur seine neuesten Dateien (höchstens 256 beim Kobra 4).
+- *Testmodelle* sind die Beispieldateien, die mit dem Drucker geliefert wurden. Sie können nicht gelöscht werden.
+
+Um den Speicher automatisch freizugeben, schalten Sie **Nach dem Druck vom Drucker löschen** in den Druckereinstellungen ein.

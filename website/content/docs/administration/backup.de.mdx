@@ -1,0 +1,45 @@
+---
+title: Sicherung und Wiederherstellung
+description: Ihre Daten sichern und Kobralink auf einen anderen Rechner umziehen.
+---
+
+## Aus dem Dashboard
+
+Ein Administrator öffnet **Einstellungen → System → Sicherung und Wiederherstellung**.
+
+**Sicherung herunterladen** liefert ein ZIP mit der Datenbank (Drucker, Benutzer, Einstellungen, Verlauf, Profile) und den
+G-Code-Dateien. Zeitraffer sind optional, sie können groß sein.
+
+**Wiederherstellen** ersetzt alle aktuellen Daten durch das Archiv und startet die Bridge dann neu. Archive bis 4 GB werden
+angenommen. Mit Docker und der Desktop-App erfolgt der Neustart automatisch.
+
+<Callout type="warn">
+    Das Archiv enthält die Zugangsdaten Ihrer Drucker, Kontodaten und Integrations-Token. Bewahren Sie es sicher auf.
+</Callout>
+
+Das Archiv enthält **nicht** das Sitzungsgeheimnis, die Push-Schlüssel, die Kamerabilder fehlgeschlagener Drucke und das
+Erkennungsmodell. Nach einer Wiederherstellung auf einem anderen Rechner melden Sie sich neu an, schalten Push auf jedem Gerät
+wieder ein und laden das Modell erneut herunter.
+
+## Das ganze Docker-Volume
+
+Das kopiert alles. Stoppen Sie Kobralink zuerst, damit die Datenbank während der Kopie nicht geschrieben wird:
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+docker run --rm -v kobralink_kobralink-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/kobralink-data.tgz -C /data .
+docker compose -f docker-compose.prod.yml start
+```
+
+## Datenverzeichnis
+
+| Pfad | Inhalt |
+| --- | --- |
+| `kobralink.db` | SQLite-Datenbank |
+| `gcodes/` | G-Code-Dateien |
+| `timelapses/` | Videos |
+| `failures/` | Kamerabilder der Drucke |
+| `models/` | Modell der Fehlererkennung |
+| `.auth-secret` | Sitzungsgeheimnis, außer `BETTER_AUTH_SECRET` ist gesetzt |
+| `.vapid.json` | Web-Push-Schlüssel |

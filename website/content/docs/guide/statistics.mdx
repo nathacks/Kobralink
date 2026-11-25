@@ -1,0 +1,47 @@
+---
+title: History, statistics and costs
+description: What was printed, what failed and what it cost.
+---
+
+## History
+
+The **History** page lists every print with its preview, duration, filament, energy and cost. For a failed print you can:
+
+- choose a reason: spaghetti, bed adhesion, clog, filament runout, layer shift, power loss, cancelled on purpose,
+  rejected quality, other
+- add a note
+- see the camera snapshot taken at the end, if the camera was running
+- read the error code reported by the printer
+
+## Statistics
+
+Choose a printer and a period: 7, 30, 90 or 365 days, or everything. The page shows:
+
+- prints, success rate, print time and filament, compared with the previous period
+- prints, hours and cost per day or month, by weekday and by start hour
+- use by material and the most printed files
+- for each printer: utilisation, mean time between failures, idle time after a print, accuracy of the slicer estimate,
+  measured energy
+- failures by reason, most frequent first
+- filament wasted by prints that never finished
+
+**Export CSV** downloads the prints of the selection.
+
+## Costs
+
+Cost = filament + energy.
+
+**Filament.** The price comes from the Spoolman spool. Without one, the *default filament price* applies
+(**Settings → General**). Filament without any price is shown as *unpriced*.
+
+**Energy.** Measured by the plug's meter when [Home Assistant](/en/docs/integrations/home-assistant#smart-plug-and-energy) is
+set up. Otherwise estimated:
+
+```text
+average power (W) ÷ 1000 × hours × price per kWh
+```
+
+The average power is the printer's own, from its profile, or the default in **Settings → General**. Leave the electricity
+price at 0 to ignore energy.
+
+An estimated cost is shown before printing on the file card, in the preview and in the print dialog. The actual cost is computed at the end.

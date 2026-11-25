@@ -1,0 +1,86 @@
+---
+title: Configurações da impressora
+description: Todas as opções de uma impressora.
+---
+
+Abra uma impressora e depois **Configurações**.
+
+## Perfil [#profile]
+
+| Configuração | Efeito |
+| --- | --- |
+| Local | Texto livre |
+| Tags | Até 20. Agrupam impressoras para direcionar itens da fila e automações |
+| Bico instalado | Arquivos fatiados para outro bico não vão para esta impressora |
+| Consumo médio | Substitui o padrão no custo de energia |
+
+As especificações oficiais aparecem quando a Anycubic as publica para o modelo.
+
+## Conexão
+
+| Configuração | Efeito |
+| --- | --- |
+| Nome, endereço IP | |
+| Porta Moonraker | 1024 a 65535, única |
+| Atualizar credenciais | Lê de novo as credenciais na impressora |
+| Reiniciar sessão MQTT | Reconecta |
+| Desconectar | Fecha a sessão até você reconectar. Útil para deixar outro cliente LAN entrar |
+
+## Impressão [#printing]
+
+| Configuração | Padrão | Efeito |
+| --- | --- | --- |
+| Nivelamento automático da mesa | ativado | Antes de cada impressão |
+| Compensação de vibração | desativado | Antes de cada impressão |
+| Calibração de fluxo | ativado | Antes de cada impressão |
+| Câmera sempre ligada | ativado | Mantém a câmera ligada |
+| Câmera ao iniciar a impressão | desativado | Inicia a transmissão quando uma impressão começa |
+| Slot AMS padrão | auto | *auto* usa todos os slots de que o G-code precisa |
+| Avisar sobre envios pela web | ativado | Confirmar antes de imprimir um arquivo enviado pelo navegador |
+| Diálogo após o envio | ativado | Abre a janela de impressão após um envio. Desativado, a impressão começa direto |
+| Iniciar o próximo arquivo sozinho | desativado | Veja [Fila](/pt-br/docs/guide/queue#automatic-start) |
+| Confirmar mesa limpa | ativado | Veja [Fila](/pt-br/docs/guide/queue#clearing-the-bed) |
+| Esperar antes de iniciar | 15 s | 0 a 3600 s |
+| Gatilho da luz | desativado | Veja [Fila](/pt-br/docs/guide/queue#light-trigger) |
+| Excluir da impressora após imprimir | desativado | Libera o armazenamento da impressora |
+| Intervalo de consulta | 3 s | 1 a 60 s entre duas consultas de estado |
+
+## Timelapse
+
+| Configuração | Padrão |
+| --- | --- |
+| Gravar timelapse | desativado |
+| Quadros por segundo | 15 (5 a 60) |
+
+## Detecção de falhas
+
+| Configuração | Padrão |
+| --- | --- |
+| Monitorar esta impressora | ativado |
+
+Vale depois que a [detecção](/pt-br/docs/guide/failure-detection) é ativada globalmente.
+
+## Alertas [#alerts]
+
+0 desativa um alerta.
+
+| Alerta | Padrão |
+| --- | --- |
+| Bico máx. | 300 °C |
+| Mesa máx. | 110 °C |
+| Offline há | 0 min (desativado) |
+| Carretel quase vazio | 0 g (desativado) |
+
+## Tomada (Home Assistant)
+
+Aparece depois que a [API do Home Assistant](/pt-br/docs/integrations/home-assistant#smart-plug-and-energy) é configurada:
+interruptor da tomada e medidor de energia.
+
+## Marcas visíveis
+
+Filtra os perfis do OrcaSlicer oferecidos em cada slot. Sem seleção, todas as marcas aparecem. Seus perfis importados aparecem
+sempre.
+
+## Excluir a impressora
+
+Os arquivos G-code guardados no Kobralink são mantidos.

@@ -1,0 +1,41 @@
+---
+title: Arquitectura
+description: Cómo está organizado el proyecto.
+---
+
+```text
+OrcaSlicer ──HTTP/WS──► :7125  (Moonraker, impresora 1) ─┐
+Mainsail / Obico ─────► :7126  (Moonraker, impresora 2) ─┤  apps/api (un solo proceso)
+Web / Escritorio ─────► :7100  (UI + API + auth) ────────┘         │ MQTT sobre TLS :9883
+                                                                   ▼
+                                                       Kobra X / Kobra 4 (modo LAN)
+```
+
+| Carpeta | Función |
+| --- | --- |
+| `apps/api` | NestJS 11, Prisma 7 con SQLite (libsql), Better Auth, bridge MQTT, emulación de Moonraker |
+| `apps/web` | React 19, Vite, TanStack Router, Query y Store, Tailwind v4, shadcn/ui |
+| `apps/desktop` | Electron, arranca la API en local, actualización automática |
+| `packages/kobra-protocol` | Cliente MQTT, credenciales, subida y análisis del G-code |
+| `packages/shared` | Esquemas Zod y tipos compartidos entre la API y el panel |
+| `packages/i18n` | Mensajes Paraglide en 7 idiomas |
+| `infra` | Dockerfile y archivos compose |
+| `website` | Esta documentación |
+
+## Ideas principales
+
+**Un bridge por impresora.** Un `PrinterBridge` mantiene la sesión MQTT, el estado en directo, el bucle de sondeo y los
+comandos. `BridgeRegistry` crea uno para cada impresora de la base de datos.
+
+**Un servidor Moonraker por impresora.** Cada uno es una aplicación Nest separada en su propio puerto. Traduce el estado en
+directo a objetos de Klipper.
+
+**Contratos en un solo sitio.** Cada cuerpo de `/api/v1` tiene un esquema Zod en `packages/shared`, validado por la API y
+tipado en el panel.
+
+**Actualizaciones en directo.** El panel recibe los eventos por SSE y los escribe en la caché de Query.
+
+**Un proceso de cámara por impresora.** Un solo ffmpeg alimenta el panel, los clientes Moonraker, los timelapses y la
+detección.
+
+**Migraciones al arrancar.** La API aplica las migraciones de Prisma pendientes al arrancar.

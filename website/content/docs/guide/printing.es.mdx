@@ -1,0 +1,56 @@
+---
+title: Impresión
+description: El diálogo de impresión, la asignación de filamentos, la omisión de objetos y las impresiones programadas.
+---
+
+## El diálogo de impresión
+
+El diálogo se abre al imprimir un archivo y después de una subida (incluido *enviar e imprimir* desde OrcaSlicer).
+
+1. **Revisa la pieza** en la vista previa.
+2. **Asigna los filamentos**: cada canal del G-code va a una ranura. Kobralink propone ranuras compatibles y avisa cuando el
+   material no coincide.
+3. **Revisa la cantidad**: el diálogo compara el filamento necesario con lo que queda en la bobina asignada (suficiente,
+   justo, insuficiente). Si una bobina se queda corta, debes confirmar para imprimir de todos modos.
+4. **Omite los objetos** que no quieras imprimir.
+5. **Elige las opciones** y luego imprime, añade a la cola o programa.
+
+Sin ranura cargada, la impresora usa el filamento del cabezal.
+
+### Opciones
+
+| Opción | Efecto |
+| --- | --- |
+| Nivelación automática de la cama | Palpa la cama antes de imprimir |
+| Compensación de vibraciones | Mide las resonancias antes de imprimir para reducir las vibraciones |
+| Calibración de flujo | Mide el flujo de extrusión antes de imprimir |
+| Grabar un timelapse | Ver [Cámara](/es/docs/guide/camera#timelapses) |
+| Detección de fallos (IA) | Ver [Detección de fallos](/es/docs/guide/failure-detection) |
+
+Las tres opciones de calibración solo aparecen si la impresora indica que las admite. Sus valores por defecto están en los
+[ajustes de la impresora](/es/docs/administration/printer-settings#printing).
+
+## Durante una impresión
+
+La impresión empieza tras la calibración; la tarjeta indica el paso actual (calentamiento, nivelación, calibración de flujo…).
+Puedes pausar, reanudar, cancelar, cambiar la velocidad, las temperaturas y el ventilador, y omitir objetos.
+
+**Omitir objetos** deja de imprimir los objetos elegidos a partir de la capa actual. No se puede deshacer en esta impresión. El
+G-code debe contener marcas de objeto (**Etiquetar objetos** en OrcaSlicer).
+
+Cuando la impresora se pausa sola, el motivo se muestra en tu idioma para los códigos más comunes. Los demás códigos muestran el
+mensaje de la impresora.
+
+## Impresiones programadas
+
+**Programar** inicia la impresión en la fecha y hora elegidas. En ese momento:
+
+- si la impresora está libre, la impresión empieza
+- si la impresora está ocupada, desconectada, en mantenimiento o esperando que se vacíe su cama, el archivo pasa **al principio
+  de la cola**
+- si Kobralink estaba apagado, la impresión empieza igualmente al volver, salvo que lleve más de una hora de retraso; entonces
+  se descarta
+
+Las impresiones programadas aparecen en la pestaña **Programadas** de la cola. Recibes una notificación con el resultado.
+
+<Callout type="warn">Asegúrate de que la cama esté vacía antes de un inicio programado.</Callout>

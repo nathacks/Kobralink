@@ -1,0 +1,45 @@
+---
+title: Caméra et timelapses
+description: Flux en direct, captures et vidéos timelapse.
+---
+
+Kobralink lit la caméra de l'imprimante une seule fois et la partage avec tous les spectateurs : le tableau de bord, les
+clients Moonraker, les timelapses et la détection d'échec. Le flux est en MJPEG, à la résolution et à la fréquence d'origine.
+
+## Paramètres
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Caméra toujours active | activé | Garde la caméra en marche, pour que la vue en direct soit toujours disponible |
+| Caméra au démarrage | désactivé | Démarre le flux quand une impression commence |
+
+Sans *toujours active*, le flux s'arrête après 60 secondes sans spectateur.
+
+## Adresses
+
+Les clients Moonraker reçoivent ces adresses automatiquement. Utilisez le port Moonraker de l'imprimante :
+
+| Adresse | Contenu |
+| --- | --- |
+| `http://<hôte>:7125/api/camera/stream` | Flux MJPEG |
+| `http://<hôte>:7125/api/camera/snapshot` | Image fixe (JPEG) |
+| `http://<hôte>:7125/api/camera/h264` | Flux H.264 |
+
+Si les ports Moonraker exigent une clé, ajoutez `?api_key=<clé>` à l'adresse.
+
+## Timelapses [#timelapses]
+
+Activez **Enregistrer un timelapse** dans les paramètres de l'imprimante, ou dans la fenêtre d'impression pour une seule
+impression. Kobralink prend une image par couche et assemble un MP4 à la fin de l'impression, à 15 images par seconde par
+défaut (5 à 60).
+
+- Une impression qui donne moins de 5 images est abandonnée.
+- Les vidéos sont dans l'onglet **Timelapses** des fichiers, où vous pouvez les lire, les télécharger et les supprimer.
+- Elles sont stockées dans le répertoire de données, dans `timelapses/`.
+
+Les timelapses sont enregistrés par Kobralink. Le timelapse propre à l'imprimante, qui nécessite une clé USB, n'est pas
+utilisé.
+
+## ffmpeg
+
+Docker et l'application de bureau incluent ffmpeg. Pour utiliser un autre binaire, définissez `KOBRALINK_FFMPEG`.

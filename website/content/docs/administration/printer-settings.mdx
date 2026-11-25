@@ -1,0 +1,85 @@
+---
+title: Printer settings
+description: Every option of a printer.
+---
+
+Open a printer, then **Settings**.
+
+## Profile
+
+| Setting | Effect |
+| --- | --- |
+| Location | Free text |
+| Tags | Up to 20. Group printers to target queue items and automations |
+| Installed nozzle | Files sliced for another nozzle do not go to this printer |
+| Average power draw | Replaces the default in the energy cost |
+
+Official specifications are shown when Anycubic publishes them for the model.
+
+## Connection
+
+| Setting | Effect |
+| --- | --- |
+| Name, IP address | |
+| Moonraker port | 1024 to 65535, unique |
+| Refresh credentials | Reads the credentials from the printer again |
+| Restart MQTT session | Reconnects |
+| Disconnect | Closes the session until you reconnect. Useful to let another LAN client in |
+
+## Printing
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Auto bed leveling | on | Before each print |
+| Vibration compensation | off | Before each print |
+| Flow calibration | on | Before each print |
+| Camera always on | on | Keeps the camera streaming |
+| Camera on print start | off | Starts the stream when a print begins |
+| Default AMS slot | auto | *auto* uses every slot the G-code needs |
+| Warn on web uploads | on | Confirm before printing a file uploaded from the browser |
+| Dialog after upload | on | Opens the print dialog after an upload. Off, the print starts directly |
+| Start the next file automatically | off | See [Queue](/en/docs/guide/queue#automatic-start) |
+| Confirm the bed is clear | on | See [Queue](/en/docs/guide/queue#clearing-the-bed) |
+| Wait before starting | 15 s | 0 to 3600 s |
+| Light trigger | off | See [Queue](/en/docs/guide/queue#light-trigger) |
+| Delete from printer after print | off | Frees the printer's storage |
+| Polling interval | 3 s | 1 to 60 s between two state requests |
+
+## Timelapse
+
+| Setting | Default |
+| --- | --- |
+| Record a timelapse | off |
+| Frames per second | 15 (5 to 60) |
+
+## Failure detection
+
+| Setting | Default |
+| --- | --- |
+| Watch this printer | on |
+
+It takes effect once [detection](/en/docs/guide/failure-detection) is enabled globally.
+
+## Alerts
+
+0 turns an alert off.
+
+| Alert | Default |
+| --- | --- |
+| Nozzle max | 300 °C |
+| Bed max | 110 °C |
+| Offline for | 0 min (off) |
+| Spool almost empty | 0 g (off) |
+
+## Plug (Home Assistant)
+
+Shown once the [Home Assistant API](/en/docs/integrations/home-assistant#smart-plug-and-energy) is set up: plug switch and energy
+meter.
+
+## Visible brands
+
+Filters the OrcaSlicer profiles offered for each slot. No selection shows every brand. Your imported profiles are always shown.
+
+## Delete the printer
+
+The G-code files stored in Kobralink are kept.

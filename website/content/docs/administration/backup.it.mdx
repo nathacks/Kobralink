@@ -1,0 +1,46 @@
+---
+title: Backup e ripristino
+description: Salvare i dati e spostare Kobralink su un'altra macchina.
+---
+
+## Dalla dashboard
+
+Un amministratore apre **Impostazioni → Sistema → Backup e ripristino**.
+
+**Scarica backup** fornisce uno ZIP con il database (stampanti, utenti, impostazioni, cronologia, profili) e i file G-code. I
+timelapse sono facoltativi, possono essere pesanti.
+
+**Ripristina** sostituisce tutti i dati attuali con l'archivio, poi riavvia il bridge. Sono accettati archivi fino a 4 GB. Con
+Docker e l'app desktop il riavvio è automatico.
+
+<Callout type="warn">
+    L'archivio contiene le credenziali delle stampanti, i dati degli account e i token delle integrazioni. Conservalo in un
+    posto sicuro.
+</Callout>
+
+L'archivio **non** contiene il segreto di sessione, le chiavi delle notifiche push, le istantanee della fotocamera delle stampe
+fallite né il modello di rilevamento. Dopo un ripristino su un'altra macchina, accedi di nuovo, riattiva le notifiche push su
+ogni dispositivo e scarica di nuovo il modello.
+
+## L'intero volume Docker
+
+Questo copia tutto. Ferma prima Kobralink, perché il database non venga scritto durante la copia:
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+docker run --rm -v kobralink_kobralink-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/kobralink-data.tgz -C /data .
+docker compose -f docker-compose.prod.yml start
+```
+
+## Directory dei dati
+
+| Percorso | Contenuto |
+| --- | --- |
+| `kobralink.db` | Database SQLite |
+| `gcodes/` | File G-code |
+| `timelapses/` | Video |
+| `failures/` | Istantanee della fotocamera delle stampe |
+| `models/` | Modello di rilevamento fallimenti |
+| `.auth-secret` | Segreto di sessione, salvo che sia impostato `BETTER_AUTH_SECRET` |
+| `.vapid.json` | Chiavi delle notifiche push |

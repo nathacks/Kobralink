@@ -1,0 +1,43 @@
+---
+title: Umgebungsvariablen
+description: Die Konfiguration des Servers.
+---
+
+## Docker
+
+In `.env` neben der Compose-Datei setzen.
+
+| Variable | Standard | Rolle |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | `http://localhost:7100` | **Setzen**: die im Browser verwendete URL |
+| `BETTER_AUTH_SECRET` | in `/data` erzeugt | Sitzungsgeheimnis (`openssl rand -base64 32`) |
+| `KOBRALINK_BIND` | `0.0.0.0` | Schnittstelle des Hosts. `127.0.0.1` hinter einem Reverse Proxy |
+| `KOBRALINK_PORT` | `7100` | Dashboard-Port auf dem Host |
+| `KOBRALINK_EXTRA_ORIGINS` | | Weitere erlaubte Origins, kommagetrennt |
+| `KOBRALINK_TRUSTED_PROXIES` | | IPs oder CIDRs der Proxies, kommagetrennt |
+| `KOBRALINK_IP_HEADERS` | | Header mit der Client-IP, vom Proxy gesetzt |
+| `KOBRALINK_DOMAIN` | | Domain für `docker-compose.https.yml` |
+| `KOBRALINK_IMAGE` | `nathacks/kobralink:latest` | Image-Name, nur von `docker-compose.yml` verwendet (Bau aus dem Quellcode) |
+| `TZ` | `UTC` | Zeitzone der Automatisierungen und Tagesstatistiken |
+
+## Serverprozess
+
+Im Docker-Image und in der Desktop-App bereits gesetzt. Nützlich beim Start aus dem Quellcode.
+
+| Variable | Standard | Rolle |
+| --- | --- | --- |
+| `KOBRALINK_DATA_DIR` | `<repo>/data` | Datenverzeichnis |
+| `DATABASE_URL` | `file:<data>/kobralink.db` | Datenbank |
+| `KOBRALINK_WEB_DIR` | `apps/web/dist` | Bereitzustellender Dashboard-Build |
+| `KOBRALINK_CERTS_DIR` | `apps/api/certs` | `anycubic_slicer.crt` und `.key` |
+| `KOBRALINK_FFMPEG` | mitgeliefert, sonst `PATH` | ffmpeg-Binärdatei |
+| `KOBRALINK_VERSION` | `package.json` | Gemeldete Version |
+| `KOBRALINK_UPDATE_REPO` | `NatHacks/Kobralink` | Für Updates abgefragtes Repository |
+| `KOBRALINK_DETECTION_MODEL_URL` | Modell von Obico | Adresse des Erkennungsmodells |
+
+## Desktop-App
+
+| Variable | Rolle |
+| --- | --- |
+| `KOBRALINK_PORT` | Port der lokalen Bridge |
+| `KOBRALINK_URL` | Öffnet diese Bridge, ohne eine lokale zu starten |

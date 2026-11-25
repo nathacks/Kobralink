@@ -1,0 +1,86 @@
+---
+title: Paramètres de l'imprimante
+description: Toutes les options d'une imprimante.
+---
+
+Ouvrez une imprimante, puis **Paramètres**.
+
+## Profil [#profile]
+
+| Paramètre | Effet |
+| --- | --- |
+| Emplacement | Texte libre |
+| Tags | Jusqu'à 20. Regroupent les imprimantes pour cibler les éléments de file et les automatisations |
+| Buse installée | Les fichiers tranchés pour une autre buse ne vont pas vers cette imprimante |
+| Puissance moyenne | Remplace la valeur par défaut dans le coût de l'énergie |
+
+Les caractéristiques officielles s'affichent quand Anycubic les publie pour le modèle.
+
+## Connexion
+
+| Paramètre | Effet |
+| --- | --- |
+| Nom, adresse IP | |
+| Port Moonraker | 1024 à 65535, unique |
+| Rafraîchir les identifiants | Relit les identifiants sur l'imprimante |
+| Redémarrer la session MQTT | Se reconnecte |
+| Déconnecter | Ferme la session jusqu'à la reconnexion. Pratique pour laisser passer un autre client LAN |
+
+## Impression [#printing]
+
+| Paramètre | Défaut | Effet |
+| --- | --- | --- |
+| Auto-nivellement | activé | Avant chaque impression |
+| Compensation des vibrations | désactivé | Avant chaque impression |
+| Calibration du débit | activé | Avant chaque impression |
+| Caméra toujours active | activé | Garde la caméra en marche |
+| Caméra au démarrage | désactivé | Démarre le flux quand une impression commence |
+| Slot AMS par défaut | auto | *auto* utilise tous les slots dont le G-code a besoin |
+| Avertir pour les envois web | activé | Confirmer avant d'imprimer un fichier envoyé depuis le navigateur |
+| Dialogue après envoi | activé | Ouvre la fenêtre d'impression après un envoi. Désactivé, l'impression démarre directement |
+| Lancer le fichier suivant automatiquement | désactivé | Voir [File d'attente](/fr/docs/guide/queue#automatic-start) |
+| Confirmer le plateau vide | activé | Voir [File d'attente](/fr/docs/guide/queue#clearing-the-bed) |
+| Attendre avant de lancer | 15 s | 0 à 3600 s |
+| Déclencheur lumineux | désactivé | Voir [File d'attente](/fr/docs/guide/queue#light-trigger) |
+| Supprimer de l'imprimante après impression | désactivé | Libère le stockage de l'imprimante |
+| Intervalle de sondage | 3 s | 1 à 60 s entre deux demandes d'état |
+
+## Timelapse
+
+| Paramètre | Défaut |
+| --- | --- |
+| Enregistrer un timelapse | désactivé |
+| Images par seconde | 15 (5 à 60) |
+
+## Détection d'échec
+
+| Paramètre | Défaut |
+| --- | --- |
+| Surveiller cette imprimante | activé |
+
+Prend effet une fois la [détection](/fr/docs/guide/failure-detection) activée globalement.
+
+## Alertes [#alerts]
+
+0 désactive une alerte.
+
+| Alerte | Défaut |
+| --- | --- |
+| Buse max | 300 °C |
+| Plateau max | 110 °C |
+| Hors ligne depuis | 0 min (désactivé) |
+| Bobine presque vide | 0 g (désactivé) |
+
+## Prise (Home Assistant)
+
+Affiché une fois l'[API Home Assistant](/fr/docs/integrations/home-assistant#smart-plug-and-energy) configurée : interrupteur de
+la prise et compteur d'énergie.
+
+## Marques visibles
+
+Filtre les profils OrcaSlicer proposés pour chaque slot. Sans sélection, toutes les marques s'affichent. Vos profils importés
+sont toujours affichés.
+
+## Supprimer l'imprimante
+
+Les fichiers G-code stockés dans Kobralink sont conservés.

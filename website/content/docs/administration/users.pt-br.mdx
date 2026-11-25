@@ -1,0 +1,29 @@
+---
+title: Usuários e funções
+description: As contas e o que cada função pode fazer.
+---
+
+| Função | Pode |
+| --- | --- |
+| Administrador | Tudo |
+| Operador | Controlar as impressoras, mudar configurações, criar chaves de API |
+| Visualizador | Só consultar |
+
+Só administradores podem gerenciar usuários, ligar ou desligar o servidor MCP, mudar as permissões das ferramentas dele, baixar
+ou restaurar um backup e reiniciar o Kobralink.
+
+Um visualizador ainda pode ativar as notificações push no próprio dispositivo e desconectar os aplicativos de IA que autorizou.
+
+## Gerenciar contas
+
+A primeira conta é criada pelo assistente de configuração e é administradora. Depois, o cadastro fecha. Os administradores criam
+as outras contas em **Configurações → Usuários**, com uma senha de pelo menos 8 caracteres, e podem mudar uma função ou uma senha
+ali.
+
+- Pelo menos um administrador precisa continuar existindo.
+- Você não pode remover a sua própria função de administrador nem excluir a sua própria conta.
+- Excluir um usuário encerra as sessões dele na hora.
+
+As sessões duram 30 dias e são renovadas enquanto são usadas.
+
+<Callout type="info">Só dê contas a pessoas de confiança, inclusive as de somente leitura.</Callout>

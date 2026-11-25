@@ -1,0 +1,44 @@
+---
+title: File
+description: La libreria G-code, la memoria della stampante e le anteprime.
+---
+
+Ogni G-code inviato a Kobralink, da OrcaSlicer o dal browser, è conservato in **una sola libreria per tutte le stampanti**. Sono
+accettati solo file `.gcode` e `.bgcode`.
+
+## Schede
+
+| Scheda | Contenuto |
+| --- | --- |
+| Tutti | Tutti i file salvati |
+| Web | File caricati dal browser e non ancora verificati |
+| Stampante | File nella memoria interna della stampante |
+| Cronologia | Stampe passate |
+| Timelapse | Video registrati |
+
+## Aggiungere file
+
+Trascina uno o più file sulla scheda, oppure fai clic per sfogliare. I file possono arrivare anche da OrcaSlicer o da qualsiasi
+client Moonraker.
+
+Un file caricato dal browser non è stato slicato per questa stampante da OrcaSlicer, quindi Kobralink chiede conferma prima di
+stamparlo. Puoi disattivarlo con **Avvisa sui caricamenti web** nelle
+[impostazioni della stampante](/it/docs/administration/printer-settings#printing).
+
+## Schede dei file
+
+Ogni scheda mostra la miniatura, il tempo stimato, i filamenti con la quantità necessaria per colore, l'ultima stampa e il
+[costo stimato](/it/docs/guide/statistics#costs).
+
+**Anteprima** apre il pezzo in 3D, strato per strato. Durante una stampa, *Segui* mantiene la vista sullo strato attuale. Le
+anteprime non sono disponibili per i file `.bgcode`.
+
+## Memoria della stampante
+
+La scheda **Stampante** elenca i file salvati sulla stampante stessa. Puoi stamparli o eliminarli e vedere l'anteprima creata
+dallo slicer. Eliminare un file qui non lo rimuove da Kobralink.
+
+- La stampante elenca solo i suoi file più recenti (al massimo 256 sulla Kobra 4).
+- I *Modelli di prova* sono i file di esempio forniti con la stampante. Non si possono eliminare.
+
+Per liberare la memoria in automatico, attiva **Elimina dalla stampante dopo la stampa** nelle impostazioni della stampante.

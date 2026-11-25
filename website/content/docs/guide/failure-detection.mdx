@@ -1,0 +1,42 @@
+---
+title: AI failure detection
+description: Watch the camera for spaghetti and detached parts.
+---
+
+A vision model (from Obico) looks at a camera frame at regular intervals during a print. It runs on the machine that hosts
+Kobralink: **no image is sent online**.
+
+## Turn it on
+
+1. Open **Settings → AI detection** and download the model (about 200 MB).
+2. Turn on **Enable detection**.
+3. Choose the action and the sensitivity.
+
+Every printer is watched by default. You can exclude one in its settings, or turn detection off in the print dialog for one
+print.
+
+## Settings
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Action on failure | Notify only | Notify, notify and pause, or notify and cancel |
+| Turn on the camera light | on | Lights the camera while watching. Kobralink turns the light off at the end if it turned it on |
+| Sensitivity | 1 | 0.5 to 2. Higher means earlier alerts and more false positives |
+| Analysis interval | 10 s | 5 to 60 s. Thresholds are tuned for 10 s |
+
+Pausing and cancelling need a higher confidence than a plain notification. The first 30 frames of a print never raise an alert,
+which is about 5 minutes at the default interval.
+
+When Kobralink pauses or cancels a print by itself, it leaves the light on so that you can see the part.
+
+## Live monitoring
+
+**Settings → AI detection** shows the score of each print being watched. The camera card shows a badge: *AI* while watching,
+*Failure suspected* when the score is high.
+
+<Callout type="warn">
+    Detection reduces damage, it does not replace supervision. It can miss a failure, and it can be wrong. Start with *Notify
+    only* to see how it behaves with your camera.
+</Callout>
+
+The model uses the CPU. If the inference engine is not available on your platform, the page says so.

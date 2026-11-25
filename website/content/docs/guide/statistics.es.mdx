@@ -1,0 +1,49 @@
+---
+title: Historial, estadísticas y costes
+description: Qué se imprimió, qué falló y cuánto costó.
+---
+
+## Historial
+
+La página **Historial** lista cada impresión con su vista previa, duración, filamento, energía y coste. En una impresión
+fallida puedes:
+
+- elegir un motivo: spaghetti, adherencia a la cama, atasco, fin de filamento, desplazamiento de capa, corte de corriente,
+  cancelada a propósito, calidad rechazada, otro
+- añadir una nota
+- ver la captura de la cámara tomada al final, si la cámara estaba activa
+- leer el código de error que indicó la impresora
+
+## Estadísticas
+
+Elige una impresora y un periodo: 7, 30, 90 o 365 días, o todo. La página muestra:
+
+- impresiones, tasa de éxito, tiempo de impresión y filamento, comparados con el periodo anterior
+- impresiones, horas y coste por día o por mes, por día de la semana y por hora de inicio
+- uso por material y los archivos más impresos
+- para cada impresora: utilización, tiempo medio entre fallos, inactividad tras una impresión, precisión de la estimación del
+  laminador, energía medida
+- fallos por motivo, del más frecuente al menos
+- el filamento desperdiciado por impresiones que nunca terminaron
+
+**Exportar CSV** descarga las impresiones de la selección.
+
+## Costes [#costs]
+
+Coste = filamento + energía.
+
+**Filamento.** El precio viene de la bobina de Spoolman. Sin ella, se aplica el *precio de filamento por defecto*
+(**Ajustes → General**). El filamento sin ningún precio se muestra como *sin precio*.
+
+**Energía.** La mide el contador del enchufe cuando [Home Assistant](/es/docs/integrations/home-assistant#smart-plug-and-energy)
+está configurado. Si no, se estima:
+
+```text
+potencia media (W) ÷ 1000 × horas × precio del kWh
+```
+
+La potencia media es la de la impresora, de su perfil, o la de **Ajustes → General**. Deja el precio de la electricidad en 0
+para ignorar la energía.
+
+Antes de imprimir se muestra un coste estimado en la tarjeta del archivo, en la vista previa y en el diálogo de impresión. El
+coste real se calcula al final.

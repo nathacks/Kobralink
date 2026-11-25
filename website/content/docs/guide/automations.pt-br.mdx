@@ -1,0 +1,51 @@
+---
+title: Automações
+description: Regras que agem nas suas impressoras quando algo acontece.
+---
+
+Uma regra diz **quando** algo acontece, **em** quais impressoras, e **então** o que fazer. Gerencie-as na página **Automações**.
+
+## Gatilhos
+
+| Gatilho | Quando |
+| --- | --- |
+| Uma impressão termina | A impressão terminou normalmente |
+| Uma impressão é cancelada ou falha | A impressão terminou antes da hora |
+| A mesa é limpa | Você confirmou, ou usou o gatilho da luz |
+| Um carretel está acabando | O alerta de carretel quase vazio da impressora dispara |
+| Todo dia em um horário | Horário do servidor, `HH:MM` |
+
+O gatilho do carretel precisa de um limite nos [alertas](/pt-br/docs/administration/printer-settings#alerts) da impressora. O gatilho
+de horário usa o fuso horário do servidor, definido por `TZ` no Docker.
+
+## Destinos
+
+Todas as impressoras, uma impressora, ou as impressoras que têm todas as tags indicadas.
+
+## Ações
+
+Uma regra tem de 1 a 10 ações, executadas em ordem:
+
+| Ação | Observações |
+| --- | --- |
+| Executar uma macro | |
+| Luz | Ligada ou desligada |
+| Filamento (ACE) | Carregar ou descarregar um slot; falha em uma impressora sem ACE |
+| Tomada inteligente | Ligada ou desligada |
+| Notificar | Mensagem de até 200 caracteres |
+| Esperar | 1 a 3600 s |
+
+Se uma ação falhar, a regra para ali. O erro aparece na regra.
+
+**Desligar a tomada** é recusado com uma impressão em andamento ou pausada. Caso contrário, o Kobralink espera o bico esfriar
+abaixo de 50 °C e desiste depois de 30 minutos.
+
+## Exemplos
+
+| Objetivo | Quando | Então |
+| --- | --- | --- |
+| Desligar depois de imprimir | Uma impressão termina | Tomada inteligente: desligada |
+| Apagar a luz à noite | Todo dia às 23:00 | Luz: desligada |
+| Avisar a oficina | Uma impressão é cancelada ou falha | Notificar: "Verifique a impressora" |
+
+**Executar agora** testa uma regra em uma impressora. A regra mostra a última execução.

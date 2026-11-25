@@ -1,0 +1,27 @@
+---
+title: Maintenance
+description: Preventive maintenance tasks for each printer.
+---
+
+Each printer has a list of tasks. A task is due as soon as **one** of its limits is reached: print hours, number of prints or
+days. A limit set to 0 is ignored.
+
+## Recommended tasks
+
+| Task | Due every |
+| --- | --- |
+| Lubricate the axes | 100 print hours |
+| Clean the nozzle | 50 print hours |
+| Check belt tension | 200 print hours |
+| Clean the bed | 20 prints |
+| Clean the fans | 90 days |
+
+Enable them one by one or all at once, or add your own with notes.
+
+## When a task is due
+
+The task is marked *Due* on the printer and in the **Maintenance** page, and a notification is sent once. Click **Done** to reset it, with
+an optional note. The history keeps the date, the note and the usage at that moment.
+
+A due task never stops the printer. To take a printer out of the queue during the work, use
+[maintenance mode](/en/docs/guide/queue#maintenance-mode).

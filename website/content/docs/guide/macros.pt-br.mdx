@@ -1,0 +1,45 @@
+---
+title: Macros
+description: Sequências de ações em um clique.
+---
+
+Uma macro é uma lista de ações (até 30) executadas em ordem em uma impressora. Macros não são G-code: a impressora não aceita
+G-code bruto pela LAN.
+
+Crie-as em **Configurações → Macros** e execute-as pelo cartão **Macros** de uma impressora.
+
+## Ações
+
+| Ação | Parâmetros |
+| --- | --- |
+| Temperaturas | Bico 0–320 °C, mesa 0–120 °C |
+| Esperar temperatura | Bico e/ou mesa, no máximo 15 minutos |
+| Ventoinha | 0–100 % |
+| Luz | Ligada ou desligada |
+| Velocidade | Silencioso, Padrão ou Esportivo |
+| Origem | Todos, XY ou Z |
+| Mover | X, Y ou Z, até 300 mm em qualquer sentido |
+| Desligar motores | |
+| Filamento | Carregar ou descarregar um slot |
+| Secagem | 30–80 °C, 10–1440 min |
+| Parar secagem | |
+| Esperar | Até 600 s |
+
+Só uma macro roda por vez em cada impressora.
+
+## Exemplo: pré-aquecer para PLA
+
+1. Temperaturas: bico 210 °C, mesa 60 °C
+2. Esperar temperatura: mesa 60 °C
+3. Luz: ligada
+
+## Chamar uma macro de outro programa
+
+O nome da macro funciona como comando G-code na porta [Moonraker](/pt-br/docs/integrations/moonraker). Maiúsculas, espaços e hífens
+não importam:
+
+```bash
+curl -X POST "http://192.168.1.20:7125/printer/gcode/script?script=PREHEAT_PLA"
+```
+
+Macros também podem ser executadas pelas [automações](/pt-br/docs/guide/automations) e por um [assistente de IA](/pt-br/docs/integrations/mcp).

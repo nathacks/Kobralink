@@ -1,0 +1,73 @@
+---
+title: Primo avvio
+description: Creare l'account amministratore e aggiungere la prima stampante.
+---
+
+La prima volta che apri Kobralink, una procedura guidata ti accompagna. Tutti i passaggi dopo l'account si possono cambiare in
+seguito.
+
+<Steps>
+<Step>
+
+### Creare l'account amministratore
+
+Questo account gestisce stampanti, utenti e impostazioni. La registrazione si chiude appena esiste: gli altri account li crea un
+amministratore in [Impostazioni → Utenti](/it/docs/administration/users).
+
+</Step>
+<Step>
+
+### Scegliere lingua, valuta e indirizzo
+
+L'indirizzo serve nei link delle notifiche. La lingua vale per i messaggi inviati dal bridge.
+
+</Step>
+<Step>
+
+### Aggiungere la stampante
+
+Sulla stampante apri **Impostazioni → Rete** e attiva la **modalità LAN**. Lascia la stampante accesa e sulla stessa rete,
+poi annota l'indirizzo IP mostrato nella sua schermata di rete.
+
+Inserisci solo l'indirizzo IP, senza porta. Kobralink legge nome utente, password e ID del dispositivo dalla stampante stessa.
+
+</Step>
+<Step>
+
+### Descrivere la stampante
+
+Posizione, tag, ugello installato e potenza media. Servono per i report, i costi e la [coda](/it/docs/guide/queue). Le specifiche
+ufficiali Anycubic compaiono quando il modello è noto.
+
+</Step>
+<Step>
+
+### Collegare Spoolman (facoltativo)
+
+Se usi [Spoolman](/it/docs/integrations/spoolman), inserisci il suo URL e provalo.
+
+</Step>
+<Step>
+
+### Collegare OrcaSlicer
+
+La procedura mostra l'indirizzo da incollare in OrcaSlicer. Vedi [OrcaSlicer](/it/docs/getting-started/orcaslicer).
+
+</Step>
+</Steps>
+
+## Aggiungere altre stampanti
+
+Apri **Stampanti → Aggiungi una stampante** e inserisci l'indirizzo IP. Ogni stampante ha la sua porta Moonraker: `7125`,
+`7126` e così via. Dai a ogni stampante un IP fisso nel router (prenotazione DHCP), così Kobralink la trova sempre.
+
+## Se la stampante non viene trovata
+
+| Messaggio | Cosa fare |
+| --- | --- |
+| La modalità LAN è attiva sulla stampante? | Attiva la modalità LAN e riprova |
+| Limite di connessioni (codice 19002) | Disconnetti gli altri client LAN come Anycubic Slicer Next |
+| Stampante non raggiungibile in rete | Controlla l'IP e che le due macchine siano sulla stessa rete |
+| Questa stampante esiste già | La stampante è già in Kobralink |
+
+Altri casi in [Risoluzione dei problemi](/it/docs/troubleshooting).

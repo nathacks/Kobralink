@@ -1,0 +1,34 @@
+---
+title: Spoolman
+description: Spoolman als maßgebliche Quelle für Spulen verwenden.
+---
+
+Mit [Spoolman](https://github.com/Donkie/Spoolman) werden Spulen, Preise und Verbrauch mit Ihren anderen Werkzeugen geteilt.
+Kobralink liest die Spulen und meldet den Verbrauch.
+
+## Einrichten
+
+1. Öffnen Sie **Einstellungen → Integrationen → Spoolman** und geben Sie die Server-URL ein, zum Beispiel
+   `http://192.168.1.20:7912`.
+2. Klicken Sie in der Karte **Filamente** auf einen Slot und wählen Sie seine Spoolman-Spule.
+
+| Einstellung | Standard | Wirkung |
+| --- | --- | --- |
+| Synchronisierung während des Drucks | 0 s | Abstand zwischen zwei Verbrauchsmeldungen. 0 meldet nur am Ende des Drucks |
+
+Sobald eine URL gesetzt ist, wird das lokale Inventar nicht mehr verwendet.
+
+## Verbrauchsmeldungen
+
+Ist Spoolman nicht erreichbar, wird der Verbrauch aufbewahrt und erneut gesendet, sobald es antwortet. Die Seite **Filament**
+zeigt, wie viele Meldungen warten. Bei einem Neustart von Kobralink geht nichts verloren.
+
+## Preise
+
+Der Preis einer Spule ist ihr eigener Preis oder der ihres Filaments, geteilt durch ihr Gewicht. Gewicht, Dichte und
+Durchmesser kommen aus Spoolman.
+
+## Docker
+
+Aus dem Kobralink-Container ist `localhost` der Container selbst. Verwenden Sie die Netzwerkadresse des Hosts, oder einen
+Dienstnamen, wenn beide im selben Compose-Projekt laufen.

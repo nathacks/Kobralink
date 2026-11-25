@@ -1,0 +1,62 @@
+---
+title: Filamento
+description: Ranuras, unidades ACE, secado, perfiles y bobinas.
+---
+
+## Ranuras
+
+La tarjeta **Filamentos** muestra lo que indica la impresora. Se detectan automáticamente tres conexiones:
+
+| Modo | Ranuras |
+| --- | --- |
+| Cabezal (búfer) | Las ranuras del cabezal |
+| ACE directo | Cuatro ranuras por unidad ACE |
+| Cabezal + ACE (hub) | Tres ranuras de cabezal, más las ranuras de las unidades ACE conectadas a la cuarta |
+
+Sin ACE, elige la **bobina externa** montada en el soporte de la impresora; su consumo se descuenta de ella.
+
+Haz clic en una ranura para ajustar su material y color (escritos en la pantalla de la impresora), su perfil de OrcaSlicer y su
+bobina, y para cargar o descargar el filamento. El filamento leído por RFID se reconoce.
+
+## Secado
+
+Inicia un ciclo desde la sección ACE de la tarjeta: 30–80 °C durante 10 a 1440 minutos. Tu ACE puede rechazar las temperaturas
+más altas. También puedes programar un ciclo para más tarde.
+
+Los preajustes se editan en la página **Filamento**. Por defecto:
+
+| Preajuste | Temperatura | Duración |
+| --- | --- | --- |
+| PLA, PLA+ | 45 °C | 4 h |
+| PETG | 50 °C | 4 h |
+| TPU | 55 °C | 4 h |
+| ABS / ASA | 55 °C | 8 h |
+| PA / PC | 55 °C | 12 h |
+
+**Alimentación automática** activa o desactiva la recarga automática de una unidad ACE.
+
+## Perfiles de OrcaSlicer [#orcaslicer-profiles]
+
+Cada ranura puede llevar un perfil de OrcaSlicer, que se envía a OrcaSlicer como marca y nombre de perfil al sincronizar los
+filamentos. Sin elección, Kobralink elige uno según el material.
+
+Para añadir tus propios perfiles, abre **Filamento** e importa un ZIP o archivos `.json` de OrcaSlicer. Se marcan con ★. Para
+acortar la lista, elige las marcas visibles en los ajustes de la impresora.
+
+## Bobinas
+
+Dos formas de controlar el filamento:
+
+| | Spoolman | Inventario local |
+| --- | --- | --- |
+| Dónde están las bobinas | En [Spoolman](/es/docs/integrations/spoolman) | En Kobralink |
+| Precios | Desde Spoolman | Precio por defecto por kg |
+| Úsalo si | Quieres una fuente compartida con otras herramientas | No usas Spoolman |
+
+El inventario local se usa mientras no haya una URL de Spoolman. Añade bobinas con su material, color y peso neto inicial; el
+peso restante se estima a partir del consumo que indica la impresora.
+
+Asigna una bobina a una ranura en el diálogo de la ranura. A partir de ahí, su consumo se descuenta al imprimir, el diálogo de
+impresión avisa cuando se queda corta y la cola lo tiene en cuenta.
+
+Se envía una alerta por debajo del umbral fijado en los ajustes de la impresora (*Bobina casi vacía*, desactivado por defecto).

@@ -1,0 +1,48 @@
+---
+title: HTTP API
+description: The endpoints of the server.
+---
+
+| Address | Purpose | Authentication |
+| --- | --- | --- |
+| `:7100/api/v1/*` | API of the dashboard | Session cookie |
+| `:7100/api/v1/metrics` | [Prometheus](/en/docs/integrations/prometheus) | API key or session |
+| `:7100/api/v1/setup/status` | Whether the first account exists | None |
+| `:7100/api/auth/*` | Sign-in (Better Auth) | |
+| `:7100/api/auth/ok` | Health check | None |
+| `:7100/api/mcp` | [MCP server](/en/docs/integrations/mcp) | API key or OAuth |
+| `:7125+` | [Moonraker](/en/docs/integrations/moonraker), one port per printer | None, or API key |
+
+<Callout type="warn" title="For your own scripts, use Moonraker or MCP">
+    `/api/v1` is made for the dashboard. It has no stability guarantee and does not accept API keys, except for the metrics.
+</Callout>
+
+## Dashboard API
+
+Bodies are validated by the Zod schemas of `packages/shared`. Viewers can only read.
+
+| Path | Purpose |
+| --- | --- |
+| `/printers`, `/printers/:id` | List, add, update, delete |
+| `/printers/:id/{connect,disconnect,reconnect,refresh-credentials}` | Connection |
+| `/printers/:id/power` | Smart plug |
+| `/printers/:id/{state,samples}` | Live state and recent temperatures |
+| `/printers/:id/{temperature,fan,light,speed,axis,axis/off}` | Controls |
+| `/printers/:id/{ams/slot,ams/feed,ace/auto-feed,ace/dry}` | Filament |
+| `/printers/:id/print`, `/printers/:id/print/{pause,resume,cancel}` | Print |
+| `/printers/:id/skip`, `/printers/:id/skip/{query,state}` | Object skip |
+| `/printers/:id/files`, `/printers/:id/printer-files` | Files |
+| `/printers/:id/camera/{stream,h264,snapshot,start,stop,reset}` | Camera |
+| `/printers/:id/{schedule,dry-schedule,maintenance,history,detection}` | Per-printer data |
+| `/printers/:id/queue`, `/printers/:id/queue/{status,start,bed-clear,auto-start,maintenance}` | Queue of a printer |
+| `/printers/:id/filament/slots`, `/printers/:id/{spools,spoolman}` | Slots and spools |
+| `/queue`, `/queue/{check,reorder}` | Queue |
+| `/files`, `/history`, `/stats`, `/stats/export.csv`, `/timelapses` | Library and statistics |
+| `/macros`, `/automations`, `/spools`, `/filament/profiles` | Configuration |
+| `/settings`, `/users`, `/notifications`, `/push`, `/detection` | Administration |
+| `/system`, `/system/{backup,restore,restart,update-check}`, `/logs/download` | System |
+
+## Live events
+
+`/api/v1/events/multiplexed?channels=printers,logs` is a Server-Sent Events stream. Each message is a JSON envelope
+`{ channel, event, data }`, with a heartbeat every 25 seconds. Available channels are `printers` and `logs`.

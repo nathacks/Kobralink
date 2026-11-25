@@ -1,0 +1,68 @@
+---
+title: OrcaSlicer
+description: Connect OrcaSlicer to Kobralink and send prints.
+---
+
+Kobralink exposes every printer as a Moonraker server, so OrcaSlicer connects to it like a Klipper machine. The exact
+address of each printer is listed in **Settings → OrcaSlicer**.
+
+<Steps>
+<Step>
+
+### Open the connection settings
+
+In the **Prepare** tab, click the connection (plug) icon next to the printer preset, or open
+**Printer settings → General → Physical printer**.
+
+</Step>
+<Step>
+
+### Pick the host type
+
+Choose **Moonraker**.
+
+</Step>
+<Step>
+
+### Fill in the host
+
+Enter the address of the printer, with the protocol and the port:
+
+```text
+http://192.168.1.20:7125
+```
+
+If OrcaSlicer runs on the same machine as Kobralink, use `http://localhost:7125`. Leave the API key empty, unless you
+turned on [Require an API key](/en/docs/administration/api-keys#lock-the-moonraker-ports).
+
+</Step>
+<Step>
+
+### Test, then save
+
+**Test** should report that the connection succeeded. The **Device** tab now shows your Kobra and **Print** sends the
+G-code to Kobralink.
+
+</Step>
+</Steps>
+
+## What the Device tab does
+
+The Device tab only targets the printer: start a print, follow progress, pause or cancel, and sync the ACE filaments.
+Everything else (queue, files, macros, camera, failure detection, statistics, notifications) is in the Kobralink
+dashboard.
+
+## Sending a print
+
+By default, a file sent from OrcaSlicer opens the print dialog in the dashboard, even with *send and print*. You check the
+filaments and slots there, then start. To start directly, turn off **Dialog after upload** in the
+[printer settings](/en/docs/administration/printer-settings#printing).
+
+## Syncing filaments
+
+The filament sync button in the Device tab fetches the slots reported by the printer. The brand and preset sent for each
+slot can be set in the [slot dialog](/en/docs/guide/filament#orcaslicer-profiles).
+
+## Skipping objects
+
+To skip objects, the G-code must contain object markers. Turn on **Label objects** in OrcaSlicer.

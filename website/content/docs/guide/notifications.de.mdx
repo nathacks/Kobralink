@@ -1,0 +1,66 @@
+---
+title: Benachrichtigungen
+description: Discord, Telegram, ntfy, Webhook, Browser und Web-Push.
+---
+
+Richten Sie sie unter **Einstellungen → Benachrichtigungen** ein und nutzen Sie dann **Test senden**.
+
+## Kanäle
+
+| Kanal | Was einzugeben ist |
+| --- | --- |
+| Discord | Die Webhook-URL des Kanals |
+| Telegram | Das Bot-Token und die Chat-ID |
+| ntfy | Die vollständige Topic-URL, öffentlich oder selbst gehostet |
+| Webhook | Jede URL, die ein JSON-`POST` annimmt |
+| Browser | Nichts. Angezeigt, wenn der Tab im Hintergrund ist |
+| Web-Push | Nichts. Auf jedem Gerät einschalten |
+
+### Web-Push
+
+Push-Benachrichtigungen kommen auch bei geschlossenem Browser an. Sie brauchen **HTTPS** (oder localhost), siehe
+[HTTPS](/de/docs/administration/https). Auf dem iPhone fügen Sie Kobralink zuerst zum Home-Bildschirm hinzu. In der Desktop-App
+sind sie nicht verfügbar.
+
+### Webhook-Inhalt
+
+```json
+{
+    "id": "0b5c…",
+    "type": "print_finished",
+    "printerId": "…",
+    "printerName": "Werkstatt-Kobra",
+    "title": "Werkstatt-Kobra — Druck fertig",
+    "body": "teil.gcode in 2 h 05 min fertig.",
+    "ts": 1764000000000,
+    "url": "https://kobralink.example.com/printers/…",
+    "data": {}
+}
+```
+
+`url` ist nur vorhanden, wenn die Kobralink-Adresse gesetzt ist. `data` hängt vom Ereignis ab.
+
+## Ereignisse
+
+| Ereignis | Standard | `type` |
+| --- | --- | --- |
+| Druck gestartet | aus | `print_started` |
+| Druck fertig | an | `print_finished` |
+| Druck abgebrochen | an | `print_cancelled` |
+| Pausiert | an | `print_paused` |
+| Drucker offline | aus | `printer_offline` |
+| Drucker wieder online | aus | `printer_online` |
+| Trocknung beendet | an | `drying_done` |
+| Alarme | an | `alert_nozzle_temp`, `alert_bed_temp`, `alert_offline`, `alert_spool_low` |
+| Druckfehler erkannt (KI) | an | `alert_print_failure` |
+| Warteschlange: nächste Datei bereit | an | `queue_next`, `queue_filament` |
+| Geplanter Druck | an | `scheduled_print` |
+| Wartung fällig | an | `maintenance_due` |
+| Nachrichten von Automatisierungen | an | `automation` |
+
+## Links
+
+Benachrichtigungen verlinken auf den passenden Bildschirm, sobald die **Kobralink-Adresse** unter **Einstellungen → Allgemein**
+gesetzt ist. Dort wird auch die Sprache der Nachrichten eingestellt.
+
+Die Alarmschwellen werden pro Drucker eingestellt, siehe [Alarme](/de/docs/administration/printer-settings#alerts).

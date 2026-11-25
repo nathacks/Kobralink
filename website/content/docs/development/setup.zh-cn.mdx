@@ -1,0 +1,59 @@
+---
+title: 开发环境
+description: 从源码运行 Kobralink。
+---
+
+你需要 [Bun](https://bun.sh) 1.4.2 或更高版本。
+
+```bash
+git clone https://github.com/NatHacks/Kobralink.git
+cd Kobralink
+bun install
+bun run db:migrate
+bun run dev:web
+```
+
+打开 `http://localhost:5454`。API 监听 7100 端口。
+
+## 命令
+
+| 命令 | 作用 |
+| --- | --- |
+| `bun run dev` | API、控制台和桌面应用 |
+| `bun run dev:web` | API 和控制台 |
+| `bun run dev:desktop` | 桌面应用及其依赖 |
+| `bun run build` | 全部构建 |
+| `bun run check-types` | 类型检查 |
+| `bun run test` | 所有测试 |
+| `bun run lint` | Biome 检查 |
+| `bun run format` | Biome 格式化 |
+| `bun run db:migrate` | 创建或应用 Prisma 迁移 |
+| `bun run db:studio` | 浏览数据库 |
+| `bun run --filter @kobralink/desktop dist` | 为当前系统生成桌面安装包 |
+
+运行单个测试文件：`cd apps/api && bun test test/queue-service.test.ts`。
+
+## 没有打印机时
+
+```bash
+bun run --filter @kobralink/api fake-printer
+```
+
+在 `127.0.0.1` 上模拟一台带 ACE、正在打印的 Kobra 4。在控制台中用这个 IP 添加打印机即可。仅用于开发，从不发布。
+
+## 规则
+
+- 只用 Bun：不用 npm，也不用 pnpm。锁文件是 `bun.lock`。
+- `apps/api` 中不使用 `Bun.*` API：它在桌面应用中也运行在 Node 下。
+- 代码中不写注释。
+- 每个可见文本都是 `packages/i18n/messages` 中的一条消息，并添加到**所有**语言。
+- Biome 使用 4 个空格缩进、120 列宽。pre-commit 钩子会对暂存文件运行它。
+
+## 证书 [#certificates]
+
+`apps/api/certs/anycubic_slicer.*` 是第三方材料，仅为互操作而包含。请勿修改。如果打印机拒绝 TLS 握手，很可能是证书已过时。从
+Anycubic Slicer Next 安装中提取新的证书对：
+
+```bash
+bun run certs:extract <路径> [--out apps/api/certs] [--force]
+```

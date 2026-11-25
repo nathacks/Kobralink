@@ -1,0 +1,52 @@
+---
+title: Moonraker
+description: 连接 Mainsail、Fluidd、Obico 和其他 Moonraker 客户端。
+---
+
+每台打印机在自己的端口上有自己的 Moonraker 服务器（`7125`、`7126`…），支持 HTTP 和 WebSocket（`/websocket`）。端口显示在打印机
+页面上，可在其设置中修改。
+
+在浏览器中打开该端口会跳转到 Kobralink 中的打印机页面。
+
+## 认证
+
+默认情况下，Moonraker 端口**对局域网开放**，与 Moonraker 本身一样。要加锁，参见
+[锁定 Moonraker 端口](/zh-cn/docs/administration/api-keys#lock-the-moonraker-ports)。
+
+## 支持的功能
+
+| 功能 | 支持情况 |
+| --- | --- |
+| 打印机对象：查询和订阅 | 是 |
+| 上传，以及上传并打印 | 是，`.gcode` 和 `.bgcode`。OctoPrint 风格的上传也可以 |
+| 开始、暂停、继续、取消 | 是 |
+| 文件：列表、元数据、缩略图 | 是 |
+| 打印历史 | 是 |
+| 任务队列 | 是，对接 [Kobralink 队列](/zh-cn/docs/guide/queue)。暂停和跳转无效 |
+| 摄像头 | 是，自动公布一个摄像头 |
+| 耗材槽位 | 是，由 OrcaSlicer 读取 |
+| G-code 脚本 | 一小部分，见下文 |
+
+## G-code 脚本 [#g-code-scripts]
+
+| 命令 | 作用 |
+| --- | --- |
+| `PAUSE`、`M25` | 暂停 |
+| `RESUME`、`M24` | 继续 |
+| `CANCEL_PRINT`、`M0`、`M1`、`M524`、`ABORT` | 取消 |
+| `M104 S<temp>` | 喷嘴目标温度 |
+| `M140 S<temp>` | 热床目标温度 |
+| `SET_HEATER_TEMPERATURE HEATER=<extruder\|heater_bed> TARGET=<temp>` | 喷嘴或热床目标温度 |
+| 某个[宏](/zh-cn/docs/guide/macros)的名称 | 运行该宏 |
+
+其他任何命令都回复 `ok` 但**不做任何事**：打印机在局域网下不接受原始 G-code。
+
+## 需要了解的数值
+
+- `gcode_move.speed_factor` 反映速度模式：静音 0.5、标准 1.0、运动 1.3。
+- `motion_report.live_velocity` 始终为 0。
+- 打印机不报告位置。Z 根据层数估算。
+
+## 客户端
+
+**Mainsail** 没有 API 密钥字段，需要密钥时无法连接。**Fluidd**、**Obico**、**OrcaSlicer** 和 **Home Assistant** 都可以发送密钥。
