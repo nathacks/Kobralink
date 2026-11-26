@@ -41,6 +41,7 @@ import { Switch } from '@/components/ui/switch';
 import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useLiveState, usePrinter } from '@/hooks/use-printers';
 import { useSpoolLookup } from '@/hooks/use-slot-spool';
+import { api } from '@/lib/api';
 import { hexToRgb, rgbCss, rgbToHex, textOn } from '@/lib/color';
 import { anyShort, checkFilament, type FilamentStatus, type SlotCheck } from '@/lib/filament-check';
 import { parseFilename } from '@/lib/filename';
@@ -49,6 +50,7 @@ import { m } from '@/lib/i18n';
 import { filamentSlotsQuery, fileObjectsQuery } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
+import { printersStore } from '@/stores/printers';
 import { EXTERNAL_SLOT } from '../ams/external-spool-form';
 
 export function queueTargetFor(choice: string, printerId: string): QueueTarget {
@@ -246,6 +248,23 @@ export function PrintReadyForm({
         timelapse,
         failureDetection,
     });
+
+    const submit = (): PrintReadyResult => {
+        const next = {
+            autoLeveling,
+            vibrationCompensation,
+            flowCalibration,
+            timelapseEnabled: timelapse,
+            failureDetection,
+        };
+        if (settings && Object.entries(next).some(([k, v]) => settings[k as keyof typeof next] !== v)) {
+            api.printers
+                .update(printerId, { settings: next })
+                .then(printersStore.actions.upsertPrinter)
+                .catch(() => {});
+        }
+        return build();
+    };
 
     if (editing) {
         const unit = editing.boxId >= 0 ? m.ace_unit({ n: editing.boxId + 1 }) : m.ams_toolhead();
@@ -537,7 +556,7 @@ export function PrintReadyForm({
                                 if (!startAt || startAt.getTime() <= Date.now()) return;
                                 setPending(true);
                                 try {
-                                    await onSchedule(build(), startAt.toISOString());
+                                    await onSchedule(submit(), startAt.toISOString());
                                     close();
                                 } finally {
                                     setPending(false);
@@ -570,7 +589,7 @@ export function PrintReadyForm({
                                 disabled={shortBlocked}
                                 onClick={() => {
                                     close();
-                                    onQueue(build(), queueTargetFor(queueChoice, printerId));
+                                    onQueue(submit(), queueTargetFor(queueChoice, printerId));
                                 }}
                             >
                                 <ListPlus /> {m.queue_add()}
@@ -586,7 +605,7 @@ export function PrintReadyForm({
                         onClick={async () => {
                             setPending(true);
                             try {
-                                await onPrint(build());
+                                await onPrint(submit());
                                 close();
                             } finally {
                                 setPending(false);

@@ -19,9 +19,15 @@ vi.mock('@/hooks/use-slot-spool', () => ({
     useSpoolLookup: () => (slot: string) => ({ remainingG: mocks.remaining[slot] }),
 }));
 
+vi.mock('@/lib/api', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/lib/api')>();
+    return { ...actual, api: { ...actual.api, printers: { ...actual.api.printers, update: mocks.update } } };
+});
+
 vi.mock('./print-preview-3d', () => ({ PrintPreview3D: () => <div data-testid="preview-3d" /> }));
 
 const mocks = vi.hoisted(() => ({
+    update: vi.fn(() => new Promise(() => {})),
     remaining: {} as Record<string, number | undefined>,
     settings: null as unknown,
     spoolman: { configured: false, slotSpools: {} } as unknown,
@@ -131,6 +137,27 @@ describe('PrintReadyForm', () => {
 const pickDay = (d: Date) => document.querySelector(`[data-day="${d.toLocaleDateString()}"]`) as HTMLElement;
 
 describe('PrintReadyForm scheduling', () => {
+    it('remembers the chosen options for the next prints, and saves nothing when unchanged', async () => {
+        mocks.update.mockClear();
+        const onPrint = vi.fn().mockResolvedValue(undefined);
+        const first = await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={onPrint} />);
+        await userEvent.click(screen.getByRole('button', { name: /print/i }));
+        expect(mocks.update).not.toHaveBeenCalled();
+        first.unmount();
+        await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={onPrint} />);
+        await userEvent.click(screen.getByRole('switch', { name: /record a timelapse/i }));
+        await userEvent.click(screen.getByRole('button', { name: /print/i }));
+        expect(mocks.update).toHaveBeenCalledWith('p1', {
+            settings: {
+                autoLeveling: true,
+                vibrationCompensation: false,
+                flowCalibration: true,
+                timelapseEnabled: false,
+                failureDetection: false,
+            },
+        });
+    });
+
     it('offers no schedule button without a handler', async () => {
         await renderWithProviders(<PrintReadyForm printerId="p1" file={file} onPrint={vi.fn()} />);
         expect(screen.queryByRole('button', { name: m.schedule_button() })).toBeNull();
