@@ -45,7 +45,8 @@ Jeder andere Befehl antwortet `ok` und **bewirkt nichts**: Der Drucker nimmt im 
 
 - `gcode_move.speed_factor` spiegelt den Geschwindigkeitsmodus: Ruhig 0,5, Standard 1,0, Sport 1,3.
 - `motion_report.live_velocity` ist immer 0.
-- Die Position meldet der Drucker nicht. Z wird aus den Schichten geschätzt.
+- Während eines Drucks werden X, Y und Z jede Sekunde vom Drucker gelesen. Außerhalb eines Drucks sind X und Y 0, und Z
+  wird aus den Schichten geschätzt.
 
 ## Clients
 

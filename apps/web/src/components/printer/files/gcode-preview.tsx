@@ -1,9 +1,10 @@
 import { type GcodeFileDto, slotUsableForPrint } from '@kobralink/shared';
-import { Box, Crosshair, Move, RotateCcw } from 'lucide-react';
-import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { ArrowDownToDot, Box, Crosshair, Move, RotateCcw } from 'lucide-react';
+import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { defaultAssignments } from '@/components/printer/files/print-ready-form';
+import { TOOLHEAD_NAME, type ToolheadModel, toolheadFor } from '@/components/printer/files/toolhead';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -13,6 +14,8 @@ import { usePrinter } from '@/hooks/use-printers';
 import { rgbToHex } from '@/lib/color';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 import { m } from '@/lib/i18n';
+import { toolAt } from '@/lib/nozzle-path';
+import { toolheadFeed } from '@/lib/toolhead-feed';
 import { cn } from '@/lib/utils';
 
 const GcodeScene = lazy(() => import('./gcode-scene').then((mod) => ({ default: mod.GcodeScene })));
@@ -24,6 +27,10 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [mode, setMode] = useState<SceneMode>('solid');
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
+    const [showHead, setShowHead] = useState(true);
+    const printerToolhead = usePrinter(printerId, (p) => toolheadFor(p?.modeId));
+    const [devToolhead, setDevToolhead] = useState<ToolheadModel | null>(null);
+    const toolhead = devToolhead ?? printerToolhead;
     const live = usePrinter(
         printerId,
         (p) =>
@@ -31,8 +38,12 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                 filename: p.live.filename,
                 printState: p.live.printState,
                 currLayer: p.live.currLayer,
+                position: p.live.position,
+                printSlots: p.live.printSlots,
                 amsSlots: p.live.amsSlots,
+                amsLoadedSlot: p.live.amsLoadedSlot,
                 filamentMode: p.live.filamentMode,
+                fanSpeed: p.live.fanSpeed,
             },
     );
     const cost = useCostEstimate(printerId);
@@ -41,6 +52,27 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     );
     const slots = live?.amsSlots;
     const filamentMode = live?.filamentMode;
+    const data = status.kind === 'ready' ? status.data : null;
+    const printSlots = printingThis && live?.printSlots?.filename === file.filename ? live.printSlots.slots : null;
+    const [learned, setLearned] = useState<Record<number, number>>({});
+    const lastSeen = useRef('');
+    const position = printingThis ? live?.position : null;
+    const loadedSlot = live?.amsLoadedSlot ?? -1;
+
+    useEffect(() => {
+        if (!printingThis) setLearned({});
+    }, [printingThis]);
+
+    useEffect(() => {
+        if (!data || !position || loadedSlot < 0) return;
+        const tool = toolAt(data, position);
+        const seen = `${tool}:${loadedSlot}`;
+        const confirmed = lastSeen.current === seen;
+        lastSeen.current = seen;
+        if (tool === null || !confirmed) return;
+        setLearned((known) => (known[tool] === loadedSlot ? known : { ...known, [tool]: loadedSlot }));
+    }, [data, position, loadedSlot]);
+
     const paletteKey = useMemo(() => {
         const usable = (slots ?? [])
             .filter((s) => filamentMode && slotUsableForPrint(s, filamentMode))
@@ -54,13 +86,14 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
         const assigned = defaultAssignments(channels, usable);
         return channels
             .map((ch) => {
-                const slot = usable.find((s) => s.globalIndex === assigned[ch.paintIndex]);
+                const known = printSlots?.[ch.paintIndex] ?? -1;
+                const index = learned[ch.paintIndex] ?? (known >= 0 ? known : assigned[ch.paintIndex]);
+                const slot = (slots ?? []).find((s) => s.globalIndex === index);
                 return slot ? rgbToHex(slot.color) : ch.colorHex;
             })
             .join(',');
-    }, [file.filaments, slots, filamentMode]);
+    }, [file.filaments, slots, filamentMode, printSlots, learned]);
     const palette = useMemo(() => (paletteKey ? paletteKey.split(',') : []), [paletteKey]);
-    const data = status.kind === 'ready' ? status.data : null;
     const total = data?.layers.length ?? 0;
 
     useEffect(() => {
@@ -87,6 +120,18 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 palette={palette}
                                 pan={pan}
                                 resetSignal={resetSignal}
+                                nozzle={following && showHead ? live?.position : null}
+                                toolhead={toolhead}
+                                feed={
+                                    live
+                                        ? toolheadFeed(
+                                              live.amsSlots,
+                                              live.amsLoadedSlot,
+                                              live.filamentMode,
+                                              live.fanSpeed,
+                                          )
+                                        : undefined
+                                }
                             />
                         </Suspense>
                         <SceneOverlay
@@ -95,6 +140,21 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                             onToggleMode={() => setMode((v) => (v === 'solid' ? 'lines' : 'solid'))}
                             onTogglePan={() => setPan((v) => !v)}
                             onReset={() => setResetSignal((v) => v + 1)}
+                            head={
+                                following && live?.position
+                                    ? {
+                                          shown: showHead,
+                                          onToggle: () => setShowHead((v) => !v),
+                                          devModel: import.meta.env.DEV
+                                              ? {
+                                                    name: TOOLHEAD_NAME[toolhead],
+                                                    onSwitch: () =>
+                                                        setDevToolhead(toolhead === 'kobra-x' ? 'kobra-4' : 'kobra-x'),
+                                                }
+                                              : undefined,
+                                      }
+                                    : undefined
+                            }
                         />
                     </>
                 ) : (
@@ -137,15 +197,17 @@ export function SceneOverlay({
     onToggleMode,
     onTogglePan,
     onReset,
+    head,
 }: {
     mode: SceneMode;
     pan: boolean;
     onToggleMode: () => void;
     onTogglePan: () => void;
     onReset: () => void;
+    head?: { shown: boolean; onToggle: () => void; devModel?: { name: string; onSwitch: () => void } };
 }) {
     return (
-        <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+        <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-2 [&>button]:pointer-events-auto">
             <span className="rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur-xs">
                 {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
             </span>
@@ -168,6 +230,27 @@ export function SceneOverlay({
             >
                 <Box />
             </OverlayButton>
+            {head && (
+                <OverlayButton
+                    label={m.preview_toolhead()}
+                    variant={head.shown ? 'default' : 'secondary'}
+                    aria-pressed={head.shown}
+                    onClick={head.onToggle}
+                >
+                    <ArrowDownToDot />
+                </OverlayButton>
+            )}
+            {head?.devModel && (
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-full shadow"
+                    onClick={head.devModel.onSwitch}
+                >
+                    {head.devModel.name}
+                </Button>
+            )}
         </div>
     );
 }

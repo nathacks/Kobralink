@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Solid part render",
     "preview_follow": "Follow",
+    "preview_toolhead": "Show print head",
     "preview_reset_view": "Reset view",
     "preview_orbit_hint": "Drag to rotate · right-click or Shift+drag to pan · scroll to zoom",
     "preview_pan_hint": "Drag to pan · scroll to zoom",

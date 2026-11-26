@@ -1,11 +1,25 @@
+import type { ToolheadPosition } from '@kobralink/shared';
 import { Grid } from '@react-three/drei/core/Grid';
 import { OrbitControls } from '@react-three/drei/core/OrbitControls';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { BoxGeometry, BufferAttribute, BufferGeometry, Color, InstancedMesh, MOUSE, Object3D, TOUCH } from 'three';
+import {
+    BoxGeometry,
+    BufferAttribute,
+    BufferGeometry,
+    Color,
+    type Group,
+    InstancedMesh,
+    MOUSE,
+    Object3D,
+    TOUCH,
+} from 'three';
 import { type ThemeColors, useThemeColors } from '@/hooks/use-theme-colors';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
+import { type Point, pathBetween, pointAlong } from '@/lib/nozzle-path';
 import { fitCamera } from '@/lib/scene-fit';
+import type { ToolheadFeed } from '@/lib/toolhead-feed';
+import { TOOLHEAD_WIDTH_MM, Toolhead, type ToolheadModel } from './toolhead';
 
 export type SceneMode = 'lines' | 'solid';
 
@@ -21,6 +35,7 @@ function visibleTint(tint: string | undefined): string | undefined {
 }
 
 const STRIDE = 6;
+const HEAD_TO_PART = 0.2;
 const NO_PALETTE: string[] = [];
 const FILAMENT_AREA = Math.PI * 0.875 ** 2;
 
@@ -172,6 +187,55 @@ function Solid({
     );
 }
 
+function Nozzle({
+    data,
+    position,
+    model,
+    scale,
+    feed,
+}: {
+    data: ParsedGcode;
+    position: ToolheadPosition;
+    model: ToolheadModel;
+    scale: number;
+    feed: ToolheadFeed;
+}) {
+    const ref = useRef<Group>(null);
+    const at = useRef<{ xy: Point; z: number } | null>(null);
+    const move = useRef<{ path: Point[]; z: number; start: number; duration: number } | null>(null);
+    const cx = (data.minX + data.maxX) / 2;
+    const cy = (data.minY + data.maxY) / 2;
+    const { x: px, y: py, z: pz } = position;
+
+    useEffect(() => {
+        const to: Point = [px, py];
+        const from = at.current;
+        const now = performance.now();
+        const last = move.current;
+        move.current = {
+            path: from ? pathBetween(data, from.xy, to, from.z, pz) : [to],
+            z: pz,
+            start: now,
+            duration: last ? Math.min(2000, Math.max(300, now - last.start)) : 0,
+        };
+    }, [data, px, py, pz]);
+
+    useFrame(() => {
+        const m = move.current;
+        if (!m || !ref.current) return;
+        const k = m.duration ? (performance.now() - m.start) / m.duration : 1;
+        const [x, y] = pointAlong(m.path, k);
+        at.current = { xy: [x, y], z: m.z };
+        ref.current.position.set(x - cx, m.z, -(y - cy));
+    });
+
+    return (
+        <group ref={ref} scale={scale}>
+            <Toolhead model={model} feed={feed} />
+        </group>
+    );
+}
+
 type Controls = {
     target: { set: (x: number, y: number, z: number) => void };
     update: () => void;
@@ -219,6 +283,9 @@ export function GcodeScene({
     pan,
     resetSignal,
     tint,
+    nozzle,
+    toolhead = 'kobra-4',
+    feed,
 }: {
     data: ParsedGcode;
     shown: number;
@@ -227,10 +294,14 @@ export function GcodeScene({
     pan: boolean;
     resetSignal: number;
     tint?: string;
+    nozzle?: ToolheadPosition | null;
+    toolhead?: ToolheadModel;
+    feed?: ToolheadFeed;
 }) {
     const colors = useThemeColors();
     const shownTint = visibleTint(tint);
     const span = Math.max(1, data.maxX - data.minX, data.maxY - data.minY);
+    const headScale = Math.min(0.4, Math.max(0.08, (span * HEAD_TO_PART) / TOOLHEAD_WIDTH_MM[toolhead]));
     const height = data.layers.length ? data.layers[data.layers.length - 1].z : 1;
     const bed = Math.max(Math.ceil((span * 1.6) / 10) * 10, 40);
     const size = useMemo(
@@ -246,7 +317,7 @@ export function GcodeScene({
         >
             <ambientLight intensity={mode === 'solid' ? 0.9 : 1} />
             {mode === 'solid' && <hemisphereLight args={['#ffffff', '#444444', 0.6]} />}
-            {mode === 'solid' && (
+            {(mode === 'solid' || nozzle) && (
                 <>
                     <directionalLight position={[distance, distance * 1.5, distance * 0.5]} intensity={1.6} />
                     <directionalLight position={[-distance, distance * 0.5, -distance]} intensity={0.5} />
@@ -268,6 +339,7 @@ export function GcodeScene({
             ) : (
                 <Lines data={data} shown={shown} colors={colors} tint={shownTint} />
             )}
+            {nozzle && feed && <Nozzle data={data} position={nozzle} model={toolhead} scale={headScale} feed={feed} />}
             <OrbitControls
                 makeDefault
                 target={[0, height / 2, 0]}

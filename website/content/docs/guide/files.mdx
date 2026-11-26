@@ -30,7 +30,12 @@ printing it. You can turn this off with **Warn on web uploads** in the
 Each card shows the thumbnail, estimated time, filaments with the amount each colour needs, last print and the
 [estimated cost](/en/docs/guide/statistics#costs).
 
-**Preview** opens the part in 3D, layer by layer. During a print, *Follow* keeps the view on the current layer. Previews
+**Preview** opens the part in 3D, layer by layer. During a print, *Follow* keeps the view on the current layer and shows the nozzle at
+its real position, read from the printer every second. The print head matches your machine (Kobra X, or Kobra 4 for the others);
+the **Show print head** button hides or shows it again. It mirrors the printer live: the tubes on top take the colour of the loaded
+filaments, the fan spins at its real speed and the Kobra X screen shows the number of the channel in use.
+The part takes the colours of the slots actually used: the ones picked when the print was started from Kobralink, otherwise
+the ones the nozzle prints as the print goes. A drop of the loaded filament's colour comes out of the nozzle. Previews
 are not available for `.bgcode` files.
 
 ## Printer storage

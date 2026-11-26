@@ -45,7 +45,8 @@ Toute autre commande répond `ok` et **ne fait rien** : l'imprimante n'accepte p
 
 - `gcode_move.speed_factor` reflète le mode de vitesse : Calme 0,5, Standard 1,0, Sport 1,3.
 - `motion_report.live_velocity` vaut toujours 0.
-- La position n'est pas fournie par l'imprimante. Z est estimé à partir des couches.
+- Pendant une impression, X, Y et Z sont lus sur l'imprimante chaque seconde. Hors impression, X et Y valent 0 et Z
+  est estimé à partir des couches.
 
 ## Clients
 

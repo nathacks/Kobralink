@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Volumendarstellung",
     "preview_follow": "Folgen",
+    "preview_toolhead": "Druckkopf anzeigen",
     "preview_reset_view": "Ansicht zurücksetzen",
     "preview_orbit_hint": "Ziehen zum Drehen · Rechtsklick oder Umschalt+Ziehen zum Verschieben · Scrollen zum Zoomen",
     "preview_pan_hint": "Ziehen zum Verschieben · Scrollen zum Zoomen",

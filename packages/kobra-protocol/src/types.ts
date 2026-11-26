@@ -115,6 +115,12 @@ export interface KobraLightData extends KobraLight {
     lights?: KobraLight[];
 }
 
+export interface KobraAxisData {
+    x?: number;
+    y?: number;
+    z?: number;
+}
+
 export interface KobraFanData {
     fan_speed_pct?: number | null;
     aux_fan_speed_pct?: number | null;

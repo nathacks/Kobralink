@@ -167,6 +167,8 @@ export interface PrinterLiveState {
     currLayer: number;
     totalLayers: number;
     zMm: number;
+    position: ToolheadPosition | null;
+    printSlots: PrintSlots | null;
     filename: string;
     slicerTimeSec: number;
     thumbnail: string;
@@ -196,6 +198,19 @@ export interface PrinterLiveState {
     peripherals: PrinterPeripherals | null;
     updatedAt: number;
 }
+
+export interface PrintSlots {
+    filename: string;
+    slots: number[];
+}
+
+export interface ToolheadPosition {
+    x: number;
+    y: number;
+    z: number;
+}
+
+export const POSITION_POLL_MS = 1000;
 
 export interface PrinterSample {
     t: number;

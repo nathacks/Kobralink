@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "实体渲染",
     "preview_follow": "跟随",
+    "preview_toolhead": "显示打印头",
     "preview_reset_view": "重置视图",
     "preview_orbit_hint": "拖动旋转 · 右键或 Shift+拖动平移 · 滚动缩放",
     "preview_pan_hint": "拖动平移 · 滚动缩放",

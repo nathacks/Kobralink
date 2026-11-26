@@ -4,6 +4,7 @@ import mqtt, { type IClientOptions, type MqttClient } from 'mqtt';
 import { KobraProtocolError } from './errors';
 import {
     CAMERA_LIGHT_TYPE,
+    type KobraAxisData,
     type KobraInfoData,
     type KobraMessage,
     type KobraMultiColorBoxData,
@@ -414,6 +415,10 @@ export class KobraMqttClient extends EventEmitter<KobraMqttEvents> {
     moveAxis(axis: number, moveType: number, distance = 0) {
         const timeoutMs = moveType === 2 ? 30000 : 5000;
         return this.request('axis', 'move', { axis, move_type: moveType, distance }, timeoutMs, true);
+    }
+
+    queryAxis() {
+        return this.request<KobraAxisData>('axis', 'query', undefined, 2000);
     }
 
     disableSteppers() {

@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Rendu solide de la pièce",
     "preview_follow": "Suivre",
+    "preview_toolhead": "Afficher la tête d'impression",
     "preview_reset_view": "Réinitialiser la vue",
     "preview_orbit_hint": "Glisser pour tourner · clic droit ou Maj+glisser pour déplacer · molette pour zoomer",
     "preview_pan_hint": "Glisser pour déplacer · molette pour zoomer",

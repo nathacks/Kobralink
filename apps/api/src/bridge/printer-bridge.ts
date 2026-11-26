@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import net from 'node:net';
 import {
+    type KobraAxisData,
     type KobraFanData,
     type KobraFileData,
     type KobraFileRecord,
@@ -30,6 +31,7 @@ import {
     isPreparing,
     KOBRA_TO_KLIPPER_STATE,
     type KobralinkEventType,
+    POSITION_POLL_MS,
     PRINTER_FILE_LIST_LIMIT,
     type PrinterFileDto,
     type PrinterFileListDto,
@@ -59,6 +61,7 @@ import {
     detectFilamentMode,
     EMPTY_DRYING,
     globalToBoxSlot,
+    printSlotsFromMapping,
     slotActivityMap,
 } from './ams';
 import { CameraCache } from './camera';
@@ -161,6 +164,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private offline = true;
     private loopWake: (() => void) | null = null;
     private loopDone: Promise<void> | null = null;
+    private positionTimer: NodeJS.Timeout | null = null;
 
     private filamentMode: FilamentMode = 'toolhead';
     private reportedModel = '';
@@ -243,6 +247,8 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             aceDrying: EMPTY_DRYING,
             skippedObjects: [],
             skipTs: 0,
+            position: null,
+            printSlots: null,
             manualOffline: false,
             storageTotalMb: 0,
             storageUsedMb: 0,
@@ -328,11 +334,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
         this.running = true;
         this.offline = true;
         this.loopDone = this.pollLoop();
+        this.positionTimer = setInterval(() => this.pollPosition(), POSITION_POLL_MS);
     }
 
     async stop(): Promise<void> {
         this.running = false;
         this.wakeLoop();
+        if (this.positionTimer) clearInterval(this.positionTimer);
+        this.positionTimer = null;
         this.camera.stop();
         await this.client.disconnect();
         await this.loopDone;
@@ -527,13 +536,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private publish(): void {
         this.s.updatedAt = Date.now();
-        this.s.zMm = this.estimateZ();
+        this.s.zMm = this.s.position?.z ?? this.estimateZ();
         this.recordSample();
         this.emit('state', this.snapshot());
     }
 
     private onReport(suffix: string, payload: KobraMessage): void {
-        if (payload.state === 'failed') {
+        const positionPoll = suffix === 'axis/report' && payload.action === 'query';
+        if (payload.state === 'failed' && !positionPoll) {
             this.log.warn(
                 `${suffix} failed: action=${payload.action} code=${payload.code ?? '?'} msg=${payload.msg ?? ''}`,
             );
@@ -576,12 +586,33 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             case 'skip/report':
                 this.onSkip(payload as KobraMessage<KobraSkipData>);
                 break;
+            case 'axis/report':
+                this.onAxis(payload as KobraMessage<KobraAxisData>);
+                break;
             case 'buried/report':
                 this.onBuried(payload as KobraMessage<Record<string, unknown>>);
                 break;
             default:
                 break;
         }
+    }
+
+    private pollPosition(): void {
+        if (!this.offline && this.s.printState === 'printing') {
+            void this.client.queryAxis();
+        } else if (this.s.position) {
+            this.s.position = null;
+            this.publish();
+        }
+    }
+
+    private onAxis(p: KobraMessage<KobraAxisData>): void {
+        if (p.action !== 'query' || p.state === 'failed' || this.s.printState !== 'printing') return;
+        const { x, y, z } = p.data ?? {};
+        if (![x, y, z].every(Number.isFinite)) return;
+        const mm = (v: unknown) => Math.round((v as number) * 1000) / 1000;
+        this.s.position = { x: mm(x), y: mm(y), z: mm(z) };
+        this.publish();
     }
 
     private onTemp(p: KobraMessage<Partial<Record<string, number>>>): void {
@@ -1821,6 +1852,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.s.skipTs = Date.now();
             this.s.slicerTimeSec = 0;
             this.s.thumbnail = this.printerThumbs.get(path.replace(/^\/+/, '')) ?? '';
+            this.s.printSlots = { filename, slots: printSlotsFromMapping(mapping, this.filamentMode) };
         });
         this.s.filename = filename;
         this.jobsReconciled = true;
@@ -1833,12 +1865,12 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     }
 
     private async requestStart(payload: PrintStartPayload, apply: () => void): Promise<void> {
-        const { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail } = this.s;
+        const { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail, printSlots } = this.s;
         const { layerHeight, firstLayerHeight, jobOptions, currentJobId } = this;
         apply();
         const result = await this.client.startPrint(payload);
         if (!result || result.state === 'failed' || (result.code !== undefined && result.code !== 0)) {
-            Object.assign(this.s, { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail });
+            Object.assign(this.s, { fileReady, skippedObjects, skipTs, slicerTimeSec, thumbnail, printSlots });
             Object.assign(this, { layerHeight, firstLayerHeight, jobOptions });
             this.publish();
             if (!result) throw new BridgeRequestError(m.api_print_no_response());
@@ -1910,6 +1942,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             this.s.thumbnail = file.thumbnail ?? '';
             this.layerHeight = file.layerHeight;
             this.firstLayerHeight = file.firstLayerHeight || file.layerHeight;
+            this.s.printSlots = { filename: file.filename, slots: printSlotsFromMapping(mapping, this.filamentMode) };
         });
         this.s.filename = file.filename;
         this.jobsReconciled = true;

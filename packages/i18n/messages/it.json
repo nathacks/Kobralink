@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Rendering solido del pezzo",
     "preview_follow": "Segui",
+    "preview_toolhead": "Mostra la testina di stampa",
     "preview_reset_view": "Reimposta vista",
     "preview_orbit_hint": "Trascina per ruotare · tasto destro o Maiusc+trascina per spostare · scorri per zoomare",
     "preview_pan_hint": "Trascina per spostare · scorri per zoomare",

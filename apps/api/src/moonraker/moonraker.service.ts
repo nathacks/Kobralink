@@ -163,6 +163,7 @@ export class MoonrakerService {
 
     printerObjects(): Record<string, unknown> {
         const s = this.bridge.snapshot();
+        const pos = [s.position?.x ?? 0, s.position?.y ?? 0, s.zMm, 0];
         return {
             extruder: { temperature: s.nozzleTemp, target: s.nozzleTarget, power: 0 },
             heater_bed: { temperature: s.bedTemp, target: s.bedTarget, power: 0 },
@@ -182,7 +183,7 @@ export class MoonrakerService {
                 file_position: s.progress ? Math.round(s.progress * 1_000_000) : 0,
             },
             toolhead: {
-                position: [0, 0, s.zMm, 0],
+                position: pos,
                 homed_axes: 'xyz',
                 print_time: s.printDurationSec,
                 estimated_print_time: s.printDurationSec,
@@ -198,14 +199,14 @@ export class MoonrakerService {
                 speed_factor: speedFactor(s.printSpeedMode),
                 extrude_factor: 1.0,
                 speed: 0,
-                gcode_position: [0, 0, s.zMm, 0],
+                gcode_position: pos,
                 absolute_coordinates: true,
                 absolute_extrude: true,
                 homing_origin: [0, 0, 0, 0],
-                position: [0, 0, s.zMm, 0],
+                position: pos,
             },
             motion_report: {
-                live_position: [0, 0, s.zMm, 0],
+                live_position: pos,
                 live_velocity: 0,
                 live_extruder_velocity: 0,
             },

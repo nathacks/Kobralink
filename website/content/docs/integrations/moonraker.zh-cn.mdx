@@ -45,7 +45,7 @@ description: 连接 Mainsail、Fluidd、Obico 和其他 Moonraker 客户端。
 
 - `gcode_move.speed_factor` 反映速度模式：静音 0.5、标准 1.0、运动 1.3。
 - `motion_report.live_velocity` 始终为 0。
-- 打印机不报告位置。Z 根据层数估算。
+- 打印时每秒从打印机读取 X、Y、Z。不在打印时 X、Y 为 0，Z 根据层数估算。
 
 ## 客户端
 

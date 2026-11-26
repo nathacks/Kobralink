@@ -3,9 +3,10 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Kobralink = bridge Moonraker pour Anycubic Kobra X (TypeScript).
-Référence Python d'origine : `/Users/nathan/Developer/Python/KX-Bridge-Release` (protocole MQTT,
-payloads, comportements à reproduire). La Kobra X n'expose que ce que son MQTT propose : pas de M220/M221 réels,
-`print_speed_mode` 1–4 seulement, pas de position live (Z estimé depuis les couches).
+La Kobra X n'expose que ce que son MQTT propose : pas de M220/M221 réels,
+`print_speed_mode` 1–4 seulement. Position réelle via `axis/query` → `axis/report` `data.{x,y,z}` (mm) : le bridge
+l'interroge chaque seconde pendant l'impression (`POSITION_POLL_MS`) → `LiveState.position` (null hors impression, Z estimé
+depuis les couches à défaut) ; l'aperçu 3D en suivi anime la buse le long du gcode entre deux mesures (`lib/nozzle-path.ts`).
 
 ## Layout (Turborepo + Bun workspaces)
 

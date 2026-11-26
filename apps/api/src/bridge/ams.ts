@@ -123,6 +123,13 @@ export function slotActivityMap(boxes: KobraColorBox[], globalLoaded: number, mo
     return map;
 }
 
+export function printSlotsFromMapping(mapping: AmsBoxMappingEntry[], mode: FilamentMode): number[] {
+    const slots: number[] = [];
+    for (const e of mapping)
+        slots[e.paint_index] = mode === 'ace_hub' && e.ams_index >= 4 ? e.ams_index - 1 : e.ams_index;
+    return Array.from(slots, (v) => v ?? -1);
+}
+
 export function slotToPrintAmsIndex(slot: AmsSlot, mode: FilamentMode): number {
     if (mode === 'ace_hub' && slot.boxId >= 0) return 4 + slot.boxId * 4 + slot.index;
     return slot.globalIndex;

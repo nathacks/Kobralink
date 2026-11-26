@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Renderizado sólido de la pieza",
     "preview_follow": "Seguir",
+    "preview_toolhead": "Mostrar el cabezal de impresión",
     "preview_reset_view": "Restablecer vista",
     "preview_orbit_hint": "Arrastra para rotar · clic derecho o Mayús+arrastrar para desplazar · desplaza para hacer zoom",
     "preview_pan_hint": "Arrastra para desplazar · desplaza para hacer zoom",

@@ -45,7 +45,8 @@ Qualquer outro comando responde `ok` e **não faz nada**: a impressora não acei
 
 - `gcode_move.speed_factor` reflete o modo de velocidade: Silencioso 0,5, Padrão 1,0, Esportivo 1,3.
 - `motion_report.live_velocity` é sempre 0.
-- A impressora não informa a posição. Z é estimado pelas camadas.
+- Durante uma impressão, X, Y e Z são lidos da impressora a cada segundo. Fora de uma impressão, X e Y valem 0 e Z é
+  estimado pelas camadas.
 
 ## Clientes
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { KobraColorBox } from '@kobralink/kobra-protocol';
-import { slotActivityMap } from '../src/bridge/ams';
+import { printSlotsFromMapping, slotActivityMap } from '../src/bridge/ams';
 
 const box = (currentStatus: number, slotIndex = 1, id = 0): KobraColorBox => ({
     id,
@@ -36,5 +36,23 @@ describe('slotActivityMap', () => {
     it('keeps the activity of the loaded slot over the loaded label', () => {
         const map = slotActivityMap([box(2, 1)], 1, 'ace_direct');
         expect(map.get(1)).toBe('retracting');
+    });
+});
+
+describe('printSlotsFromMapping', () => {
+    const entry = (paint: number, ams: number) => ({
+        paint_index: paint,
+        ams_index: ams,
+        paint_color: [0, 0, 0, 255] as [number, number, number, number],
+        ams_color: [0, 0, 0, 255] as [number, number, number, number],
+        material_type: 'PLA',
+    });
+
+    it('turns the hub print indexes back into slot indexes and leaves unmapped tools at -1', () => {
+        expect(printSlotsFromMapping([entry(0, 1), entry(2, 5)], 'ace_hub')).toEqual([1, -1, 4]);
+    });
+
+    it('keeps the indexes as they are outside the hub mode', () => {
+        expect(printSlotsFromMapping([entry(0, 5), entry(1, 2)], 'ace_direct')).toEqual([5, 2]);
     });
 });

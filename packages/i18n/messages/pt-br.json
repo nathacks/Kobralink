@@ -792,6 +792,7 @@
     "preview_layer_z": "Z {z}",
     "preview_solid": "Renderização sólida da peça",
     "preview_follow": "Seguir",
+    "preview_toolhead": "Mostrar o cabeçote de impressão",
     "preview_reset_view": "Redefinir vista",
     "preview_orbit_hint": "Arraste para girar · botão direito ou Shift+arrastar para mover · role para ampliar",
     "preview_pan_hint": "Arraste para mover · role para ampliar",

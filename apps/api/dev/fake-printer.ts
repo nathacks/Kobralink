@@ -47,6 +47,7 @@ interface RequestData {
     target_hotbed_temp?: number;
     settings?: { print_speed_mode?: number; target_nozzle_temp?: number; target_hotbed_temp?: number };
     objects_skip_parts?: string[];
+    ams_settings?: { ams_box_mapping?: { paint_index: number; ams_index: number }[] };
     multi_color_box?: BoxChange[];
 }
 
@@ -68,6 +69,7 @@ export interface FakePrinterOptions {
     httpPort?: number;
     mqttPort?: number;
     now?: () => number;
+    gcodeDir?: string;
 }
 
 function packet(head: number, body: Buffer): Buffer {
@@ -103,6 +105,104 @@ function readPacket(buf: Buffer): { type: number; body: Buffer; rest: Buffer } |
     return null;
 }
 
+export interface Toolpath {
+    t: number[];
+    x: number[];
+    y: number[];
+    z: number[];
+    layer: number[];
+    tool: number[];
+    fan: number[];
+    colors: string[];
+    totalSec: number;
+    layers: number;
+}
+
+export function parseToolpath(text: string): Toolpath {
+    const path: Toolpath = {
+        t: [0],
+        x: [0],
+        y: [0],
+        z: [0],
+        layer: [0],
+        tool: [0],
+        fan: [-1],
+        colors: [],
+        totalSec: 0,
+        layers: 0,
+    };
+    let [x, y, z, e, feed, layer, layerZ, tool, fan] = [0, 0, 0, 0, 1800, 0, -1, 0, -1];
+    let absolute = true;
+    let absoluteE = true;
+    for (const raw of text.split('\n')) {
+        const colours = /^;\s*filament_colou?r\s*=\s*(.+)$/.exec(raw.trim());
+        if (colours) path.colors = colours[1].split(/[;,]/).map((c) => c.trim().toUpperCase());
+        const words = raw.split(';')[0].trim().toUpperCase().split(/\s+/);
+        const code = words[0];
+        if (code === 'G90') absolute = true;
+        else if (code === 'G91') absolute = false;
+        else if (code === 'M82') absoluteE = true;
+        else if (code === 'M83') absoluteE = false;
+        else if (/^T\d+$/.test(code)) tool = Number(code.slice(1));
+        else if (code === 'M107') fan = 0;
+        else if (code === 'M106') {
+            const speed = words.find((w) => w[0] === 'S');
+            fan = Math.round((Math.min(255, Number(speed?.slice(1) ?? 255)) / 255) * 100);
+        } else if (code === 'G92') {
+            for (const w of words.slice(1)) if (w[0] === 'E') e = Number(w.slice(1)) || 0;
+        }
+        if (code !== 'G0' && code !== 'G1') continue;
+        let [nx, ny, nz, extrude] = [x, y, z, false];
+        for (const w of words.slice(1)) {
+            const v = Number(w.slice(1));
+            if (!Number.isFinite(v)) continue;
+            if (w[0] === 'X') nx = absolute ? v : x + v;
+            else if (w[0] === 'Y') ny = absolute ? v : y + v;
+            else if (w[0] === 'Z') nz = absolute ? v : z + v;
+            else if (w[0] === 'F') feed = v;
+            else if (w[0] === 'E') {
+                extrude = absoluteE ? v > e : v > 0;
+                e = absoluteE ? v : e + v;
+            }
+        }
+        const distance = Math.hypot(nx - x, ny - y, nz - z);
+        if (!distance) continue;
+        if (extrude && (nx !== x || ny !== y) && nz > layerZ + 1e-4) {
+            layer += 1;
+            layerZ = nz;
+        }
+        [x, y, z] = [nx, ny, nz];
+        path.totalSec += distance / (Math.max(feed, 60) / 60);
+        path.t.push(path.totalSec);
+        path.x.push(x);
+        path.y.push(y);
+        path.z.push(z);
+        path.layer.push(layer);
+        path.tool.push(tool);
+        path.fan.push(fan);
+    }
+    path.layers = layer;
+    return path;
+}
+
+export function toolpathIndex(path: Toolpath, sec: number): number {
+    let [lo, hi] = [0, path.t.length - 1];
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (path.t[mid] < sec) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
+}
+
+export function toolpathPosition(path: Toolpath, sec: number): { x: number; y: number; z: number } {
+    const i = toolpathIndex(path, sec);
+    if (i === 0) return { x: path.x[0], y: path.y[0], z: path.z[0] };
+    const k = (sec - path.t[i - 1]) / (path.t[i] - path.t[i - 1] || 1);
+    const at = (a: number[]) => a[i - 1] + (a[i] - a[i - 1]) * Math.min(1, Math.max(0, k));
+    return { x: at(path.x), y: at(path.y), z: at(path.z) };
+}
+
 export class FakePrinter {
     private readonly root = path.resolve(__dirname, '..');
     private readonly sockets = new Set<Socket>();
@@ -118,6 +218,8 @@ export class FakePrinter {
     private filename = 'Benchy_PLA_0.20mm_1h30m.gcode';
     private taskId = 'fake-1';
     private elapsedSec = TOTAL_SEC * 0.42;
+    private readonly toolpaths = new Map<string, Toolpath>();
+    private toolpath: Toolpath | null = null;
     private temp = {
         curr_nozzle_temp: 219,
         target_nozzle_temp: 220,
@@ -125,6 +227,8 @@ export class FakePrinter {
         target_hotbed_temp: 60,
     };
     private fan = 80;
+    private tool = -1;
+    private mapping = new Map<number, number>();
     private speedMode = 2;
     private light = { type: 3, status: 1, brightness: 80 };
     private skipped: string[] = [];
@@ -174,6 +278,8 @@ export class FakePrinter {
     constructor(private readonly opts: FakePrinterOptions = {}) {
         this.now = opts.now ?? Date.now;
         this.lastStep = this.now();
+        this.toolpath = this.toolpathFor(this.filename);
+        if (this.toolpath) this.elapsedSec = this.toolpath.totalSec * 0.42;
         this.http = http.createServer((req, res) => this.onHttp(req, res));
         this.mqtt = tls.createServer(
             {
@@ -218,7 +324,11 @@ export class FakePrinter {
             const info = Buffer.concat([cipher.update(JSON.stringify(IDENTITY)), cipher.final()]).toString('base64');
             json({ code: 200, data: { token: iv, info } });
         } else if (url.pathname === '/gcode_upload') {
-            req.resume().on('end', () => json({ code: 200 }));
+            const chunks: Buffer[] = [];
+            req.on('data', (c: Buffer) => chunks.push(c)).on('end', () => {
+                this.onUpload(Buffer.concat(chunks));
+                json({ code: 200 });
+            });
         } else if (url.pathname === '/flv') {
             this.streamCamera(res);
         } else {
@@ -262,6 +372,7 @@ export class FakePrinter {
     private onRequest(body: Buffer): void {
         const request: Request = JSON.parse(body.subarray(2 + body.readUInt16BE(0)).toString('utf8'));
         const finished = this.step();
+        this.followToolpath();
         const reply = this.handle(request);
         if (reply) this.report(request.type, request.action, reply, request.msgid);
         if (finished) {
@@ -296,8 +407,67 @@ export class FakePrinter {
         t.curr_nozzle_temp = approach(t.curr_nozzle_temp, t.target_nozzle_temp, 4);
         t.curr_hotbed_temp = approach(t.curr_hotbed_temp, t.target_hotbed_temp, 1);
         if (this.state !== 'printing') return false;
-        this.elapsedSec = Math.min(TOTAL_SEC, this.elapsedSec + dt);
-        return this.elapsedSec >= TOTAL_SEC;
+        this.elapsedSec = Math.min(this.totalSec, this.elapsedSec + dt);
+        return this.elapsedSec >= this.totalSec;
+    }
+
+    private followToolpath(): void {
+        if (this.state !== 'printing' || !this.toolpath) return;
+        const i = toolpathIndex(this.toolpath, this.elapsedSec);
+        const fan = this.toolpath.fan[i];
+        if (fan >= 0 && fan !== this.fan) {
+            this.fan = fan;
+            this.report('fan', 'query', { data: { fan_speed_pct: fan } });
+        }
+        const tool = this.toolpath.tool[i];
+        if (tool === this.tool) return;
+        this.tool = tool;
+        const ams = this.mapping.get(tool) ?? this.amsIndexOfColour(this.toolpath.colors[tool]) ?? tool;
+        for (const b of this.boxes) b.loaded_slot = -1;
+        const ace = this.boxes.find((b) => b.id === Math.floor((ams - 4) / 4));
+        if (ams < 4) this.boxes[0].loaded_slot = ams;
+        else if (ace) ace.loaded_slot = (ams - 4) % 4;
+        this.report('multiColorBox', 'getInfo', { data: { multi_color_box: this.boxes } });
+    }
+
+    private amsIndexOfColour(hex: string | undefined): number | undefined {
+        if (!hex) return undefined;
+        for (const box of this.boxes) {
+            const i = box.slots.findIndex(
+                (s) =>
+                    s.status === 5 &&
+                    `#${s.color.map((c) => c.toString(16).padStart(2, '0')).join('')}`.toUpperCase() === hex,
+            );
+            if (i >= 0) return box.id < 0 ? i : 4 + box.id * 4 + i;
+        }
+        return undefined;
+    }
+
+    private get totalSec(): number {
+        return this.toolpath?.totalSec || TOTAL_SEC;
+    }
+
+    private toolpathFor(filename: string): Toolpath | null {
+        const dir = this.opts.gcodeDir;
+        const stored =
+            dir && fs.existsSync(dir) ? fs.readdirSync(dir).find((n) => n.endsWith(`__${filename}`)) : undefined;
+        if (!this.toolpaths.has(filename) && dir && stored)
+            this.toolpaths.set(filename, parseToolpath(fs.readFileSync(path.join(dir, stored), 'utf8')));
+        return this.toolpaths.get(filename) ?? null;
+    }
+
+    loadGcode(filename: string, text: string): void {
+        this.toolpaths.set(filename, parseToolpath(text));
+        this.files = [
+            { filename, size: Buffer.byteLength(text), timestamp: Math.floor(this.now() / 1000) },
+            ...this.files.filter((f) => f.filename !== filename),
+        ];
+    }
+
+    private onUpload(body: Buffer): void {
+        const text = body.toString('utf8');
+        const head = /name="gcode"; filename="([^"]+)"\r\n[^\r]*\r\n\r\n/.exec(text);
+        if (head) this.loadGcode(head[1], text.slice(head.index + head[0].length, text.lastIndexOf('\r\n--')));
     }
 
     private goIdle(): void {
@@ -310,21 +480,32 @@ export class FakePrinter {
     }
 
     private project() {
-        const done = this.elapsedSec / TOTAL_SEC;
+        const done = this.elapsedSec / this.totalSec;
+        const layers = this.toolpath?.layers ?? TOTAL_LAYERS;
+        const layer = this.toolpath
+            ? this.toolpath.layer[toolpathIndex(this.toolpath, this.elapsedSec)]
+            : done * layers;
         return {
             state: this.state,
             filename: this.filename,
             taskid: this.taskId,
             progress: Math.floor(done * 100),
             print_time: Math.floor(this.elapsedSec / 60),
-            remain_time: Math.ceil((TOTAL_SEC - this.elapsedSec) / 60),
-            curr_layer: Math.max(1, Math.floor(done * TOTAL_LAYERS)),
-            total_layers: TOTAL_LAYERS,
+            remain_time: Math.ceil((this.totalSec - this.elapsedSec) / 60),
+            curr_layer: Math.max(1, Math.floor(layer)),
+            total_layers: layers,
         };
     }
 
+    private axis() {
+        if (!this.printing) return { x: -17.5, y: 260, z: 0 };
+        if (this.toolpath) return toolpathPosition(this.toolpath, this.elapsedSec);
+        const a = this.elapsedSec * 0.8;
+        return { x: 125 + 20 * Math.cos(a), y: 125 + 20 * Math.sin(a), z: this.project().curr_layer * 0.2 };
+    }
+
     private printReply(): Reply {
-        const usage = Math.round((this.elapsedSec / TOTAL_SEC) * TOTAL_FILAMENT_MM);
+        const usage = Math.round((this.elapsedSec / this.totalSec) * TOTAL_FILAMENT_MM);
         return {
             state: this.state,
             ...(this.state === 'paused' ? PAUSE_REASON : {}),
@@ -375,6 +556,9 @@ export class FakePrinter {
                 this.goIdle();
                 return { state: 'stoped', data: { filename: this.filename, taskid: this.taskId } };
             case 'print/start':
+                this.mapping = new Map(
+                    (d.ams_settings?.ams_box_mapping ?? []).map((e) => [e.paint_index, e.ams_index]),
+                );
                 return this.startPrint(d.filename ?? '');
             case 'print/update':
                 this.speedMode = d.settings?.print_speed_mode ?? this.speedMode;
@@ -413,6 +597,8 @@ export class FakePrinter {
             }
             case 'file/fileDetails':
                 return this.details(d.filename ?? '');
+            case 'axis/query':
+                return { data: this.axis() };
             case 'skip/query_obj':
                 return { data: { objects_skip_parts: this.skipped } };
             case 'skip/start':
@@ -427,6 +613,8 @@ export class FakePrinter {
         if (this.printing) return { state: 'failed', code: 10112, data: null };
         this.state = 'printing';
         this.filename = filename;
+        this.toolpath = this.toolpathFor(filename);
+        this.tool = -1;
         this.taskId = `fake-${this.now()}`;
         this.elapsedSec = 0;
         this.setTargets(220, 60);
@@ -482,7 +670,12 @@ export class FakePrinter {
 }
 
 if (require.main === module) {
-    new FakePrinter()
+    new FakePrinter({
+        gcodeDir: path.join(
+            path.resolve(process.env.KOBRALINK_DATA_DIR ?? path.resolve(__dirname, '..', '..', '..', 'data')),
+            'gcodes',
+        ),
+    })
         .start()
         .then(() => console.log(`Fake printer ready: add a printer with the IP ${HOST} in the dashboard`))
         .catch((e: Error) => {
