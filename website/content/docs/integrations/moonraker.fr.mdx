@@ -47,6 +47,7 @@ Toute autre commande répond `ok` et **ne fait rien** : l'imprimante n'accepte p
 - `motion_report.live_velocity` vaut toujours 0.
 - Pendant une impression, X, Y et Z sont lus sur l'imprimante chaque seconde. Hors impression, X et Y valent 0 et Z
   est estimé à partir des couches.
+- Les limites des axes (`configfile`, `toolhead.axis_maximum`) et les températures maximales viennent des [caractéristiques](/fr/docs/reference/printers) du modèle, ou du volume d'impression saisi dans le profil de l'imprimante.
 
 ## Clients
 

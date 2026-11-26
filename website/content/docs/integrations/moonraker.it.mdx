@@ -47,6 +47,7 @@ Qualsiasi altro comando risponde `ok` e **non fa nulla**: la stampante non accet
 - `motion_report.live_velocity` vale sempre 0.
 - Durante una stampa, X, Y e Z vengono letti dalla stampante ogni secondo. Fuori dalla stampa, X e Y valgono 0 e Z è
   stimata dagli strati.
+- I limiti degli assi (`configfile`, `toolhead.axis_maximum`) e le temperature massime vengono dalle [specifiche](/it/docs/reference/printers) del modello, o dal volume di stampa inserito nel profilo della stampante.
 
 ## Client
 

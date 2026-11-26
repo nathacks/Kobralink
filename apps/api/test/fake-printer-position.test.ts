@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { type KobraMqttClient, uploadAccepted, uploadGcode } from '@kobralink/kobra-protocol';
+import { fetchPrinterCredentials, type KobraMqttClient, uploadAccepted, uploadGcode } from '@kobralink/kobra-protocol';
 import { type PrinterLiveState, printerSettingsSchema } from '@kobralink/shared';
 import { FakePrinter, parseToolpath, toolpathPosition } from '../dev/fake-printer';
 import { type BridgePrinterConfig, PrinterBridge } from '../src/bridge/printer-bridge';
@@ -191,4 +191,53 @@ describe('fake printer toolpath', () => {
         expect(path.tool.slice(1)).toEqual([0, 2]);
         expect(path.fan.slice(1)).toEqual([50, 0]);
     });
+});
+
+describe('another model against the fake printer', () => {
+    const fake = new FakePrinter({ httpPort: 0, mqttPort: 0, modeId: '20024' });
+    let bridge: PrinterBridge;
+
+    afterAll(async () => {
+        await bridge?.stop();
+        fake.stop();
+    });
+
+    it('connects with the identity the printer reports and announces its build volume', async () => {
+        const ports = await fake.start();
+        const creds = await fetchPrinterCredentials('127.0.0.1', ports.httpPort);
+        expect(creds).toMatchObject({ modeId: '20024', model: 'Anycubic Kobra 3' });
+        const config = {
+            id: 'fake-k3',
+            name: 'Fake Kobra 3',
+            ip: '127.0.0.1',
+            mqttPort: ports.mqttPort,
+            username: creds.username,
+            password: creds.password,
+            deviceId: creds.deviceId,
+            modeId: creds.modeId,
+            httpPort: 0,
+            settings: printerSettingsSchema.parse({ pollIntervalSec: 1, cameraAlwaysOn: false }),
+        } as unknown as BridgePrinterConfig;
+        bridge = new PrinterBridge(config, gcode, {
+            cert: fs.readFileSync(path.join(certs, 'anycubic_slicer.crt')),
+            key: fs.readFileSync(path.join(certs, 'anycubic_slicer.key')),
+        });
+        bridge.start();
+        await until(() => bridge.snapshot().position);
+        const moon = new MoonrakerService(
+            bridge,
+            gcode,
+            { library: () => [], resolveSlot: () => ({ profile: null }) } as never,
+            {} as never,
+            {} as never,
+        );
+        const objects = moon.printerObjects() as {
+            configfile: { config: Record<string, { position_max?: string; max_temp?: string }> };
+            toolhead: { axis_maximum: number[] };
+        };
+        expect(objects.configfile.config.stepper_x.position_max).toBe('250');
+        expect(objects.configfile.config.stepper_z.position_max).toBe('260');
+        expect(objects.configfile.config.heater_bed.max_temp).toBe('110');
+        expect(objects.toolhead.axis_maximum).toEqual([250, 250, 260, 0]);
+    }, 15000);
 });

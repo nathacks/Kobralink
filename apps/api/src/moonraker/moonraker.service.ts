@@ -1,4 +1,10 @@
-import { type AmsSlot, type SetTemperatureInput, setTemperatureSchema } from '@kobralink/shared';
+import {
+    type AmsSlot,
+    buildVolumeFor,
+    printerSpecs,
+    type SetTemperatureInput,
+    setTemperatureSchema,
+} from '@kobralink/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrinterBridge } from '../bridge/printer-bridge';
 import { loadEnv } from '../config/env';
@@ -185,6 +191,8 @@ export class MoonrakerService {
             toolhead: {
                 position: pos,
                 homed_axes: 'xyz',
+                axis_minimum: [0, 0, 0, 0],
+                axis_maximum: [...Object.values(this.volume()), 0],
                 print_time: s.printDurationSec,
                 estimated_print_time: s.printDurationSec,
             },
@@ -239,17 +247,26 @@ export class MoonrakerService {
         return out;
     }
 
+    private volume() {
+        const { modeId, settings } = this.bridge.config;
+        return buildVolumeFor(modeId, settings.profile.buildVolumeMm) ?? { x: 250, y: 250, z: 250 };
+    }
+
     private configfileStub() {
+        const { modeId, settings } = this.bridge.config;
+        const specs = printerSpecs(modeId);
+        const volume = this.volume();
+        const nozzle = settings.profile.nozzleMm ?? specs?.defaultNozzleMm ?? 0.4;
         const cfg = {
             extruder: {
                 min_temp: '0',
-                max_temp: '320',
+                max_temp: String(specs?.maxNozzleC ?? 320),
                 min_extrude_temp: '170',
-                nozzle_diameter: '0.400',
+                nozzle_diameter: nozzle.toFixed(3),
                 filament_diameter: '1.750',
                 max_extrude_only_distance: '500',
             },
-            heater_bed: { min_temp: '0', max_temp: '120' },
+            heater_bed: { min_temp: '0', max_temp: String(specs?.maxBedC ?? 120) },
             printer: {
                 kinematics: 'corexy',
                 max_velocity: '500',
@@ -257,9 +274,9 @@ export class MoonrakerService {
                 max_z_velocity: '20',
                 max_z_accel: '500',
             },
-            stepper_x: { position_min: '0', position_max: '250' },
-            stepper_y: { position_min: '0', position_max: '250' },
-            stepper_z: { position_min: '0', position_max: '250' },
+            stepper_x: { position_min: '0', position_max: String(volume.x) },
+            stepper_y: { position_min: '0', position_max: String(volume.y) },
+            stepper_z: { position_min: '0', position_max: String(volume.z) },
             fan: {},
             virtual_sdcard: { path: '~/gcode_files' },
             pause_resume: {},

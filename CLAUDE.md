@@ -7,6 +7,10 @@ La Kobra X n'expose que ce que son MQTT propose : pas de M220/M221 réels,
 `print_speed_mode` 1–4 seulement. Position réelle via `axis/query` → `axis/report` `data.{x,y,z}` (mm) : le bridge
 l'interroge chaque seconde pendant l'impression (`POSITION_POLL_MS`) → `LiveState.position` (null hors impression, Z estimé
 depuis les couches à défaut) ; l'aperçu 3D en suivi anime la buse le long du gcode entre deux mesures (`lib/nozzle-path.ts`).
+Modèles : Kobra X et Kobra 4 testés ; Kobra 3/3 V2/3 Max/S1/S1 Max acceptés mais non testés (même protocole). Pas de `if modeId`
+dispersés : caractéristiques dans `printer-specs.ts`, volume = `buildVolumeFor(modeId, profile.buildVolumeMm)` (profil > fiche).
+`apps/api/dev/probe-printer.ts` = capture en lecture seule pour un nouveau modèle (aussi dans l'image Docker) ;
+`FAKE_PRINTER_MODE_ID` fait passer le fake printer pour un autre modèle.
 
 ## Layout (Turborepo + Bun workspaces)
 

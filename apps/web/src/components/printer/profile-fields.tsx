@@ -27,6 +27,7 @@ function NumberField({
     value,
     onChange,
     step,
+    placeholder,
 }: {
     id: string;
     label: string;
@@ -34,6 +35,7 @@ function NumberField({
     value: number | null;
     onChange: (v: number | null) => void;
     step: number;
+    placeholder?: number;
 }) {
     return (
         <div className="grid gap-2">
@@ -44,6 +46,7 @@ function NumberField({
                 min={0}
                 step={step}
                 value={value ?? ''}
+                placeholder={placeholder === undefined ? undefined : String(placeholder)}
                 onChange={(e) => onChange(numberOrNull(e.target.value))}
                 className="rounded-full px-4"
             />
@@ -62,6 +65,12 @@ export function ProfileFields({
     modeId: string | null | undefined;
 }) {
     const set = <K extends keyof PrinterProfile>(key: K, v: PrinterProfile[K]) => onChange({ ...value, [key]: v });
+    const modelVolume = printerSpecs(modeId)?.buildVolumeMm ?? null;
+    const setAxis = (axis: 'x' | 'y' | 'z', n: number | null) =>
+        set(
+            'buildVolumeMm',
+            n === null ? null : { ...(value.buildVolumeMm ?? modelVolume ?? { x: n, y: n, z: n }), [axis]: n },
+        );
     return (
         <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
@@ -99,6 +108,25 @@ export function ProfileFields({
                 <Label htmlFor="profile-tags">{m.profile_tags()}</Label>
                 <TagsInput id="profile-tags" value={value.tags} onChange={(tags) => set('tags', tags)} />
                 <p className="px-4 text-xs text-muted-foreground">{m.profile_tags_hint()}</p>
+            </div>
+            <div className="grid gap-2 md:col-span-2">
+                <Label>{m.profile_volume()}</Label>
+                <div className="grid grid-cols-3 gap-2">
+                    {(['x', 'y', 'z'] as const).map((axis) => (
+                        <NumberField
+                            key={axis}
+                            id={`profile-volume-${axis}`}
+                            label={axis.toUpperCase()}
+                            value={value.buildVolumeMm?.[axis] ?? null}
+                            placeholder={modelVolume?.[axis]}
+                            onChange={(n) => setAxis(axis, n)}
+                            step={1}
+                        />
+                    ))}
+                </div>
+                <p className="px-4 text-xs text-muted-foreground">
+                    {modelVolume ? m.profile_volume_hint() : m.profile_volume_hint_unknown()}
+                </p>
             </div>
             <div className="md:col-span-2">
                 <NumberField

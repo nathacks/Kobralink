@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Box, Pause, Play, Scissors, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { confirmCancel } from '@/components/printer/cancel-print';
-import { GcodePreview } from '@/components/printer/files/gcode-preview';
+import { GcodePreview, PREVIEW_DIALOG_CLASS } from '@/components/printer/files/gcode-preview';
 import { openPrintReadyDialog } from '@/components/printer/print-ready-watcher';
 import { SkipObjectsForm } from '@/components/printer/skip/skip-objects-form';
 import { useParsedGcode } from '@/hooks/use-parsed-gcode';
@@ -58,7 +58,7 @@ export function PrintCard({ printerId, className }: { printerId: string; classNa
         ? () =>
               openDialog({
                   title: parseFilename(liveFile.filename).name,
-                  props: { className: 'rounded-3xl sm:max-w-4xl' },
+                  props: { className: PREVIEW_DIALOG_CLASS },
                   content: <GcodePreview printerId={printerId} file={liveFile} />,
               })
         : undefined;

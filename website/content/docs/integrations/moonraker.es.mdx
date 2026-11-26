@@ -47,6 +47,7 @@ Cualquier otro comando responde `ok` y **no hace nada**: la impresora no acepta 
 - `motion_report.live_velocity` siempre vale 0.
 - Durante una impresión, X, Y y Z se leen de la impresora cada segundo. Fuera de una impresión, X e Y valen 0 y Z se
   estima a partir de las capas.
+- Los límites de los ejes (`configfile`, `toolhead.axis_maximum`) y las temperaturas máximas vienen de las [especificaciones](/es/docs/reference/printers) del modelo, o del volumen de impresión indicado en el perfil de la impresora.
 
 ## Clientes
 

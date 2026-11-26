@@ -84,6 +84,11 @@ describe('fetchPrinterCredentials', () => {
         expect(e.params).toEqual({ code: 19001 });
     });
 
+    it('refuses a bundle without modeId instead of guessing a model', async () => {
+        ctrlReply = { code: 200, data: { info: encrypt({ ...BUNDLE, modeId: undefined }), token: IV } };
+        expect((await failure()).code).toBe('ctrl_invalid');
+    });
+
     it('keeps the invalid answer error for a success without a bundle', async () => {
         ctrlReply = { code: 200, data: {} };
         expect((await failure()).code).toBe('ctrl_invalid');

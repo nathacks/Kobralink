@@ -1,4 +1,4 @@
-import type { AmsSlot, GcodeFileDto } from '@kobralink/shared';
+import { type AmsSlot, type GcodeFileDto, printerSettingsSchema } from '@kobralink/shared';
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
@@ -58,6 +58,7 @@ const file = {
 function setLive(x: number, printSlots: { filename: string; slots: number[] } | null = null) {
     printer.current = {
         modeId: '20028',
+        settings: printerSettingsSchema.parse({}),
         live: {
             filename: 'Benchy.gcode',
             printState: 'printing',

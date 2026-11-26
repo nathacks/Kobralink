@@ -1,0 +1,74 @@
+name: Printer compatibility report
+description: Tell us how Kobralink works with your Anycubic printer
+title: "[Compatibility] "
+labels: ["printer-compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Each report helps a model move from *Not tested* to *Supported*.
+        Guide: https://nathacks.github.io/Kobralink/en/docs/reference/printers#probe
+  - type: dropdown
+    id: model
+    attributes:
+      label: Printer model
+      options:
+        - Kobra 3
+        - Kobra 3 V2
+        - Kobra 3 Max
+        - Kobra S1
+        - Kobra S1 Max
+        - Kobra 4
+        - Kobra X
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Printer firmware version
+      placeholder: "As shown on the printer screen"
+  - type: dropdown
+    id: ace
+    attributes:
+      label: Filament system
+      options:
+        - None (single spool)
+        - ACE Pro
+        - ACE 2 Pro / ACE Gen2
+        - Built-in (Kobra X)
+  - type: input
+    id: kobralink
+    attributes:
+      label: Kobralink version
+      placeholder: "e.g. 1.2.0 (Docker / desktop app)"
+  - type: checkboxes
+    id: works
+    attributes:
+      label: What works from Kobralink
+      description: Tick only what you tried and saw working.
+      options:
+        - label: Adding the printer by IP
+        - label: Live state (temperatures, progress, layers)
+        - label: Starting a print
+        - label: Pause / resume / cancel
+        - label: ACE slots shown and loading / unloading
+        - label: Camera stream
+        - label: Camera light
+        - label: Live toolhead in the 3D preview
+        - label: Skipping an object
+        - label: OrcaSlicer through Moonraker
+  - type: textarea
+    id: issues
+    attributes:
+      label: What does not work
+      description: Error messages, screenshots, Kobralink logs (Settings → Logs).
+  - type: textarea
+    id: capture
+    attributes:
+      label: Capture file
+      description: |
+        Drag the `probe.json` file from `probe-printer.ts` here (ideally one idle and one during a print).
+        Passwords, identifiers and IPs are already masked, but check the file before sending it.
+    validations:
+      required: true

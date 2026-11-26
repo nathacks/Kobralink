@@ -793,6 +793,10 @@
     "preview_solid": "Rendu solide de la pièce",
     "preview_follow": "Suivre",
     "preview_toolhead": "Afficher la tête d'impression",
+    "preview_plate": "Plateau",
+    "preview_plate_anycubic": "Anycubic officiel",
+    "preview_plate_pei": "PEI texturé",
+    "preview_plate_none": "Aucun (grille)",
     "preview_reset_view": "Réinitialiser la vue",
     "preview_orbit_hint": "Glisser pour tourner · clic droit ou Maj+glisser pour déplacer · molette pour zoomer",
     "preview_pan_hint": "Glisser pour déplacer · molette pour zoomer",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Valider un entretien",
     "mcp_tool_annotate_print_job": "Note ou cause d'échec d'une impression",
     "mcp_ask": "L'IA veut lancer : {target}. Autoriser ?",
-    "mcp_ask_bed": "Vérifiez vous-même que le plateau est vide."
+    "mcp_ask_bed": "Vérifiez vous-même que le plateau est vide.",
+    "profile_volume": "Volume d'impression (mm)",
+    "profile_volume_hint": "Laisser vide pour utiliser les dimensions du modèle. Sert à la file d'attente et à Moonraker.",
+    "profile_volume_hint_unknown": "Modèle inconnu : indiquez la largeur (X), la profondeur (Y) et la hauteur (Z) du plateau. Sert à la file d'attente et à Moonraker."
 }

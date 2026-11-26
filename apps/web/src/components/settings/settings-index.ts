@@ -211,6 +211,7 @@ const GROUPS: SettingGroup[] = [
             [m.profile_location],
             [m.profile_nozzle, m.profile_nozzle_hint],
             [m.profile_tags, m.profile_tags_hint],
+            [m.profile_volume, m.profile_volume_hint],
             [m.profile_power, m.profile_power_hint],
         ],
     },

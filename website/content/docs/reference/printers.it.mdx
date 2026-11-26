@@ -1,18 +1,63 @@
 ---
 title: Stampanti supportate
-description: I modelli supportati e le loro specifiche.
+description: I modelli supportati, il loro stato e le loro specifiche.
 ---
 
-Kobralink supporta la **Kobra X** e la **Kobra 4**.
+Kobralink supporta la **Kobra X** e la **Kobra 4**. Gli altri modelli Kobra si possono aggiungere, ma **non sono testati**.
 
-| Modello | Volume di stampa (mm) | Ugelli (mm) | Ugello / piano max | ACE |
-| --- | --- | --- | --- | --- |
-| Kobra X | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Integrato |
-| Kobra 4 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Opzionale |
+| Modello | Stato | Volume di stampa (mm) | Ugelli (mm) | Ugello / piano max | ACE |
+| --- | --- | --- | --- | --- | --- |
+| Kobra X | Supportata | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Integrato |
+| Kobra 4 | Supportata | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Opzionale |
+| Kobra 3 | Non testata | 250 × 250 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Opzionale |
+| Kobra 3 V2 | Non testata | 255 × 255 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Opzionale |
+| Kobra 3 Max | Non testata | 420 × 420 × 500 | **0.4**, 0.6, 0.8 | 300 °C / 90 °C | Opzionale |
+| Kobra S1 | Non testata | 250 × 250 × 250 | **0.4**, 0.25, 0.6, 0.8 | 320 °C / 120 °C | Opzionale |
+| Kobra S1 Max | Non testata | 350 × 350 × 350 | **0.4**, 0.25, 0.6, 0.8 | 350 °C / 120 °C | Opzionale |
 
-L'ugello standard è in grassetto. Sono le specifiche pubblicate da Anycubic; le usa la [coda](/it/docs/guide/queue#compatibility).
+L'ugello standard è in grassetto. Sono le specifiche pubblicate da Anycubic; le usano la [coda](/it/docs/guide/queue#compatibility) e [Moonraker](/it/docs/integrations/moonraker). Un volume di stampa inserito nel [profilo](/it/docs/administration/printer-settings#profile) della stampante sostituisce quello del modello.
 
-## Altri modelli
+## Modelli non testati [#untested]
 
-Kobralink conosce anche le specifiche di Kobra 3, Kobra 3 V2, Kobra 3 Max, Kobra S1 e Kobra S1 Max, che usano un protocollo LAN
-simile. **Non sono supportate né testate**.
+Usano lo stesso protocollo LAN della Kobra X: credenziali tramite `/ctrl`, MQTT sulla porta 9883, lo stesso certificato. Kobralink non li blocca, ma queste funzioni sono state verificate solo sulla Kobra X e sulla Kobra 4:
+
+- l'avvio di una stampa, con le sue opzioni (livellamento, calibrazione…);
+- la modalità filamento e l'ACE;
+- la posizione della testina in diretta;
+- la fotocamera e la luce;
+- il salto degli oggetti.
+
+Se la stampante non risponde mai alla richiesta di posizione, Kobralink smette di chiederla fino alla stampa successiva.
+
+Un modello che Kobralink non conosce non mostra specifiche: inserisci il suo volume di stampa nel [profilo](/it/docs/administration/printer-settings#profile) della stampante.
+
+## Aiuta a supportare il tuo modello [#probe]
+
+Hai un modello segnato *Non testata*? È un report dalla tua stampante che lo porta a *Supportata*. Bastano pochi minuti.
+
+### 1. Catturare ciò che invia la stampante
+
+Lo strumento di cattura **invia solo richieste di lettura** (informazioni, stato, filamento, posizione, oggetti, luce, file): non avvia, mette in pausa, riscalda né muove nulla, quindi può girare durante una stampa. Dura 2 minuti. L'ideale: una cattura a riposo e una durante una stampa.
+
+Con Docker:
+
+```sh
+docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+docker cp kobralink:/data/probe.json .
+```
+
+Dal codice sorgente, in `apps/api`:
+
+```sh
+bun dev/probe-printer.ts <printer-ip> [seconds] [file.json]
+```
+
+Se la stampante è già aggiunta in Kobralink, lo strumento riusa le sue credenziali. Altrimenti le recupera come la procedura guidata, occupando una delle connessioni della stampante. Password, identificativi, indirizzi IP e token degli URL sono sostituiti da `…` nel file: controllalo prima di inviarlo.
+
+### 2. Provare le funzioni principali
+
+Da Kobralink, annota cosa funziona: lo stato in diretta, l'avvio di una stampa, pausa / ripresa / annullamento, l'ACE, la fotocamera e la sua luce, la testina in diretta nell'anteprima, il salto di un oggetto, OrcaSlicer tramite Moonraker.
+
+### 3. Inviare il report
+
+Apri un [report di compatibilità](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20) su GitHub: scegli il modello, spunta cosa funziona, descrivi cosa non va e allega i file di cattura.

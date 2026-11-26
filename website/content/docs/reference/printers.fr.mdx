@@ -1,19 +1,63 @@
 ---
 title: Imprimantes prises en charge
-description: Les modèles pris en charge et leurs caractéristiques.
+description: Les modèles pris en charge, leur statut et leurs caractéristiques.
 ---
 
-Kobralink prend en charge la **Kobra X** et la **Kobra 4**.
+Kobralink prend en charge la **Kobra X** et la **Kobra 4**. Les autres modèles Kobra peuvent être ajoutés, mais ils ne sont **pas testés**.
 
-| Modèle | Volume d'impression (mm) | Buses (mm) | Buse / plateau max | ACE |
-| --- | --- | --- | --- | --- |
-| Kobra X | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Intégré |
-| Kobra 4 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | En option |
+| Modèle | Statut | Volume d'impression (mm) | Buses (mm) | Buse / plateau max | ACE |
+| --- | --- | --- | --- | --- | --- |
+| Kobra X | Prise en charge | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Intégré |
+| Kobra 4 | Prise en charge | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | En option |
+| Kobra 3 | Non testée | 250 × 250 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | En option |
+| Kobra 3 V2 | Non testée | 255 × 255 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | En option |
+| Kobra 3 Max | Non testée | 420 × 420 × 500 | **0.4**, 0.6, 0.8 | 300 °C / 90 °C | En option |
+| Kobra S1 | Non testée | 250 × 250 × 250 | **0.4**, 0.25, 0.6, 0.8 | 320 °C / 120 °C | En option |
+| Kobra S1 Max | Non testée | 350 × 350 × 350 | **0.4**, 0.25, 0.6, 0.8 | 350 °C / 120 °C | En option |
 
-La buse standard est en gras. Ce sont les caractéristiques publiées par Anycubic ; elles servent à la
-[file d'attente](/fr/docs/guide/queue#compatibility).
+La buse standard est en gras. Ce sont les caractéristiques publiées par Anycubic ; elles servent à la [file d'attente](/fr/docs/guide/queue#compatibility) et à [Moonraker](/fr/docs/integrations/moonraker). Un volume d'impression saisi dans le [profil](/fr/docs/administration/printer-settings#profile) de l'imprimante remplace celui du modèle.
 
-## Autres modèles
+## Modèles non testés [#untested]
 
-Kobralink connaît aussi les caractéristiques de la Kobra 3, Kobra 3 V2, Kobra 3 Max, Kobra S1 et Kobra S1 Max, qui utilisent un
-protocole LAN proche. Elles ne sont **ni prises en charge ni testées**.
+Ils utilisent le même protocole LAN que la Kobra X : identifiants par `/ctrl`, MQTT sur le port 9883, même certificat. Kobralink ne les bloque pas, mais ces fonctions n'ont été vérifiées que sur la Kobra X et la Kobra 4 :
+
+- le lancement d'une impression, avec ses options (nivellement, calibration…) ;
+- le mode filament et l'ACE ;
+- la position de la tête en direct ;
+- la caméra et l'éclairage ;
+- l'exclusion d'objets.
+
+Si l'imprimante ne répond jamais à la demande de position, Kobralink arrête de la demander jusqu'à l'impression suivante.
+
+Un modèle que Kobralink ne connaît pas n'affiche pas de caractéristiques : saisissez son volume d'impression dans le [profil](/fr/docs/administration/printer-settings#profile) de l'imprimante.
+
+## Aider à prendre en charge votre modèle [#probe]
+
+Vous avez un modèle marqué *Non testée* ? C'est un rapport fait sur votre imprimante qui le fait passer à *Prise en charge*. Ça prend quelques minutes.
+
+### 1. Capturer ce qu'envoie l'imprimante
+
+L'outil de capture **n'envoie que des requêtes de lecture** (informations, état, filament, position, objets, éclairage, fichiers) : il ne lance, ne met en pause, ne chauffe et ne déplace rien, il peut donc tourner pendant une impression. Il dure 2 minutes. L'idéal : une capture à l'arrêt et une pendant une impression.
+
+Avec Docker :
+
+```sh
+docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+docker cp kobralink:/data/probe.json .
+```
+
+Depuis le code source, dans `apps/api` :
+
+```sh
+bun dev/probe-printer.ts <printer-ip> [seconds] [file.json]
+```
+
+Si l'imprimante est déjà ajoutée dans Kobralink, l'outil reprend ses identifiants. Sinon il les récupère comme l'assistant d'ajout, ce qui occupe un des emplacements de connexion de l'imprimante. Les mots de passe, identifiants, adresses IP et jetons des URL sont remplacés par `…` dans le fichier : vérifiez-le avant de l'envoyer.
+
+### 2. Essayer les fonctions principales
+
+Depuis Kobralink, notez ce qui marche : l'état en direct, le lancement d'une impression, pause / reprise / annulation, l'ACE, la caméra et son éclairage, la tête en direct dans l'aperçu, l'exclusion d'un objet, OrcaSlicer via Moonraker.
+
+### 3. Envoyer le rapport
+
+Ouvrez un [rapport de compatibilité](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20) sur GitHub : choisissez le modèle, cochez ce qui marche, décrivez ce qui ne marche pas et joignez les fichiers de capture.

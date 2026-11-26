@@ -3,6 +3,7 @@ import {
     ACTIVE_PRINT_STATES,
     type BedClearResultDto,
     blockingReasons,
+    buildVolumeFor,
     COLOR_TOLERANCE,
     type CompatReason,
     type GcodeFilament,
@@ -280,7 +281,7 @@ export class QueueService extends EventEmitter<{ bed_cleared: [printerId: string
             model: p.model,
             tags: profile.tags,
             nozzleMm: profile.nozzleMm ?? specs?.defaultNozzleMm ?? null,
-            buildVolumeMm: specs?.buildVolumeMm ?? null,
+            buildVolumeMm: buildVolumeFor(p.modeId, profile.buildVolumeMm),
         };
     }
 

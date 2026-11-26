@@ -1,24 +1,41 @@
-import { type GcodeFileDto, slotUsableForPrint } from '@kobralink/shared';
-import { ArrowDownToDot, Box, Crosshair, Move, RotateCcw } from 'lucide-react';
+import {
+    BUILD_PLATES,
+    type BuildPlateStyle,
+    buildVolumeFor,
+    type GcodeFileDto,
+    slotUsableForPrint,
+} from '@kobralink/shared';
+import { ArrowDownToDot, Box, ChevronDown, Crosshair, Move, RotateCcw } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { defaultAssignments } from '@/components/printer/files/print-ready-form';
 import { TOOLHEAD_NAME, type ToolheadModel, toolheadFor } from '@/components/printer/files/toolhead';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useParsedGcode } from '@/hooks/use-parsed-gcode';
 import { usePrinter } from '@/hooks/use-printers';
+import { api } from '@/lib/api';
 import { rgbToHex } from '@/lib/color';
 import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 import { m } from '@/lib/i18n';
 import { toolAt } from '@/lib/nozzle-path';
 import { toolheadFeed } from '@/lib/toolhead-feed';
 import { cn } from '@/lib/utils';
+import { printersStore } from '@/stores/printers';
 
 const GcodeScene = lazy(() => import('./gcode-scene').then((mod) => ({ default: mod.GcodeScene })));
+
+export const PREVIEW_DIALOG_CLASS = 'max-h-[96svh] overflow-y-auto rounded-3xl sm:max-w-[min(96vw,1600px)]';
 
 export function GcodePreview({ printerId, file }: { printerId: string; file: GcodeFileDto }) {
     const status = useParsedGcode(printerId, file);
@@ -29,6 +46,8 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     const [resetSignal, setResetSignal] = useState(0);
     const [showHead, setShowHead] = useState(true);
     const printerToolhead = usePrinter(printerId, (p) => toolheadFor(p?.modeId));
+    const plate = usePrinter(printerId, (p) => buildVolumeFor(p?.modeId, p?.settings.profile.buildVolumeMm));
+    const plateStyle = usePlateStyle(printerId);
     const [devToolhead, setDevToolhead] = useState<ToolheadModel | null>(null);
     const toolhead = devToolhead ?? printerToolhead;
     const live = usePrinter(
@@ -109,7 +128,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
 
     return (
         <div className="grid gap-3 py-2">
-            <div className="relative h-[55svh] w-full overflow-hidden rounded-2xl bg-secondary">
+            <div className="relative h-[calc(100svh-17rem)] min-h-72 w-full overflow-hidden rounded-2xl bg-secondary">
                 {status.kind === 'ready' ? (
                     <>
                         <Suspense fallback={null}>
@@ -122,6 +141,8 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 resetSignal={resetSignal}
                                 nozzle={following && showHead ? live?.position : null}
                                 toolhead={toolhead}
+                                plate={plate}
+                                plateStyle={plateStyle}
                                 feed={
                                     live
                                         ? toolheadFeed(
@@ -135,6 +156,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                             />
                         </Suspense>
                         <SceneOverlay
+                            printerId={printerId}
                             mode={mode}
                             pan={pan}
                             onToggleMode={() => setMode((v) => (v === 'solid' ? 'lines' : 'solid'))}
@@ -192,6 +214,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
 }
 
 export function SceneOverlay({
+    printerId,
     mode,
     pan,
     onToggleMode,
@@ -199,6 +222,7 @@ export function SceneOverlay({
     onReset,
     head,
 }: {
+    printerId: string;
     mode: SceneMode;
     pan: boolean;
     onToggleMode: () => void;
@@ -207,51 +231,103 @@ export function SceneOverlay({
     head?: { shown: boolean; onToggle: () => void; devModel?: { name: string; onSwitch: () => void } };
 }) {
     return (
-        <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-2 [&>button]:pointer-events-auto">
-            <span className="rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur-xs">
-                {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
-            </span>
-            <OverlayButton label={m.preview_reset_view()} onClick={onReset}>
-                <RotateCcw />
-            </OverlayButton>
-            <OverlayButton
-                label={m.preview_pan()}
-                variant={pan ? 'default' : 'secondary'}
-                aria-pressed={pan}
-                onClick={onTogglePan}
-            >
-                <Move />
-            </OverlayButton>
-            <OverlayButton
-                label={m.preview_solid()}
-                variant={mode === 'solid' ? 'default' : 'secondary'}
-                aria-pressed={mode === 'solid'}
-                onClick={onToggleMode}
-            >
-                <Box />
-            </OverlayButton>
-            {head && (
-                <OverlayButton
-                    label={m.preview_toolhead()}
-                    variant={head.shown ? 'default' : 'secondary'}
-                    aria-pressed={head.shown}
-                    onClick={head.onToggle}
-                >
-                    <ArrowDownToDot />
+        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+            <PlateMenu printerId={printerId} />
+            <div className="flex min-w-0 flex-col items-end gap-2 [&>button]:pointer-events-auto">
+                <span className="rounded-2xl bg-background/70 px-2.5 py-1 text-right text-[11px] text-muted-foreground backdrop-blur-xs">
+                    {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
+                </span>
+                <OverlayButton label={m.preview_reset_view()} onClick={onReset}>
+                    <RotateCcw />
                 </OverlayButton>
-            )}
-            {head?.devModel && (
+                <OverlayButton
+                    label={m.preview_pan()}
+                    variant={pan ? 'default' : 'secondary'}
+                    aria-pressed={pan}
+                    onClick={onTogglePan}
+                >
+                    <Move />
+                </OverlayButton>
+                <OverlayButton
+                    label={m.preview_solid()}
+                    variant={mode === 'solid' ? 'default' : 'secondary'}
+                    aria-pressed={mode === 'solid'}
+                    onClick={onToggleMode}
+                >
+                    <Box />
+                </OverlayButton>
+                {head && (
+                    <OverlayButton
+                        label={m.preview_toolhead()}
+                        variant={head.shown ? 'default' : 'secondary'}
+                        aria-pressed={head.shown}
+                        onClick={head.onToggle}
+                    >
+                        <ArrowDownToDot />
+                    </OverlayButton>
+                )}
+                {head?.devModel && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-full shadow"
+                        onClick={head.devModel.onSwitch}
+                    >
+                        {head.devModel.name}
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const PLATE_LABEL: Record<BuildPlateStyle, () => string> = {
+    anycubic: () => m.preview_plate_anycubic(),
+    pei: () => m.preview_plate_pei(),
+    none: () => m.preview_plate_none(),
+};
+
+export function usePlateStyle(printerId: string): BuildPlateStyle {
+    return usePrinter(printerId, (p) => p?.settings.buildPlate ?? 'anycubic');
+}
+
+function PlateMenu({ printerId }: { printerId: string }) {
+    const style = usePlateStyle(printerId);
+    const choose = (buildPlate: BuildPlateStyle) => {
+        const printer = printersStore.state.printers[printerId];
+        if (!printer || buildPlate === style) return;
+        printersStore.actions.upsertPrinter({ ...printer, settings: { ...printer.settings, buildPlate } });
+        api.printers
+            .update(printerId, { settings: { buildPlate } })
+            .then(printersStore.actions.upsertPrinter)
+            .catch(() => printersStore.actions.upsertPrinter(printer));
+    };
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
                 <Button
                     type="button"
                     size="sm"
                     variant="secondary"
-                    className="rounded-full shadow"
-                    onClick={head.devModel.onSwitch}
+                    className="pointer-events-auto shrink-0 rounded-full shadow"
+                    aria-label={`${m.preview_plate()} · ${PLATE_LABEL[style]()}`}
+                    title={m.preview_plate()}
                 >
-                    {head.devModel.name}
+                    {PLATE_LABEL[style]()}
+                    <ChevronDown />
                 </Button>
-            )}
-        </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="rounded-2xl">
+                <DropdownMenuRadioGroup value={style} onValueChange={(v) => choose(v as BuildPlateStyle)}>
+                    {BUILD_PLATES.map((p) => (
+                        <DropdownMenuRadioItem key={p} value={p} className="rounded-xl">
+                            {PLATE_LABEL[p]()}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 

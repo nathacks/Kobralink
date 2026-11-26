@@ -128,3 +128,10 @@ export function printerSpecs(modeId: string | null | undefined): PrinterSpecs | 
     if (!modeId) return null;
     return ANYCUBIC_PRINTER_SPECS.find((s) => s.modeId === modeId) ?? null;
 }
+
+export function buildVolumeFor(
+    modeId: string | null | undefined,
+    override: PrinterSpecs['buildVolumeMm'] | undefined,
+): PrinterSpecs['buildVolumeMm'] {
+    return override ?? printerSpecs(modeId)?.buildVolumeMm ?? null;
+}

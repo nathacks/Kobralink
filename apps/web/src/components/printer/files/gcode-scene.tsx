@@ -1,4 +1,4 @@
-import type { ToolheadPosition } from '@kobralink/shared';
+import type { BuildPlateStyle, ToolheadPosition } from '@kobralink/shared';
 import { Grid } from '@react-three/drei/core/Grid';
 import { OrbitControls } from '@react-three/drei/core/OrbitControls';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -19,6 +19,7 @@ import type { ParsedGcode } from '@/lib/gcode-parser.worker';
 import { type Point, pathBetween, pointAlong } from '@/lib/nozzle-path';
 import { fitCamera } from '@/lib/scene-fit';
 import type { ToolheadFeed } from '@/lib/toolhead-feed';
+import { BuildPlate } from './build-plate';
 import { TOOLHEAD_WIDTH_MM, Toolhead, type ToolheadModel } from './toolhead';
 
 export type SceneMode = 'lines' | 'solid';
@@ -286,6 +287,8 @@ export function GcodeScene({
     nozzle,
     toolhead = 'kobra-4',
     feed,
+    plate,
+    plateStyle = 'anycubic',
 }: {
     data: ParsedGcode;
     shown: number;
@@ -297,6 +300,8 @@ export function GcodeScene({
     nozzle?: ToolheadPosition | null;
     toolhead?: ToolheadModel;
     feed?: ToolheadFeed;
+    plate?: { x: number; y: number } | null;
+    plateStyle?: BuildPlateStyle;
 }) {
     const colors = useThemeColors();
     const shownTint = visibleTint(tint);
@@ -309,6 +314,9 @@ export function GcodeScene({
         [data.maxX, data.minX, data.maxY, data.minY, height],
     );
     const distance = fitCamera(size, 45).distance;
+    const plateCenter: [number, number, number] = plate
+        ? [plate.x / 2 - (data.minX + data.maxX) / 2, 0, -(plate.y / 2 - (data.minY + data.maxY) / 2)]
+        : [0, 0, 0];
 
     return (
         <Canvas
@@ -317,23 +325,32 @@ export function GcodeScene({
         >
             <ambientLight intensity={mode === 'solid' ? 0.9 : 1} />
             {mode === 'solid' && <hemisphereLight args={['#ffffff', '#444444', 0.6]} />}
-            {(mode === 'solid' || nozzle) && (
+            <directionalLight position={[distance, distance * 1.5, distance * 0.5]} intensity={1.6} />
+            <directionalLight position={[-distance, distance * 0.5, -distance]} intensity={0.5} />
+            {plateStyle === 'none' ? (
                 <>
-                    <directionalLight position={[distance, distance * 1.5, distance * 0.5]} intensity={1.6} />
-                    <directionalLight position={[-distance, distance * 0.5, -distance]} intensity={0.5} />
+                    {plate && (
+                        <mesh position={[plateCenter[0], -0.05, plateCenter[2]]} rotation-x={-Math.PI / 2}>
+                            <planeGeometry args={[plate.x, plate.y]} />
+                            <meshBasicMaterial color={colors.muted} transparent opacity={0.12} depthWrite={false} />
+                        </mesh>
+                    )}
+                    <Grid
+                        args={plate ? [plate.x, plate.y] : [bed, bed]}
+                        position={plateCenter}
+                        cellSize={10}
+                        cellThickness={0.6}
+                        cellColor={colors.border}
+                        sectionSize={50}
+                        sectionThickness={1}
+                        sectionColor={colors.muted}
+                        fadeDistance={plate ? Math.max(distance * 4, Math.hypot(plate.x, plate.y) * 2) : distance * 4}
+                        fadeStrength={1}
+                    />
                 </>
+            ) : (
+                <BuildPlate size={plate ?? { x: bed, y: bed }} position={plateCenter} style={plateStyle} />
             )}
-            <Grid
-                args={[bed, bed]}
-                cellSize={10}
-                cellThickness={0.6}
-                cellColor={colors.border}
-                sectionSize={50}
-                sectionThickness={1}
-                sectionColor={colors.muted}
-                fadeDistance={distance * 4}
-                fadeStrength={1}
-            />
             {mode === 'solid' ? (
                 <Solid data={data} shown={shown} palette={palette} fallback={shownTint ?? colors.primary} />
             ) : (

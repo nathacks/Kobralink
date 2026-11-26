@@ -793,6 +793,10 @@
     "preview_solid": "Rendering solido del pezzo",
     "preview_follow": "Segui",
     "preview_toolhead": "Mostra la testina di stampa",
+    "preview_plate": "Piatto di stampa",
+    "preview_plate_anycubic": "Anycubic ufficiale",
+    "preview_plate_pei": "PEI testurizzato",
+    "preview_plate_none": "Nessuno (griglia)",
     "preview_reset_view": "Reimposta vista",
     "preview_orbit_hint": "Trascina per ruotare · tasto destro o Maiusc+trascina per spostare · scorri per zoomare",
     "preview_pan_hint": "Trascina per spostare · scorri per zoomare",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Completare una manutenzione",
     "mcp_tool_annotate_print_job": "Nota o causa di errore di una stampa",
     "mcp_ask": "L'IA vuole eseguire: {target}. Consentire?",
-    "mcp_ask_bed": "Verifica di persona che il piano sia vuoto."
+    "mcp_ask_bed": "Verifica di persona che il piano sia vuoto.",
+    "profile_volume": "Volume di stampa (mm)",
+    "profile_volume_hint": "Lascia vuoto per usare le dimensioni del modello. Usato dalla coda e da Moonraker.",
+    "profile_volume_hint_unknown": "Modello sconosciuto: indica larghezza (X), profondità (Y) e altezza (Z) del piano. Usato dalla coda e da Moonraker."
 }

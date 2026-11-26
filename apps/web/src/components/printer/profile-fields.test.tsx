@@ -56,7 +56,20 @@ describe('ProfileFields', () => {
 
     it('has no purchase price or lifespan field', () => {
         render(<Harness onChange={vi.fn()} />);
-        expect(screen.getAllByRole('spinbutton')).toHaveLength(1);
+        expect(screen.getAllByRole('spinbutton')).toHaveLength(4);
+    });
+
+    it('overrides one axis of the model volume and clears back to the model', () => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange} />);
+        const z = screen.getByLabelText('Z');
+        expect(z.getAttribute('placeholder')).toBe('260');
+        fireEvent.change(z, { target: { value: '250' } });
+        expect(onChange).toHaveBeenLastCalledWith(
+            expect.objectContaining({ buildVolumeMm: { x: 260, y: 260, z: 250 } }),
+        );
+        fireEvent.change(z, { target: { value: '' } });
+        expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ buildVolumeMm: null }));
     });
 
     it('shows the nozzle as not set until one is chosen', () => {

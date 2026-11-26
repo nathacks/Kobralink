@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { GcodePreview } from '@/components/printer/files/gcode-preview';
+import { GcodePreview, PREVIEW_DIALOG_CLASS } from '@/components/printer/files/gcode-preview';
 import { ScrollAreaWithShadow } from '@/components/ui/scroll-area-with-shadow';
 import { useCostEstimate } from '@/hooks/use-cost-estimate';
 import { useFileActions } from '@/hooks/use-file-actions';
@@ -112,7 +112,7 @@ export function FilesCard({ printerId, className }: { printerId: string; classNa
                         onPreview={() =>
                             openDialog({
                                 title: parseFilename(f.filename).name,
-                                props: { className: 'rounded-3xl sm:max-w-4xl' },
+                                props: { className: PREVIEW_DIALOG_CLASS },
                                 content: <GcodePreview printerId={printerId} file={f} />,
                             })
                         }

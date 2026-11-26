@@ -67,4 +67,18 @@ describe('live toolhead position', () => {
         expect(h.client.queryAxis).toHaveBeenCalledTimes(1);
         expect(h.b.snapshot().position).toBeNull();
     });
+
+    it('stops polling a printer that never answers, until the next print', async () => {
+        const h = bridge('printing');
+        for (let i = 0; i < 8; i++) {
+            h.internals.pollPosition();
+            await Promise.resolve();
+        }
+        expect(h.client.queryAxis).toHaveBeenCalledTimes(5);
+        h.internals.s.printState = 'standby';
+        h.internals.pollPosition();
+        h.internals.s.printState = 'printing';
+        h.internals.pollPosition();
+        expect(h.client.queryAxis).toHaveBeenCalledTimes(6);
+    });
 });

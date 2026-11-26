@@ -80,12 +80,15 @@ export async function fetchPrinterCredentials(
     }
     const result = decryptInfo(encrypted, token.slice(16, 32), ctrlToken);
     if (result.error) throw new Error(String(result.error));
+    if (!result.modeId || !result.deviceId) {
+        throw new KobraProtocolError('ctrl_invalid', {}, 'Invalid /ctrl response (missing modeId or deviceId)');
+    }
     return {
         printerIp: String(result.ip ?? ip),
         username: String(result.username ?? ''),
         password: String(result.password ?? ''),
-        deviceId: String(result.deviceId ?? ''),
-        modeId: String(result.modeId ?? '20030'),
+        deviceId: String(result.deviceId),
+        modeId: String(result.modeId),
         model: String(result.modelName ?? 'Anycubic Kobra'),
     };
 }

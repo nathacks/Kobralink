@@ -12,7 +12,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/NatHacks/Kobralink" alt="License" /></a>
 </p>
 
-Kobralink turns an **Anycubic Kobra X** or **Kobra 4** into a **Moonraker-compatible printer** — no Klipper, no
+Kobralink turns an **Anycubic Kobra X** or **Kobra 4** (other Kobra models [untested](#supported-printers)) into a **Moonraker-compatible printer** — no Klipper, no
 Raspberry Pi, no firmware change. Run it on a small server (Docker) or as a desktop app, add your
 printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonraker client
 (Mainsail, Obico, Home Assistant…).
@@ -53,6 +53,37 @@ printer by IP, then use it from **OrcaSlicer**, a **web dashboard** or any Moonr
 - **Macros**, backup / restore, update check, multi-user, light and dark themes
 - UI in **French**, **English**, **German**, **Spanish**, **Italian**, **Simplified Chinese** and
   **Brazilian Portuguese**
+
+## Supported printers
+
+| Model | Status |
+| --- | --- |
+| Kobra X | ✅ Supported |
+| Kobra 4 | ✅ Supported |
+| Kobra 3, Kobra 3 V2, Kobra 3 Max | 🧪 Not tested |
+| Kobra S1, Kobra S1 Max | 🧪 Not tested |
+
+Untested models use the same LAN protocol and can be added, but starting a print, the ACE, the camera light and the live
+toolhead position have only been checked on the Kobra X and Kobra 4. Details per model:
+[Supported printers](https://nathacks.github.io/Kobralink/en/docs/reference/printers).
+
+### Help support your printer
+
+You own one of the untested models? Two minutes are enough:
+
+1. Run the **read-only capture tool** (it only sends queries: it never starts, heats or moves anything, and it can run
+   during a print). Passwords, identifiers, IPs and URL tokens are masked in the file.
+   ```sh
+   docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+   docker cp kobralink:/data/probe.json .
+   ```
+   From the source code: `cd apps/api && bun dev/probe-printer.ts <printer-ip>`. Ideally, one capture idle and one
+   during a print.
+2. Try the main features from Kobralink (live state, start a print, pause / resume, ACE, camera) and note what works.
+3. Open a [printer compatibility report](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20)
+   with the file attached.
+
+Each report moves a model closer to *Supported*.
 
 ## Install in production (Docker Compose)
 

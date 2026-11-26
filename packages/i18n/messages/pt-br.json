@@ -793,6 +793,10 @@
     "preview_solid": "Renderização sólida da peça",
     "preview_follow": "Seguir",
     "preview_toolhead": "Mostrar o cabeçote de impressão",
+    "preview_plate": "Mesa de impressão",
+    "preview_plate_anycubic": "Anycubic oficial",
+    "preview_plate_pei": "PEI texturizado",
+    "preview_plate_none": "Nenhuma (grade)",
     "preview_reset_view": "Redefinir vista",
     "preview_orbit_hint": "Arraste para girar · botão direito ou Shift+arrastar para mover · role para ampliar",
     "preview_pan_hint": "Arraste para mover · role para ampliar",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Concluir uma manutenção",
     "mcp_tool_annotate_print_job": "Nota ou causa de falha de uma impressão",
     "mcp_ask": "A IA quer executar: {target}. Permitir?",
-    "mcp_ask_bed": "Verifique você mesmo se a mesa está vazia."
+    "mcp_ask_bed": "Verifique você mesmo se a mesa está vazia.",
+    "profile_volume": "Volume de impressão (mm)",
+    "profile_volume_hint": "Deixe vazio para usar as dimensões do modelo. Usado pela fila e pelo Moonraker.",
+    "profile_volume_hint_unknown": "Modelo desconhecido: informe a largura (X), a profundidade (Y) e a altura (Z) da mesa. Usado pela fila e pelo Moonraker."
 }

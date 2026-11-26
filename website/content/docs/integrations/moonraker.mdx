@@ -47,6 +47,7 @@ Any other command answers `ok` and **does nothing**: the printer does not accept
 - `motion_report.live_velocity` is always 0.
 - During a print, X, Y and Z are read from the printer every second. Outside a print, X and Y are 0 and Z is estimated
   from the layers.
+- Axis limits (`configfile`, `toolhead.axis_maximum`) and maximum temperatures come from the model's [specifications](/en/docs/reference/printers), or from the build volume set in the printer profile.
 
 ## Clients
 

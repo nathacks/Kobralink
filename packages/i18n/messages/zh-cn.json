@@ -793,6 +793,10 @@
     "preview_solid": "实体渲染",
     "preview_follow": "跟随",
     "preview_toolhead": "显示打印头",
+    "preview_plate": "打印板",
+    "preview_plate_anycubic": "Anycubic 官方",
+    "preview_plate_pei": "纹理 PEI",
+    "preview_plate_none": "无（网格）",
     "preview_reset_view": "重置视图",
     "preview_orbit_hint": "拖动旋转 · 右键或 Shift+拖动平移 · 滚动缩放",
     "preview_pan_hint": "拖动平移 · 滚动缩放",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "完成维护任务",
     "mcp_tool_annotate_print_job": "打印备注或失败原因",
     "mcp_ask": "AI 想要执行：{target}。是否允许？",
-    "mcp_ask_bed": "请亲自确认热床已清空。"
+    "mcp_ask_bed": "请亲自确认热床已清空。",
+    "profile_volume": "打印尺寸（毫米）",
+    "profile_volume_hint": "留空则使用该型号的尺寸。用于打印队列和 Moonraker。",
+    "profile_volume_hint_unknown": "未知型号：请填写热床的宽度 (X)、深度 (Y) 和高度 (Z)。用于打印队列和 Moonraker。"
 }

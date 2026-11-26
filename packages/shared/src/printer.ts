@@ -21,6 +21,10 @@ export const printerTagSchema = z
     .max(32)
     .transform((v) => v.toLowerCase());
 
+const axisMm = z.number().min(1).max(2000);
+export const buildVolumeSchema = z.object({ x: axisMm, y: axisMm, z: axisMm });
+export type BuildVolume = z.infer<typeof buildVolumeSchema>;
+
 export const printerProfileSchema = z.object({
     location: z.string().trim().max(64).default(''),
     tags: z
@@ -30,8 +34,12 @@ export const printerProfileSchema = z.object({
         .default([]),
     nozzleMm: z.number().min(0.1).max(2).nullable().default(null),
     powerW: nullableNumber(5000),
+    buildVolumeMm: buildVolumeSchema.nullable().default(null),
 });
 export type PrinterProfile = z.infer<typeof printerProfileSchema>;
+
+export const BUILD_PLATES = ['none', 'anycubic', 'pei'] as const;
+export type BuildPlateStyle = (typeof BUILD_PLATES)[number];
 
 export const printerSettingsSchema = z.object({
     autoLeveling: z.boolean().default(true),
@@ -58,6 +66,7 @@ export const printerSettingsSchema = z.object({
     lightTrigger: z.boolean().default(false),
     energySensor: z.union([z.literal(''), z.string().trim().regex(ENERGY_SENSOR_PATTERN)]).default(''),
     plugSwitch: z.union([z.literal(''), z.string().trim().regex(PLUG_SWITCH_PATTERN)]).default(''),
+    buildPlate: z.enum(BUILD_PLATES).default('anycubic'),
     alerts: alertSettingsSchema.default(alertSettingsSchema.parse({})),
     profile: printerProfileSchema.default(printerProfileSchema.parse({})),
 });

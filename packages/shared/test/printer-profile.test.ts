@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { PRINTER_TAG_MAX, printerProfileSchema, printerSettingsSchema, updatePrinterSchema } from '../src/printer';
+import { buildVolumeFor } from '../src/printer-specs';
 
 describe('printerProfileSchema', () => {
     it('starts empty, with nothing invented', () => {
@@ -8,6 +9,7 @@ describe('printerProfileSchema', () => {
             tags: [],
             nozzleMm: null,
             powerW: null,
+            buildVolumeMm: null,
         });
         expect(printerSettingsSchema.parse({}).profile).toEqual(printerProfileSchema.parse({}));
     });
@@ -29,6 +31,13 @@ describe('printerProfileSchema', () => {
         expect(printerProfileSchema.parse({ nozzleMm: 0.6, powerW: null }).nozzleMm).toBe(0.6);
     });
 
+    it('uses the build volume from the profile, else from the model', () => {
+        expect(printerProfileSchema.safeParse({ buildVolumeMm: { x: 0, y: 250, z: 250 } }).success).toBe(false);
+        expect(buildVolumeFor('20024', null)).toEqual({ x: 250, y: 250, z: 260 });
+        expect(buildVolumeFor('20024', { x: 300, y: 300, z: 300 })).toEqual({ x: 300, y: 300, z: 300 });
+        expect(buildVolumeFor('99999', null)).toBeNull();
+    });
+
     it('can be patched one field at a time', () => {
         const patch = updatePrinterSchema.parse({ settings: { profile: { location: 'Garage' } } });
         expect(patch.settings?.profile).toEqual({ location: 'Garage' });
@@ -42,6 +51,7 @@ describe('printerProfileSchema without machine cost', () => {
             tags: [],
             nozzleMm: null,
             powerW: 200,
+            buildVolumeMm: null,
         });
     });
 });

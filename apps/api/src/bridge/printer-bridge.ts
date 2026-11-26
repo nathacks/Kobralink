@@ -80,6 +80,8 @@ const IDLE_CONFIRM_MS = 10_000;
 const PAUSE_KOBRA_STATES = new Set(['pausing', 'paused', 'pause']);
 const RESUME_KOBRA_STATES = new Set(['resuming', 'resumed', 'printing']);
 
+const AXIS_MAX_MISSES = 5;
+
 export interface BridgePrinterConfig {
     id: string;
     name: string;
@@ -165,6 +167,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
     private loopWake: (() => void) | null = null;
     private loopDone: Promise<void> | null = null;
     private positionTimer: NodeJS.Timeout | null = null;
+    private axisMisses = 0;
 
     private filamentMode: FilamentMode = 'toolhead';
     private reportedModel = '';
@@ -599,8 +602,14 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
 
     private pollPosition(): void {
         if (!this.offline && this.s.printState === 'printing') {
-            void this.client.queryAxis();
-        } else if (this.s.position) {
+            if (this.axisMisses >= AXIS_MAX_MISSES) return;
+            void this.client.queryAxis().then((r) => {
+                this.axisMisses = r && r.state !== 'failed' ? 0 : this.axisMisses + 1;
+            });
+            return;
+        }
+        this.axisMisses = 0;
+        if (this.s.position) {
             this.s.position = null;
             this.publish();
         }

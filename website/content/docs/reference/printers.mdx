@@ -1,19 +1,63 @@
 ---
 title: Supported printers
-description: Supported models and their specifications.
+description: Supported models, their status and specifications.
 ---
 
-Kobralink supports the **Kobra X** and the **Kobra 4**.
+Kobralink supports the **Kobra X** and the **Kobra 4**. The other Kobra models can be added, but they are **not tested**.
 
-| Model | Build volume (mm) | Nozzles (mm) | Max nozzle / bed | ACE |
-| --- | --- | --- | --- | --- |
-| Kobra X | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Built in |
-| Kobra 4 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Optional |
+| Model | Status | Build volume (mm) | Nozzles (mm) | Max nozzle / bed | ACE |
+| --- | --- | --- | --- | --- | --- |
+| Kobra X | Supported | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Built in |
+| Kobra 4 | Supported | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Optional |
+| Kobra 3 | Not tested | 250 × 250 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Optional |
+| Kobra 3 V2 | Not tested | 255 × 255 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Optional |
+| Kobra 3 Max | Not tested | 420 × 420 × 500 | **0.4**, 0.6, 0.8 | 300 °C / 90 °C | Optional |
+| Kobra S1 | Not tested | 250 × 250 × 250 | **0.4**, 0.25, 0.6, 0.8 | 320 °C / 120 °C | Optional |
+| Kobra S1 Max | Not tested | 350 × 350 × 350 | **0.4**, 0.25, 0.6, 0.8 | 350 °C / 120 °C | Optional |
 
-The standard nozzle is in bold. These are the specifications published by Anycubic; they are used by the
-[queue](/en/docs/guide/queue#compatibility).
+The standard nozzle is in bold. These are the specifications published by Anycubic; they are used by the [queue](/en/docs/guide/queue#compatibility) and by [Moonraker](/en/docs/integrations/moonraker). A build volume set in the printer [profile](/en/docs/administration/printer-settings#profile) replaces the model's.
 
-## Other models
+## Models not tested [#untested]
 
-Kobralink also knows the specifications of the Kobra 3, Kobra 3 V2, Kobra 3 Max, Kobra S1 and Kobra S1 Max, which use a related LAN
-protocol. They are **not supported or tested**.
+They use the same LAN protocol as the Kobra X: credentials through `/ctrl`, MQTT on port 9883, the same certificate. Kobralink does not block them, but these features have only been checked on the Kobra X and Kobra 4:
+
+- starting a print, with its options (leveling, calibration…);
+- the filament mode and the ACE;
+- the live toolhead position;
+- the camera and the light;
+- skipping objects.
+
+If the printer never answers the position request, Kobralink stops asking until the next print.
+
+A model Kobralink does not know shows no specifications: enter its build volume in the printer [profile](/en/docs/administration/printer-settings#profile).
+
+## Help support your model [#probe]
+
+You own a model marked *Not tested*? A report from your printer is what moves it to *Supported*. It takes a few minutes.
+
+### 1. Capture what the printer sends
+
+The capture tool **only sends queries** (information, status, filament, position, objects, light, files): it never starts, pauses, heats or moves anything, so it can run during a print. It lasts 2 minutes. Ideally, run one capture while idle and one during a print.
+
+With Docker:
+
+```sh
+docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+docker cp kobralink:/data/probe.json .
+```
+
+From the source code, in `apps/api`:
+
+```sh
+bun dev/probe-printer.ts <printer-ip> [seconds] [file.json]
+```
+
+If the printer is already added to Kobralink, the tool reuses its credentials. Otherwise it fetches them like the setup wizard, which takes one of the printer's connection slots. Passwords, identifiers, IP addresses and URL tokens are replaced by `…` in the file: check it before sending it.
+
+### 2. Try the main features
+
+From Kobralink, note what works: live state, starting a print, pause / resume / cancel, the ACE, the camera and its light, the live print head in the preview, skipping an object, OrcaSlicer through Moonraker.
+
+### 3. Send the report
+
+Open a [printer compatibility report](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20) on GitHub: pick the model, tick what works, describe what does not and attach the capture files.

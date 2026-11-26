@@ -5,6 +5,7 @@ import http from 'node:http';
 import type { AddressInfo, Socket } from 'node:net';
 import path from 'node:path';
 import tls from 'node:tls';
+import { printerSpecs } from '@kobralink/shared';
 import { resolveFfmpeg } from '../src/bridge/camera';
 
 const HOST = '127.0.0.1';
@@ -70,6 +71,7 @@ export interface FakePrinterOptions {
     mqttPort?: number;
     now?: () => number;
     gcodeDir?: string;
+    modeId?: string;
 }
 
 function packet(head: number, body: Buffer): Buffer {
@@ -213,7 +215,8 @@ export class FakePrinter {
     private readonly mqtt: tls.Server;
     private lastStep: number;
 
-    private name = 'Fake Kobra 4';
+    private readonly identity: typeof IDENTITY;
+    private name: string;
     private state = 'printing';
     private filename = 'Benchy_PLA_0.20mm_1h30m.gcode';
     private taskId = 'fake-1';
@@ -276,6 +279,10 @@ export class FakePrinter {
     ];
 
     constructor(private readonly opts: FakePrinterOptions = {}) {
+        const modeId = opts.modeId ?? IDENTITY.modeId;
+        const model = printerSpecs(modeId)?.name ?? `Kobra ${modeId}`;
+        this.identity = { ...IDENTITY, modeId, modelName: `Anycubic ${model}` };
+        this.name = `Fake ${model}`;
         this.now = opts.now ?? Date.now;
         this.lastStep = this.now();
         this.toolpath = this.toolpathFor(this.filename);
@@ -321,7 +328,9 @@ export class FakePrinter {
         } else if (url.pathname === '/ctrl') {
             const iv = randomBytes(8).toString('hex');
             const cipher = createCipheriv('aes-128-cbc', this.token.slice(16, 32), iv);
-            const info = Buffer.concat([cipher.update(JSON.stringify(IDENTITY)), cipher.final()]).toString('base64');
+            const info = Buffer.concat([cipher.update(JSON.stringify(this.identity)), cipher.final()]).toString(
+                'base64',
+            );
             json({ code: 200, data: { token: iv, info } });
         } else if (url.pathname === '/gcode_upload') {
             const chunks: Buffer[] = [];
@@ -385,7 +394,7 @@ export class FakePrinter {
     }
 
     private report(type: string, action: string, reply: Reply, msgid: string = randomUUID()): void {
-        const topic = `anycubic/anycubicCloud/v1/printer/public/${IDENTITY.modeId}/${IDENTITY.deviceId}/${type}/report`;
+        const topic = `anycubic/anycubicCloud/v1/printer/public/${this.identity.modeId}/${this.identity.deviceId}/${type}/report`;
         const message = { type, action, msgid, timestamp: this.now(), code: 200, state: 'done', msg: '', ...reply };
         const out = publishPacket(topic, JSON.stringify(message));
         for (const socket of this.sockets) socket.write(out);
@@ -652,7 +661,7 @@ export class FakePrinter {
     private info() {
         return {
             printerName: this.name,
-            model: IDENTITY.modelName,
+            model: this.identity.modelName,
             version: '0.0.0-fake',
             state: this.printing ? 'busy' : this.state,
             temp: this.roundedTemp(),
@@ -671,6 +680,7 @@ export class FakePrinter {
 
 if (require.main === module) {
     new FakePrinter({
+        modeId: process.env.FAKE_PRINTER_MODE_ID,
         gcodeDir: path.join(
             path.resolve(process.env.KOBRALINK_DATA_DIR ?? path.resolve(__dirname, '..', '..', '..', 'data')),
             'gcodes',

@@ -1,19 +1,63 @@
 ---
 title: Impressoras compatíveis
-description: Os modelos compatíveis e suas especificações.
+description: Os modelos compatíveis, seu status e suas especificações.
 ---
 
-O Kobralink é compatível com a **Kobra X** e a **Kobra 4**.
+O Kobralink é compatível com a **Kobra X** e a **Kobra 4**. Os outros modelos Kobra podem ser adicionados, mas **não foram testados**.
 
-| Modelo | Volume de impressão (mm) | Bicos (mm) | Bico / mesa máx. | ACE |
-| --- | --- | --- | --- | --- |
-| Kobra X | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Integrado |
-| Kobra 4 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Opcional |
+| Modelo | Status | Volume de impressão (mm) | Bicos (mm) | Bico / mesa máx. | ACE |
+| --- | --- | --- | --- | --- | --- |
+| Kobra X | Compatível | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Integrado |
+| Kobra 4 | Compatível | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | Opcional |
+| Kobra 3 | Não testada | 250 × 250 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Opcional |
+| Kobra 3 V2 | Não testada | 255 × 255 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | Opcional |
+| Kobra 3 Max | Não testada | 420 × 420 × 500 | **0.4**, 0.6, 0.8 | 300 °C / 90 °C | Opcional |
+| Kobra S1 | Não testada | 250 × 250 × 250 | **0.4**, 0.25, 0.6, 0.8 | 320 °C / 120 °C | Opcional |
+| Kobra S1 Max | Não testada | 350 × 350 × 350 | **0.4**, 0.25, 0.6, 0.8 | 350 °C / 120 °C | Opcional |
 
-O bico padrão está em negrito. São as especificações publicadas pela Anycubic; elas são usadas pela
-[fila](/pt-br/docs/guide/queue#compatibility).
+O bico padrão está em negrito. São as especificações publicadas pela Anycubic; elas são usadas pela [fila](/pt-br/docs/guide/queue#compatibility) e pelo [Moonraker](/pt-br/docs/integrations/moonraker). Um volume de impressão informado no [perfil](/pt-br/docs/administration/printer-settings#profile) da impressora substitui o do modelo.
 
-## Outros modelos
+## Modelos não testados [#untested]
 
-O Kobralink também conhece as especificações da Kobra 3, Kobra 3 V2, Kobra 3 Max, Kobra S1 e Kobra S1 Max, que usam um protocolo
-LAN parecido. Elas **não são compatíveis nem foram testadas**.
+Eles usam o mesmo protocolo LAN da Kobra X: credenciais por `/ctrl`, MQTT na porta 9883, o mesmo certificado. O Kobralink não os bloqueia, mas estas funções só foram verificadas na Kobra X e na Kobra 4:
+
+- iniciar uma impressão, com suas opções (nivelamento, calibração…);
+- o modo de filamento e o ACE;
+- a posição do cabeçote ao vivo;
+- a câmera e a luz;
+- pular objetos.
+
+Se a impressora nunca responder ao pedido de posição, o Kobralink para de pedir até a próxima impressão.
+
+Um modelo que o Kobralink não conhece não mostra especificações: informe o volume de impressão no [perfil](/pt-br/docs/administration/printer-settings#profile) da impressora.
+
+## Ajude a dar suporte ao seu modelo [#probe]
+
+Você tem um modelo marcado como *Não testada*? É um relatório da sua impressora que o leva a *Compatível*. Leva poucos minutos.
+
+### 1. Capturar o que a impressora envia
+
+A ferramenta de captura **só envia consultas** (informações, estado, filamento, posição, objetos, luz, arquivos): não inicia, pausa, aquece nem move nada, então pode rodar durante uma impressão. Dura 2 minutos. O ideal: uma captura parada e outra durante uma impressão.
+
+Com Docker:
+
+```sh
+docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+docker cp kobralink:/data/probe.json .
+```
+
+A partir do código-fonte, em `apps/api`:
+
+```sh
+bun dev/probe-printer.ts <printer-ip> [seconds] [file.json]
+```
+
+Se a impressora já foi adicionada ao Kobralink, a ferramenta reutiliza as credenciais dela. Caso contrário, ela as obtém como o assistente de configuração, o que ocupa uma das conexões da impressora. Senhas, identificadores, endereços IP e tokens das URLs são substituídos por `…` no arquivo: confira antes de enviar.
+
+### 2. Testar as funções principais
+
+No Kobralink, anote o que funciona: o estado ao vivo, iniciar uma impressão, pausar / retomar / cancelar, o ACE, a câmera e sua luz, o cabeçote ao vivo na prévia, pular um objeto, o OrcaSlicer via Moonraker.
+
+### 3. Enviar o relatório
+
+Abra um [relatório de compatibilidade](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20) no GitHub: escolha o modelo, marque o que funciona, descreva o que não funciona e anexe os arquivos de captura.

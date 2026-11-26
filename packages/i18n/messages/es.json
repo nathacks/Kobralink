@@ -793,6 +793,10 @@
     "preview_solid": "Renderizado sólido de la pieza",
     "preview_follow": "Seguir",
     "preview_toolhead": "Mostrar el cabezal de impresión",
+    "preview_plate": "Placa de impresión",
+    "preview_plate_anycubic": "Anycubic oficial",
+    "preview_plate_pei": "PEI texturizado",
+    "preview_plate_none": "Ninguna (cuadrícula)",
     "preview_reset_view": "Restablecer vista",
     "preview_orbit_hint": "Arrastra para rotar · clic derecho o Mayús+arrastrar para desplazar · desplaza para hacer zoom",
     "preview_pan_hint": "Arrastra para desplazar · desplaza para hacer zoom",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Completar un mantenimiento",
     "mcp_tool_annotate_print_job": "Nota o causa de fallo de una impresión",
     "mcp_ask": "La IA quiere ejecutar: {target}. ¿Permitir?",
-    "mcp_ask_bed": "Comprueba tú mismo que la cama está vacía."
+    "mcp_ask_bed": "Comprueba tú mismo que la cama está vacía.",
+    "profile_volume": "Volumen de impresión (mm)",
+    "profile_volume_hint": "Déjalo vacío para usar las dimensiones del modelo. Lo usan la cola y Moonraker.",
+    "profile_volume_hint_unknown": "Modelo desconocido: indica el ancho (X), el fondo (Y) y la altura (Z) de la cama. Lo usan la cola y Moonraker."
 }

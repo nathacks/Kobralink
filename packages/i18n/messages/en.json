@@ -793,6 +793,10 @@
     "preview_solid": "Solid part render",
     "preview_follow": "Follow",
     "preview_toolhead": "Show print head",
+    "preview_plate": "Build plate",
+    "preview_plate_anycubic": "Official Anycubic",
+    "preview_plate_pei": "Textured PEI",
+    "preview_plate_none": "None (grid)",
     "preview_reset_view": "Reset view",
     "preview_orbit_hint": "Drag to rotate · right-click or Shift+drag to pan · scroll to zoom",
     "preview_pan_hint": "Drag to pan · scroll to zoom",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Complete a maintenance task",
     "mcp_tool_annotate_print_job": "Note or failure reason of a print",
     "mcp_ask": "The AI wants to run: {target}. Allow?",
-    "mcp_ask_bed": "Check yourself that the bed is empty."
+    "mcp_ask_bed": "Check yourself that the bed is empty.",
+    "profile_volume": "Build volume (mm)",
+    "profile_volume_hint": "Leave empty to use the model's dimensions. Used by the queue and Moonraker.",
+    "profile_volume_hint_unknown": "Unknown model: enter the bed width (X), depth (Y) and height (Z). Used by the queue and Moonraker."
 }

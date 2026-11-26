@@ -1,18 +1,63 @@
 ---
 title: 支持的打印机
-description: 支持的型号及其规格。
+description: 支持的型号、状态及其规格。
 ---
 
-Kobralink 支持 **Kobra X** 和 **Kobra 4**。
+Kobralink 支持 **Kobra X** 和 **Kobra 4**。其他 Kobra 型号可以添加，但**未经测试**。
 
-| 型号 | 打印体积（mm） | 喷嘴（mm） | 喷嘴 / 热床最高温度 | ACE |
-| --- | --- | --- | --- | --- |
-| Kobra X | 260 × 260 × 260 | **0.4**、0.25、0.6、0.8 | 300 °C / 100 °C | 内置 |
-| Kobra 4 | 260 × 260 × 260 | **0.4**、0.25、0.6、0.8 | 300 °C / 100 °C | 选配 |
+| 型号 | 状态 | 打印尺寸（毫米） | 喷嘴（毫米） | 喷嘴 / 热床最高温度 | ACE |
+| --- | --- | --- | --- | --- | --- |
+| Kobra X | 支持 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | 内置 |
+| Kobra 4 | 支持 | 260 × 260 × 260 | **0.4**, 0.25, 0.6, 0.8 | 300 °C / 100 °C | 可选 |
+| Kobra 3 | 未测试 | 250 × 250 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | 可选 |
+| Kobra 3 V2 | 未测试 | 255 × 255 × 260 | **0.4**, 0.6, 0.8 | 300 °C / 110 °C | 可选 |
+| Kobra 3 Max | 未测试 | 420 × 420 × 500 | **0.4**, 0.6, 0.8 | 300 °C / 90 °C | 可选 |
+| Kobra S1 | 未测试 | 250 × 250 × 250 | **0.4**, 0.25, 0.6, 0.8 | 320 °C / 120 °C | 可选 |
+| Kobra S1 Max | 未测试 | 350 × 350 × 350 | **0.4**, 0.25, 0.6, 0.8 | 350 °C / 120 °C | 可选 |
 
-加粗的是标准喷嘴。这些是 Anycubic 公布的规格，[队列](/zh-cn/docs/guide/queue#compatibility)会用到它们。
+标准喷嘴以粗体显示。这些是 Anycubic 公布的规格，供[打印队列](/zh-cn/docs/guide/queue#compatibility)和 [Moonraker](/zh-cn/docs/integrations/moonraker) 使用。在打印机[档案](/zh-cn/docs/administration/printer-settings#profile)中填写的打印尺寸会替代型号的尺寸。
 
-## 其他型号
+## 未测试的型号 [#untested]
 
-Kobralink 也知道 Kobra 3、Kobra 3 V2、Kobra 3 Max、Kobra S1 和 Kobra S1 Max 的规格，它们使用相近的局域网协议，但**不受支持，
-也未经测试**。
+它们与 Kobra X 使用相同的局域网协议：通过 `/ctrl` 获取凭据、端口 9883 上的 MQTT、相同的证书。Kobralink 不会阻止它们，但以下功能只在 Kobra X 和 Kobra 4 上验证过：
+
+- 开始打印及其选项（调平、校准等）；
+- 耗材模式和 ACE；
+- 打印头实时位置；
+- 摄像头和灯光；
+- 跳过对象。
+
+如果打印机始终不响应位置请求，Kobralink 会停止请求，直到下一次打印。
+
+Kobralink 不认识的型号不显示规格：请在打印机[档案](/zh-cn/docs/administration/printer-settings#profile)中填写其打印尺寸。
+
+## 帮助支持你的型号 [#probe]
+
+你的型号标为*未测试*？来自你打印机的报告能让它变成*支持*。只需几分钟。
+
+### 1. 抓取打印机发送的内容
+
+抓取工具**只发送查询**（信息、状态、耗材、位置、对象、灯光、文件）：不会开始、暂停、加热或移动任何东西，因此可以在打印过程中运行。持续 2 分钟。最好在空闲时和打印时各抓取一次。
+
+使用 Docker：
+
+```sh
+docker exec kobralink bun dev/probe-printer.ts <printer-ip> 120 /data/probe.json
+docker cp kobralink:/data/probe.json .
+```
+
+从源代码运行，在 `apps/api` 中：
+
+```sh
+bun dev/probe-printer.ts <printer-ip> [seconds] [file.json]
+```
+
+如果打印机已添加到 Kobralink，工具会复用其凭据。否则会像添加向导一样获取凭据，这会占用打印机的一个连接名额。文件中的密码、标识符、IP 地址和 URL 令牌会被替换为 `…`：发送前请检查。
+
+### 2. 试用主要功能
+
+在 Kobralink 中记录哪些功能可用：实时状态、开始打印、暂停 / 继续 / 取消、ACE、摄像头及其灯光、预览中的实时打印头、跳过对象、通过 Moonraker 使用 OrcaSlicer。
+
+### 3. 发送报告
+
+在 GitHub 上提交[兼容性报告](https://github.com/NatHacks/Kobralink/issues/new?template=printer-compatibility.yml&title=%5BCompatibility%5D%20Kobra%20)：选择型号，勾选可用的功能，描述不可用的部分，并附上抓取文件。

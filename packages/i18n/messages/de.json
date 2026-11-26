@@ -793,6 +793,10 @@
     "preview_solid": "Volumendarstellung",
     "preview_follow": "Folgen",
     "preview_toolhead": "Druckkopf anzeigen",
+    "preview_plate": "Druckplatte",
+    "preview_plate_anycubic": "Original Anycubic",
+    "preview_plate_pei": "Texturiertes PEI",
+    "preview_plate_none": "Keine (Raster)",
     "preview_reset_view": "Ansicht zurücksetzen",
     "preview_orbit_hint": "Ziehen zum Drehen · Rechtsklick oder Umschalt+Ziehen zum Verschieben · Scrollen zum Zoomen",
     "preview_pan_hint": "Ziehen zum Verschieben · Scrollen zum Zoomen",
@@ -1490,5 +1494,8 @@
     "mcp_tool_complete_maintenance_task": "Wartung abschließen",
     "mcp_tool_annotate_print_job": "Notiz oder Fehlerursache eines Drucks",
     "mcp_ask": "Die KI möchte ausführen: {target}. Erlauben?",
-    "mcp_ask_bed": "Prüfen Sie selbst, dass das Druckbett leer ist."
+    "mcp_ask_bed": "Prüfen Sie selbst, dass das Druckbett leer ist.",
+    "profile_volume": "Bauraum (mm)",
+    "profile_volume_hint": "Leer lassen, um die Maße des Modells zu verwenden. Wird von der Warteschlange und Moonraker genutzt.",
+    "profile_volume_hint_unknown": "Unbekanntes Modell: Breite (X), Tiefe (Y) und Höhe (Z) des Druckbetts angeben. Wird von der Warteschlange und Moonraker genutzt."
 }
