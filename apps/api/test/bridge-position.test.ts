@@ -68,6 +68,15 @@ describe('live toolhead position', () => {
         expect(h.b.snapshot().position).toBeNull();
     });
 
+    it('keeps the last position without polling while paused', () => {
+        const h = bridge('printing');
+        h.report({ x: 1, y: 2, z: 3 });
+        h.internals.s.printState = 'paused';
+        h.internals.pollPosition();
+        expect(h.client.queryAxis).toHaveBeenCalledTimes(0);
+        expect(h.b.snapshot().position).toEqual({ x: 1, y: 2, z: 3 });
+    });
+
     it('stops polling a printer that never answers, until the next print', async () => {
         const h = bridge('printing');
         for (let i = 0; i < 8; i++) {

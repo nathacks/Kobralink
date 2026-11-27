@@ -180,7 +180,7 @@ function Lines({
             touch(attribute, v * 3, 3);
         }
         base.setDrawRange(0, start);
-        top.setDrawRange(start, (p ? v + 1 : ends[index]) - start);
+        top.setDrawRange(start, (p ? v + 1 : shown > 0 ? ends[index] : 0) - start);
     });
 
     return (
@@ -256,7 +256,7 @@ function Solid({
             mesh.setMatrixAt(i, work.multiplyMatrices(tip.m, local));
             touch(mesh.instanceMatrix, i * 16, 16);
         }
-        mesh.count = p ? i + 1 : ends[layerIndex(shown, ends)];
+        mesh.count = p ? i + 1 : shown > 0 ? ends[layerIndex(shown, ends)] : 0;
     });
 
     return (

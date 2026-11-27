@@ -608,6 +608,7 @@ export class PrinterBridge extends EventEmitter<BridgeEvents> {
             });
             return;
         }
+        if (this.s.printState === 'paused') return;
         this.axisMisses = 0;
         if (this.s.position) {
             this.s.position = null;
