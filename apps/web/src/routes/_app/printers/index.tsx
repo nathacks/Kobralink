@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Printer } from 'lucide-react';
 import { z } from 'zod';
 import { AddPrinterDialog } from '@/components/printer/add-printer-dialog';
@@ -10,16 +10,9 @@ import { usePrinterCardActions } from '@/hooks/use-printer-card-actions';
 import { usePrinters } from '@/hooks/use-printers';
 import { useCanOperate } from '@/hooks/use-role';
 import { m } from '@/lib/i18n';
-import { printersQuery } from '@/lib/queries';
 
 export const Route = createFileRoute('/_app/printers/')({
     validateSearch: z.object({ status: z.enum(HOME_STATUSES).optional().catch(undefined) }),
-    beforeLoad: async ({ context, search }) => {
-        const printers = await context.queryClient.query({ ...printersQuery, staleTime: 'static' });
-        if (printers.length === 1 && !search.status) {
-            throw redirect({ to: '/printers/$printerId', params: { printerId: printers[0].id }, replace: true });
-        }
-    },
     component: PrintersPage,
 });
 
