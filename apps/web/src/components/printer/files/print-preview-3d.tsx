@@ -1,6 +1,6 @@
 import { buildVolumeFor, type GcodeFileDto } from '@kobralink/shared';
 import { lazy, Suspense, useState } from 'react';
-import { SceneOverlay, usePlateStyle } from '@/components/printer/files/gcode-preview';
+import { SceneOverlay } from '@/components/printer/files/gcode-preview';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { useParsedGcode } from '@/hooks/use-parsed-gcode';
 import { usePrinter } from '@/hooks/use-printers';
@@ -22,7 +22,6 @@ export function PrintPreview3D({
 }) {
     const status = useParsedGcode(printerId, file);
     const plate = usePrinter(printerId, (p) => buildVolumeFor(p?.modeId, p?.settings.profile.buildVolumeMm));
-    const plateStyle = usePlateStyle(printerId);
     const [mode, setMode] = useState<SceneMode>('solid');
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
@@ -43,11 +42,12 @@ export function PrintPreview3D({
                             resetSignal={resetSignal}
                             tint={tint}
                             plate={plate}
-                            plateStyle={plateStyle}
+                            plateStyle="none"
                         />
                     </Suspense>
                     <SceneOverlay
                         printerId={printerId}
+                        plateMenu={false}
                         mode={mode}
                         pan={pan}
                         onToggleMode={() => setMode((v) => (v === 'solid' ? 'lines' : 'solid'))}

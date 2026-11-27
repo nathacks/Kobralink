@@ -3,6 +3,7 @@ import {
     type BuildPlateStyle,
     buildVolumeFor,
     type GcodeFileDto,
+    isCalibrating,
     slotUsableForPrint,
 } from '@kobralink/shared';
 import { ArrowDownToDot, Box, ChevronDown, Crosshair, Ghost, Move, RotateCcw } from 'lucide-react';
@@ -56,6 +57,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
             p?.live && {
                 filename: p.live.filename,
                 printState: p.live.printState,
+                kobraState: p.live.kobraState,
                 currLayer: p.live.currLayer,
                 position: p.live.position,
                 printSlots: p.live.printSlots,
@@ -124,7 +126,8 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
     }, [printingThis, data]);
 
     const following = follow && printingThis;
-    const shown = following && live ? Math.max(1, Math.min(total, live.currLayer)) : layer;
+    const nozzle = following && live && !isCalibrating(live) ? live.position : null;
+    const shown = following && live ? Math.max(0, Math.min(total, live.currLayer)) : layer;
 
     return (
         <div className="grid gap-3 py-2">
@@ -139,7 +142,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 palette={palette}
                                 pan={pan}
                                 resetSignal={resetSignal}
-                                nozzle={following ? live?.position : null}
+                                nozzle={nozzle}
                                 showHead={showHead}
                                 toolhead={toolhead}
                                 plate={plate}
@@ -165,7 +168,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                             onTogglePan={() => setPan((v) => !v)}
                             onReset={() => setResetSignal((v) => v + 1)}
                             head={
-                                following && live?.position
+                                nozzle
                                     ? {
                                           shown: showHead,
                                           onToggle: () => setShowHead((v) => !v),
@@ -229,6 +232,7 @@ export function SceneOverlay({
     onTogglePan,
     onReset,
     head,
+    plateMenu = true,
 }: {
     printerId: string;
     mode: SceneMode;
@@ -238,66 +242,69 @@ export function SceneOverlay({
     onTogglePan: () => void;
     onReset: () => void;
     head?: { shown: boolean; onToggle: () => void; devModel?: { name: string; onSwitch: () => void } };
+    plateMenu?: boolean;
 }) {
     return (
-        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-            <PlateMenu printerId={printerId} />
-            <div className="flex min-w-0 flex-col items-end gap-2 [&>button]:pointer-events-auto">
-                <span className="rounded-2xl bg-background/70 px-2.5 py-1 text-right text-[11px] text-muted-foreground backdrop-blur-xs">
-                    {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
-                </span>
-                <OverlayButton label={m.preview_reset_view()} onClick={onReset}>
-                    <RotateCcw />
-                </OverlayButton>
-                <OverlayButton
-                    label={m.preview_pan()}
-                    variant={pan ? 'default' : 'secondary'}
-                    aria-pressed={pan}
-                    onClick={onTogglePan}
-                >
-                    <Move />
-                </OverlayButton>
-                <OverlayButton
-                    label={m.preview_solid()}
-                    variant={mode !== 'lines' ? 'default' : 'secondary'}
-                    aria-pressed={mode !== 'lines'}
-                    onClick={onToggleMode}
-                >
-                    <Box />
-                </OverlayButton>
-                {onToggleGhost && (
-                    <OverlayButton
-                        label={m.preview_ghost()}
-                        variant={mode === 'ghost' ? 'default' : 'secondary'}
-                        aria-pressed={mode === 'ghost'}
-                        onClick={onToggleGhost}
-                    >
-                        <Ghost />
+        <>
+            <span className="pointer-events-none absolute inset-x-3 bottom-3 mx-auto w-fit max-w-[calc(100%-1.5rem)] rounded-full bg-background/70 px-3 py-1 text-center text-[11px] text-muted-foreground backdrop-blur-xs">
+                {pan ? m.preview_pan_hint() : m.preview_orbit_hint()}
+            </span>
+            <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+                {plateMenu && <PlateMenu printerId={printerId} />}
+                <div className="ml-auto flex min-w-0 flex-col items-end gap-2 [&>button]:pointer-events-auto">
+                    <OverlayButton label={m.preview_reset_view()} onClick={onReset}>
+                        <RotateCcw />
                     </OverlayButton>
-                )}
-                {head && (
                     <OverlayButton
-                        label={m.preview_toolhead()}
-                        variant={head.shown ? 'default' : 'secondary'}
-                        aria-pressed={head.shown}
-                        onClick={head.onToggle}
+                        label={m.preview_pan()}
+                        variant={pan ? 'default' : 'secondary'}
+                        aria-pressed={pan}
+                        onClick={onTogglePan}
                     >
-                        <ArrowDownToDot />
+                        <Move />
                     </OverlayButton>
-                )}
-                {head?.devModel && (
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full shadow"
-                        onClick={head.devModel.onSwitch}
+                    <OverlayButton
+                        label={m.preview_solid()}
+                        variant={mode !== 'lines' ? 'default' : 'secondary'}
+                        aria-pressed={mode !== 'lines'}
+                        onClick={onToggleMode}
                     >
-                        {head.devModel.name}
-                    </Button>
-                )}
+                        <Box />
+                    </OverlayButton>
+                    {onToggleGhost && (
+                        <OverlayButton
+                            label={m.preview_ghost()}
+                            variant={mode === 'ghost' ? 'default' : 'secondary'}
+                            aria-pressed={mode === 'ghost'}
+                            onClick={onToggleGhost}
+                        >
+                            <Ghost />
+                        </OverlayButton>
+                    )}
+                    {head && (
+                        <OverlayButton
+                            label={m.preview_toolhead()}
+                            variant={head.shown ? 'default' : 'secondary'}
+                            aria-pressed={head.shown}
+                            onClick={head.onToggle}
+                        >
+                            <ArrowDownToDot />
+                        </OverlayButton>
+                    )}
+                    {head?.devModel && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="rounded-full shadow"
+                            onClick={head.devModel.onSwitch}
+                        >
+                            {head.devModel.name}
+                        </Button>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 

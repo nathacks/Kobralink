@@ -28,6 +28,7 @@ import {
     TriangleAlert,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { DialogFooterPortal } from '@/components/dialogs/confirmation-dialog';
 import { DateTimePicker, defaultStart } from '@/components/form/date-time-picker';
 import { SlotForm } from '@/components/printer/ams/slot-form';
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
@@ -52,6 +53,7 @@ import { cn } from '@/lib/utils';
 import { confirmationDialogStore } from '@/stores/confirmation-dialog';
 import { printersStore } from '@/stores/printers';
 import { EXTERNAL_SLOT } from '../ams/external-spool-form';
+import { SpoolArt, slotFraction } from '../ams/spool-art';
 
 export function queueTargetFor(choice: string, printerId: string): QueueTarget {
     if (choice === 'any') return { printerId: null, targetTags: [] };
@@ -114,14 +116,11 @@ function slotLabel(slot: AmsSlot, info: SlotFilamentInfo | undefined): string {
     return `${m.print_ready_slot({ n: slot.globalIndex + 1 })} · ${name}`;
 }
 
-function Chip({ color, children, className }: { color: string; children: ReactNode; className?: string }) {
+function Chip({ color, children }: { color: string; children: ReactNode }) {
     const rgb = hexToRgb(color);
     return (
         <span
-            className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
-                className,
-            )}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
             style={{ background: rgbCss(rgb), color: textOn(rgb) }}
         >
             {children}
@@ -285,142 +284,162 @@ export function PrintReadyForm({
         );
     }
 
+    const assigned = new Set(
+        usable.length ? channels.filter((ch) => ch.isUsed).map((ch) => assignments[ch.paintIndex]) : [],
+    );
+    const boxIds = [...new Set(allSlots.map((s) => s.boxId))];
+
     return (
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 py-2 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <div className="grid content-start gap-3">
-                <PrintPreview3D printerId={printerId} file={file} tint={tint} className="h-72 md:h-[26rem]" />
-                <div className="min-w-0 space-y-1.5 px-1">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 py-2 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <div className="grid content-start gap-4">
+                <PrintPreview3D
+                    printerId={printerId}
+                    file={file}
+                    tint={tint}
+                    className="h-72 rounded-3xl md:h-[26rem]"
+                />
+                <div className="min-w-0 space-y-2.5 px-1">
                     <div className="flex items-center gap-2">
-                        <span className="truncate font-medium" title={file.filename}>
+                        <span className="truncate text-lg font-medium leading-tight" title={file.filename}>
                             {name}
                         </span>
-                        {plate !== null && (
-                            <span className="shrink-0 text-sm text-muted-foreground">
-                                {m.files_plate({ n: plate })}
-                            </span>
-                        )}
+                        {plate !== null && <Pill>{m.files_plate({ n: plate })}</Pill>}
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-2">
                         {file.estPrintTimeSec > 0 && (
-                            <span className="inline-flex items-center gap-1.5">
-                                <Clock className="size-4" /> {formatDuration(file.estPrintTimeSec)}
-                            </span>
+                            <Pill>
+                                <Clock /> {formatDuration(file.estPrintTimeSec)}
+                            </Pill>
                         )}
                         {file.layerHeight > 0 && (
-                            <span className="inline-flex items-center gap-1.5">
-                                <Layers className="size-4" /> {file.layerHeight} mm
-                            </span>
+                            <Pill>
+                                <Layers /> {file.layerHeight} mm
+                            </Pill>
                         )}
                         {channels.map((ch) => (
-                            <span key={ch.paintIndex} className="inline-flex items-center gap-1.5">
+                            <Pill key={ch.paintIndex}>
                                 <span className="size-3 rounded-full" style={{ background: ch.colorHex }} />
                                 {ch.material || '?'}
-                            </span>
+                            </Pill>
                         ))}
                     </div>
                 </div>
                 <CostEstimateCard estimate={estimate} currency={cost.currency} />
             </div>
 
-            <div className="grid min-w-0 content-start gap-4">
+            <div className="grid min-w-0 content-start gap-5">
                 {allSlots.length > 0 && (
-                    <div className="grid gap-2">
-                        <div className="text-sm font-medium text-muted-foreground">{m.print_ready_slots()}</div>
-                        <div className="flex flex-wrap gap-2">
-                            {allSlots.map((s) => {
-                                const empty = s.status !== 5 && !s.type;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={s.globalIndex}
-                                        disabled={!state.connected}
-                                        onClick={() => setEditing(s)}
-                                        title={empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })}
-                                        className={cn(
-                                            'flex size-9 items-center justify-center rounded-full text-xs font-semibold transition-transform enabled:hover:scale-105 disabled:opacity-60',
-                                            empty &&
-                                                'border border-dashed border-muted-foreground/40 text-muted-foreground',
-                                        )}
-                                        style={
-                                            empty ? undefined : { background: rgbCss(s.color), color: textOn(s.color) }
-                                        }
-                                    >
-                                        {s.globalIndex + 1}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <Section title={m.print_ready_slots()}>
+                        {boxIds.map((boxId) => (
+                            <div key={boxId} className="grid gap-1.5">
+                                {boxIds.length > 1 && (
+                                    <span className="px-1 text-xs font-medium text-muted-foreground">
+                                        {boxId >= 0 ? m.ace_unit({ n: boxId + 1 }) : m.ams_toolhead()}
+                                    </span>
+                                )}
+                                <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2">
+                                    {allSlots
+                                        .filter((s) => s.boxId === boxId)
+                                        .map((s) => {
+                                            const empty = s.status !== 5 && !s.type;
+                                            const spool = spoolOf(String(s.globalIndex));
+                                            const fraction = slotFraction(spool.fraction, s.remainingPct);
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={s.globalIndex}
+                                                    disabled={!state.connected}
+                                                    onClick={() => setEditing(s)}
+                                                    title={
+                                                        empty ? m.ams_slot_empty() : m.ams_slot_edit({ type: s.type })
+                                                    }
+                                                    className={cn(
+                                                        'flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-secondary/60 px-1.5 pt-2 pb-1.5 outline-none transition-colors enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+                                                        assigned.has(s.globalIndex) && 'ring-2 ring-primary',
+                                                    )}
+                                                >
+                                                    <SpoolArt
+                                                        color={empty ? undefined : rgbCss(s.color)}
+                                                        fraction={fraction ?? 1}
+                                                        className="size-10"
+                                                    />
+                                                    <span className="flex w-full min-w-0 items-baseline justify-center gap-1 text-xs">
+                                                        <span className="truncate font-medium">
+                                                            {empty ? m.ams_empty() : s.type || '?'}
+                                                        </span>
+                                                        <span className="shrink-0 text-muted-foreground">
+                                                            {s.globalIndex + 1}
+                                                        </span>
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+                        ))}
+                    </Section>
                 )}
 
                 {channels.length > 0 && (
-                    <div className="grid gap-2">
-                        <div className="text-sm font-medium text-muted-foreground">{m.print_ready_channels()}</div>
+                    <Section title={m.print_ready_channels()}>
                         {usable.length === 0 ? (
                             <p className="rounded-2xl bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
                                 {m.print_ready_no_slots()}
                             </p>
                         ) : (
-                            <div className="grid gap-2">
-                                {channels.map((ch) => {
-                                    const options = compatibleSlots(ch, usable);
-                                    const current = assignments[ch.paintIndex] ?? -1;
-                                    const chosen = usable.find((s) => s.globalIndex === current);
-                                    return (
-                                        <div
-                                            key={ch.paintIndex}
-                                            className={cn(
-                                                'flex items-center gap-3 rounded-2xl bg-secondary/60 px-3 py-2',
-                                                !ch.isUsed && 'opacity-60',
-                                            )}
-                                        >
-                                            <Chip color={ch.colorHex}>{ch.paintIndex + 1}</Chip>
-                                            <div className="w-16 shrink-0">
-                                                <div className="truncate text-sm">{ch.material || '?'}</div>
-                                                <div className="text-[10px] uppercase text-muted-foreground">
-                                                    {ch.isUsed ? m.print_ready_used() : m.print_ready_unused()}
-                                                </div>
+                            channels.map((ch) => {
+                                const options = compatibleSlots(ch, usable);
+                                const current = assignments[ch.paintIndex] ?? -1;
+                                return (
+                                    <div
+                                        key={ch.paintIndex}
+                                        className={cn(
+                                            'flex items-center gap-3 rounded-2xl bg-secondary/60 p-2 pl-3',
+                                            !ch.isUsed && 'opacity-60',
+                                        )}
+                                    >
+                                        <Chip color={ch.colorHex}>{ch.paintIndex + 1}</Chip>
+                                        <div className="w-16 shrink-0">
+                                            <div className="truncate text-sm font-medium">{ch.material || '?'}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {ch.isUsed ? m.print_ready_used() : m.print_ready_unused()}
                                             </div>
-                                            <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-                                            {chosen ? (
-                                                <Chip color={rgbToHex(chosen.color)}>{chosen.globalIndex + 1}</Chip>
-                                            ) : (
-                                                <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-xs text-muted-foreground">
-                                                    ?
-                                                </span>
-                                            )}
-                                            <Select
-                                                value={String(current)}
-                                                disabled={!options.length}
-                                                onValueChange={(v) =>
-                                                    setAssignments((cur) => ({ ...cur, [ch.paintIndex]: Number(v) }))
-                                                }
-                                            >
-                                                <SelectTrigger className="w-0 min-w-0 flex-1">
-                                                    <SelectValue placeholder={m.print_ready_no_match()} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {options.map((s) => (
-                                                        <SelectItem key={s.globalIndex} value={String(s.globalIndex)}>
+                                        </div>
+                                        <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                                        <Select
+                                            value={String(current)}
+                                            disabled={!options.length}
+                                            onValueChange={(v) =>
+                                                setAssignments((cur) => ({ ...cur, [ch.paintIndex]: Number(v) }))
+                                            }
+                                        >
+                                            <SelectTrigger className="h-10 w-0 min-w-0 flex-1 rounded-full border-0 bg-background pl-2 dark:bg-background">
+                                                <SelectValue placeholder={m.print_ready_no_match()} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {options.map((s) => (
+                                                    <SelectItem key={s.globalIndex} value={String(s.globalIndex)}>
+                                                        <SpoolArt color={rgbCss(s.color)} className="size-6" />
+                                                        <span className="truncate">
                                                             {slotLabel(
                                                                 s,
                                                                 slotInfos.data?.find(
                                                                     (i) => i.slotIndex === s.globalIndex,
                                                                 ),
                                                             )}
-                                                        </SelectItem>
-                                                    ))}
-                                                    {!options.length && (
-                                                        <SelectItem value="-1" disabled>
-                                                            {m.print_ready_no_match()}
-                                                        </SelectItem>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                                        </span>
+                                                    </SelectItem>
+                                                ))}
+                                                {!options.length && (
+                                                    <SelectItem value="-1" disabled>
+                                                        {m.print_ready_no_match()}
+                                                    </SelectItem>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                );
+                            })
                         )}
                         {blocked && (
                             <div className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -438,7 +457,7 @@ export function PrintReadyForm({
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </Section>
                 )}
 
                 {checks.some((c) => c.needG !== null) && (
@@ -477,8 +496,7 @@ export function PrintReadyForm({
                     </div>
                 )}
 
-                <div className="grid gap-2">
-                    <div className="text-sm font-medium text-muted-foreground">{m.print_ready_options()}</div>
+                <Section title={m.print_ready_options()}>
                     <div className="divide-y divide-border/60 overflow-hidden rounded-2xl bg-secondary/60">
                         {supportsPrintOption(state.features, 'autoLeveling') && (
                             <OptionRow
@@ -527,7 +545,7 @@ export function PrintReadyForm({
                             onChange={setFailureDetection}
                         />
                     </div>
-                </div>
+                </Section>
             </div>
 
             {onSchedule && scheduling && startAt && (
@@ -536,87 +554,106 @@ export function PrintReadyForm({
                 </div>
             )}
 
-            <DialogFooter className="gap-2 sm:justify-between md:col-span-2">
-                <Button type="button" variant="ghost" className="rounded-full" onClick={close}>
-                    {m.upload_ready_later()}
-                </Button>
-                <div className="flex flex-wrap items-center gap-2">
-                    {onSchedule && (
+            <DialogFooterPortal>
+                <DialogFooter className="gap-2 sm:justify-between">
+                    <Button type="button" variant="ghost" className="rounded-full" onClick={close}>
+                        {m.upload_ready_later()}
+                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {onSchedule && (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className={cn('rounded-full', scheduling && 'bg-primary/15')}
+                                disabled={pending || blocked || shortBlocked || (names.length > 0 && remaining <= 0)}
+                                onClick={async () => {
+                                    if (!scheduling) {
+                                        setStartAt(defaultStart(new Date()));
+                                        setScheduling(true);
+                                        return;
+                                    }
+                                    if (!startAt || startAt.getTime() <= Date.now()) return;
+                                    setPending(true);
+                                    try {
+                                        await onSchedule(submit(), startAt.toISOString());
+                                        close();
+                                    } finally {
+                                        setPending(false);
+                                    }
+                                }}
+                            >
+                                <CalendarClock /> {scheduling ? m.schedule_confirm() : m.schedule_button()}
+                            </Button>
+                        )}
+                        {onQueue && (
+                            <div className="flex items-center gap-1">
+                                <Select value={queueChoice} onValueChange={setQueueChoice}>
+                                    <SelectTrigger className="w-44 rounded-full" aria-label={m.queue_target_label()}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="this">{m.queue_target_this()}</SelectItem>
+                                        <SelectItem value="any">{m.queue_target_any()}</SelectItem>
+                                        {(settings?.profile.tags ?? []).map((tag) => (
+                                            <SelectItem key={tag} value={`tag:${tag}`}>
+                                                {m.queue_target_tag({ tag })}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="rounded-full"
+                                    disabled={shortBlocked}
+                                    onClick={() => {
+                                        close();
+                                        onQueue(submit(), queueTargetFor(queueChoice, printerId));
+                                    }}
+                                >
+                                    <ListPlus /> {m.queue_add()}
+                                </Button>
+                            </div>
+                        )}
                         <Button
                             type="button"
-                            variant="secondary"
-                            className={cn('rounded-full', scheduling && 'bg-primary/15')}
-                            disabled={pending || blocked || shortBlocked || (names.length > 0 && remaining <= 0)}
+                            className="rounded-full px-5"
+                            disabled={
+                                pending || !canPrint || blocked || shortBlocked || (names.length > 0 && remaining <= 0)
+                            }
                             onClick={async () => {
-                                if (!scheduling) {
-                                    setStartAt(defaultStart(new Date()));
-                                    setScheduling(true);
-                                    return;
-                                }
-                                if (!startAt || startAt.getTime() <= Date.now()) return;
                                 setPending(true);
                                 try {
-                                    await onSchedule(submit(), startAt.toISOString());
+                                    await onPrint(submit());
                                     close();
                                 } finally {
                                     setPending(false);
                                 }
                             }}
                         >
-                            <CalendarClock /> {scheduling ? m.schedule_confirm() : m.schedule_button()}
+                            <Play /> {m.common_print()}
                         </Button>
-                    )}
-                    {onQueue && (
-                        <div className="flex items-center gap-1">
-                            <Select value={queueChoice} onValueChange={setQueueChoice}>
-                                <SelectTrigger className="w-44 rounded-full" aria-label={m.queue_target_label()}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="this">{m.queue_target_this()}</SelectItem>
-                                    <SelectItem value="any">{m.queue_target_any()}</SelectItem>
-                                    {(settings?.profile.tags ?? []).map((tag) => (
-                                        <SelectItem key={tag} value={`tag:${tag}`}>
-                                            {m.queue_target_tag({ tag })}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                className="rounded-full"
-                                disabled={shortBlocked}
-                                onClick={() => {
-                                    close();
-                                    onQueue(submit(), queueTargetFor(queueChoice, printerId));
-                                }}
-                            >
-                                <ListPlus /> {m.queue_add()}
-                            </Button>
-                        </div>
-                    )}
-                    <Button
-                        type="button"
-                        className="rounded-full px-5"
-                        disabled={
-                            pending || !canPrint || blocked || shortBlocked || (names.length > 0 && remaining <= 0)
-                        }
-                        onClick={async () => {
-                            setPending(true);
-                            try {
-                                await onPrint(submit());
-                                close();
-                            } finally {
-                                setPending(false);
-                            }
-                        }}
-                    >
-                        <Play /> {m.common_print()}
-                    </Button>
-                </div>
-            </DialogFooter>
+                    </div>
+                </DialogFooter>
+            </DialogFooterPortal>
         </div>
+    );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <section className="grid gap-2">
+            <h3 className="px-1 text-sm font-medium text-muted-foreground">{title}</h3>
+            {children}
+        </section>
+    );
+}
+
+function Pill({ children }: { children: ReactNode }) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground [&_svg]:size-3.5">
+            {children}
+        </span>
     );
 }
 
@@ -637,7 +674,9 @@ function OptionRow({
 }) {
     return (
         <div className="flex items-center gap-3 px-4 py-3">
-            <span className="text-muted-foreground [&_svg]:size-4">{icon}</span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-muted-foreground [&_svg]:size-4">
+                {icon}
+            </span>
             <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer flex-col items-start gap-0.5 font-normal">
                 <span className="text-sm">{label}</span>
                 <span className="text-xs text-muted-foreground">{hint}</span>
@@ -682,9 +721,7 @@ export function FilamentChecks({
                         key={c.slotKey}
                         className="flex items-center gap-3 rounded-2xl bg-secondary/60 px-3 py-2 text-sm"
                     >
-                        <Chip color={c.colorHex} className="size-6">
-                            {external ? '' : Number(c.slotKey) + 1}
-                        </Chip>
+                        <SpoolArt color={c.colorHex} className="size-7" />
                         <span className="min-w-0 flex-1">
                             <span className="font-medium">
                                 {external
