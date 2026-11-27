@@ -1,4 +1,5 @@
 name: Release
+run-name: "[Release] ${{ github.ref_name }}"
 
 on:
   push:
@@ -166,7 +167,7 @@ jobs:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           V="${VERSION#v}"
-          PREV="$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || true)"
+          PREV="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${VERSION}^" 2>/dev/null || true)"
           RANGE="${VERSION}"
           [ -z "$PREV" ] || RANGE="${PREV}..${VERSION}"
           CHANGES="$(git log "$RANGE" --no-merges --invert-grep --grep='^\[Release\]' --pretty='- %s ([%h](${REPO_URL}/commit/%H))')"

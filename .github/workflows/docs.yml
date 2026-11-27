@@ -1,4 +1,5 @@
 name: Docs
+run-name: "[Release Docs] ${{ github.ref_name }}"
 
 on:
   push:
