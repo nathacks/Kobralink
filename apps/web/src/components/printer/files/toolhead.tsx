@@ -17,15 +17,6 @@ const TOOLHEAD_BY_MODE_ID: Record<string, ToolheadModel> = {
     '20029': 'kobra-s1-max',
 };
 
-export const TOOLHEAD_WIDTH_MM: Record<ToolheadModel, number> = {
-    'kobra-x': 48,
-    'kobra-4': 73,
-    'kobra-3': 60,
-    'kobra-3-max': 54,
-    'kobra-s1': 46,
-    'kobra-s1-max': 48,
-};
-
 export const TOOLHEAD_NAME: Record<ToolheadModel, string> = {
     'kobra-x': 'Kobra X',
     'kobra-4': 'Kobra 4',

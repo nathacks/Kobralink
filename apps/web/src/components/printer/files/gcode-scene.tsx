@@ -31,7 +31,7 @@ import {
 import { fitCamera } from '@/lib/scene-fit';
 import type { ToolheadFeed } from '@/lib/toolhead-feed';
 import { BuildPlate } from './build-plate';
-import { TOOLHEAD_WIDTH_MM, Toolhead, type ToolheadModel } from './toolhead';
+import { Toolhead, type ToolheadModel } from './toolhead';
 
 export type SceneMode = 'lines' | 'solid' | 'ghost';
 
@@ -48,8 +48,8 @@ function visibleTint(tint: string | undefined): string | undefined {
 
 const STRIDE = 6;
 const GHOST_OPACITY = 0.15;
-const HEAD_TO_PART = 0.2;
 const NO_PALETTE: string[] = [];
+const HEAD_SCALE = 0.5;
 const FILAMENT_AREA = Math.PI * 0.875 ** 2;
 const local = new Matrix4();
 const work = new Matrix4();
@@ -303,7 +303,6 @@ function Nozzle({
     data,
     position,
     model,
-    scale,
     feed,
     layer,
     visible,
@@ -312,7 +311,6 @@ function Nozzle({
     data: ParsedGcode;
     position: ToolheadPosition;
     model: ToolheadModel;
-    scale: number;
     feed: ToolheadFeed;
     layer: number;
     visible: boolean;
@@ -371,7 +369,7 @@ function Nozzle({
     });
 
     return (
-        <group ref={ref} scale={scale} visible={visible}>
+        <group ref={ref} scale={HEAD_SCALE} visible={visible}>
             <Toolhead model={model} feed={feed} />
         </group>
     );
@@ -449,7 +447,6 @@ export function GcodeScene({
     const progress = useRef<Progress | null>(null);
     const shownTint = visibleTint(tint);
     const span = Math.max(1, data.maxX - data.minX, data.maxY - data.minY);
-    const headScale = Math.min(0.4, Math.max(0.08, (span * HEAD_TO_PART) / TOOLHEAD_WIDTH_MM[toolhead]));
     const height = data.layers.length ? data.layers[data.layers.length - 1].z : 1;
     const bed = Math.max(Math.ceil((span * 1.6) / 10) * 10, 40);
     const size = useMemo(
@@ -511,7 +508,6 @@ export function GcodeScene({
                     data={data}
                     position={nozzle}
                     model={toolhead}
-                    scale={headScale}
                     feed={feed}
                     layer={shown - 1}
                     visible={showHead}
