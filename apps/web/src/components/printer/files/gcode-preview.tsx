@@ -5,7 +5,7 @@ import {
     type GcodeFileDto,
     slotUsableForPrint,
 } from '@kobralink/shared';
-import { ArrowDownToDot, Box, ChevronDown, Crosshair, Move, RotateCcw } from 'lucide-react';
+import { ArrowDownToDot, Box, ChevronDown, Crosshair, Ghost, Move, RotateCcw } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
@@ -139,7 +139,8 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 palette={palette}
                                 pan={pan}
                                 resetSignal={resetSignal}
-                                nozzle={following && showHead ? live?.position : null}
+                                nozzle={following ? live?.position : null}
+                                showHead={showHead}
                                 toolhead={toolhead}
                                 plate={plate}
                                 plateStyle={plateStyle}
@@ -159,7 +160,8 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                             printerId={printerId}
                             mode={mode}
                             pan={pan}
-                            onToggleMode={() => setMode((v) => (v === 'solid' ? 'lines' : 'solid'))}
+                            onToggleMode={() => setMode((v) => (v === 'lines' ? 'solid' : 'lines'))}
+                            onToggleGhost={() => setMode((v) => (v === 'ghost' ? 'solid' : 'ghost'))}
                             onTogglePan={() => setPan((v) => !v)}
                             onReset={() => setResetSignal((v) => v + 1)}
                             head={
@@ -223,6 +225,7 @@ export function SceneOverlay({
     mode,
     pan,
     onToggleMode,
+    onToggleGhost,
     onTogglePan,
     onReset,
     head,
@@ -231,6 +234,7 @@ export function SceneOverlay({
     mode: SceneMode;
     pan: boolean;
     onToggleMode: () => void;
+    onToggleGhost?: () => void;
     onTogglePan: () => void;
     onReset: () => void;
     head?: { shown: boolean; onToggle: () => void; devModel?: { name: string; onSwitch: () => void } };
@@ -255,12 +259,22 @@ export function SceneOverlay({
                 </OverlayButton>
                 <OverlayButton
                     label={m.preview_solid()}
-                    variant={mode === 'solid' ? 'default' : 'secondary'}
-                    aria-pressed={mode === 'solid'}
+                    variant={mode !== 'lines' ? 'default' : 'secondary'}
+                    aria-pressed={mode !== 'lines'}
                     onClick={onToggleMode}
                 >
                     <Box />
                 </OverlayButton>
+                {onToggleGhost && (
+                    <OverlayButton
+                        label={m.preview_ghost()}
+                        variant={mode === 'ghost' ? 'default' : 'secondary'}
+                        aria-pressed={mode === 'ghost'}
+                        onClick={onToggleGhost}
+                    >
+                        <Ghost />
+                    </OverlayButton>
+                )}
                 {head && (
                     <OverlayButton
                         label={m.preview_toolhead()}

@@ -65,3 +65,35 @@ describe('SceneOverlay plate menu', () => {
         await waitFor(() => expect(plateOf('p1')).toBe('anycubic'));
     });
 });
+
+describe('SceneOverlay ghost mode', () => {
+    const overlay = (mode: 'solid' | 'ghost', onToggleGhost?: () => void) =>
+        render(
+            <SceneOverlay
+                printerId="p1"
+                mode={mode}
+                pan={false}
+                onToggleMode={() => {}}
+                onToggleGhost={onToggleGhost}
+                onTogglePan={() => {}}
+                onReset={() => {}}
+            />,
+        );
+
+    beforeEach(() => printersStore.actions.upsertPrinter(printer));
+
+    it('offers the see-through finished part only where the scene supports it', async () => {
+        overlay('solid');
+        expect(screen.queryByRole('button', { name: m.preview_ghost() })).toBeNull();
+    });
+
+    it('toggles the see-through finished part and shows it pressed', async () => {
+        const toggle = vi.fn();
+        overlay('ghost', toggle);
+        const button = screen.getByRole('button', { name: m.preview_ghost() });
+        expect(button.getAttribute('aria-pressed')).toBe('true');
+        expect(screen.getByRole('button', { name: m.preview_solid() }).getAttribute('aria-pressed')).toBe('true');
+        await userEvent.click(button);
+        expect(toggle).toHaveBeenCalledOnce();
+    });
+});

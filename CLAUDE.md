@@ -6,7 +6,10 @@ Kobralink = bridge Moonraker pour Anycubic Kobra X (TypeScript).
 La Kobra X n'expose que ce que son MQTT propose : pas de M220/M221 réels,
 `print_speed_mode` 1–4 seulement. Position réelle via `axis/query` → `axis/report` `data.{x,y,z}` (mm) : le bridge
 l'interroge chaque seconde pendant l'impression (`POSITION_POLL_MS`) → `LiveState.position` (null hors impression, Z estimé
-depuis les couches à défaut) ; l'aperçu 3D en suivi anime la buse le long du gcode entre deux mesures (`lib/nozzle-path.ts`).
+depuis les couches à défaut) ; l'aperçu 3D en suivi anime la buse le long du gcode entre deux mesures et ne dessine la pièce que jusqu'au point sous la buse
+(`track` dans `lib/nozzle-path.ts` : abscisse curviligne le long du parcours, candidat le plus probable selon XY + position attendue
+(vitesse médiane), Z corrigé d'un décalage appris, z-hop ignoré, saut de couche / retour arrière / saut improbable confirmés par une
+2e mesure, resynchro sur `currLayer` après 5 ratés).
 Modèles : Kobra X et Kobra 4 testés ; Kobra 3/3 V2/3 Max/S1/S1 Max acceptés mais non testés (même protocole). Pas de `if modeId`
 dispersés : caractéristiques dans `printer-specs.ts`, volume = `buildVolumeFor(modeId, profile.buildVolumeMm)` (profil > fiche).
 `apps/api/dev/probe-printer.ts` = capture en lecture seule pour un nouveau modèle (aussi dans l'image Docker) ;
