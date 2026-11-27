@@ -10,7 +10,7 @@ import { type ComponentProps, lazy, Suspense, useEffect, useMemo, useRef, useSta
 import { CostEstimateCard } from '@/components/printer/files/cost-estimate';
 import type { SceneMode } from '@/components/printer/files/gcode-scene';
 import { defaultAssignments } from '@/components/printer/files/print-ready-form';
-import { TOOLHEAD_NAME, type ToolheadModel, toolheadFor } from '@/components/printer/files/toolhead';
+import { TOOLHEAD_MODELS, TOOLHEAD_NAME, type ToolheadModel, toolheadFor } from '@/components/printer/files/toolhead';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -171,7 +171,12 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                               ? {
                                                     name: TOOLHEAD_NAME[toolhead],
                                                     onSwitch: () =>
-                                                        setDevToolhead(toolhead === 'kobra-x' ? 'kobra-4' : 'kobra-x'),
+                                                        setDevToolhead(
+                                                            TOOLHEAD_MODELS[
+                                                                (TOOLHEAD_MODELS.indexOf(toolhead) + 1) %
+                                                                    TOOLHEAD_MODELS.length
+                                                            ],
+                                                        ),
                                                 }
                                               : undefined,
                                       }

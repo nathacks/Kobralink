@@ -1,19 +1,39 @@
 import { RoundedBox } from '@react-three/drei/core/RoundedBox';
 import { useFrame } from '@react-three/fiber';
 import { type ReactNode, useEffect, useMemo, useRef } from 'react';
-import { BackSide, CanvasTexture, DataTexture, type Group, Shape, SRGBColorSpace } from 'three';
+import { BackSide, CanvasTexture, DataTexture, ExtrudeGeometry, type Group, Shape, SRGBColorSpace } from 'three';
 import type { ToolheadFeed } from '@/lib/toolhead-feed';
 
-export type ToolheadModel = 'kobra-x' | 'kobra-4';
+export type ToolheadModel = 'kobra-x' | 'kobra-4' | 'kobra-3' | 'kobra-3-max' | 'kobra-s1';
 
-const KOBRA_X_MODE_ID = '20030';
+const TOOLHEAD_BY_MODE_ID: Record<string, ToolheadModel> = {
+    '20030': 'kobra-x',
+    '20024': 'kobra-3',
+    '20027': 'kobra-3',
+    '20025': 'kobra-s1',
+    '20026': 'kobra-3-max',
+};
 
-export const TOOLHEAD_WIDTH_MM: Record<ToolheadModel, number> = { 'kobra-x': 48, 'kobra-4': 73 };
+export const TOOLHEAD_WIDTH_MM: Record<ToolheadModel, number> = {
+    'kobra-x': 48,
+    'kobra-4': 73,
+    'kobra-3': 60,
+    'kobra-3-max': 54,
+    'kobra-s1': 56,
+};
 
-export const TOOLHEAD_NAME: Record<ToolheadModel, string> = { 'kobra-x': 'Kobra X', 'kobra-4': 'Kobra 4' };
+export const TOOLHEAD_NAME: Record<ToolheadModel, string> = {
+    'kobra-x': 'Kobra X',
+    'kobra-4': 'Kobra 4',
+    'kobra-3': 'Kobra 3',
+    'kobra-3-max': 'Kobra 3 Max',
+    'kobra-s1': 'Kobra S1',
+};
+
+export const TOOLHEAD_MODELS = Object.keys(TOOLHEAD_NAME) as ToolheadModel[];
 
 export function toolheadFor(modeId: string | undefined): ToolheadModel {
-    return modeId === KOBRA_X_MODE_ID ? 'kobra-x' : 'kobra-4';
+    return (modeId && TOOLHEAD_BY_MODE_ID[modeId]) || 'kobra-4';
 }
 
 const SHELL = { color: '#e9ebed', roughness: 0.5, metalness: 0.02 };
@@ -85,6 +105,7 @@ function Label({
     rotation,
     weight = 700,
     italic = false,
+    glow = false,
 }: {
     text: string;
     color: string;
@@ -93,6 +114,7 @@ function Label({
     rotation?: Vec3;
     weight?: number;
     italic?: boolean;
+    glow?: boolean;
 }) {
     const { texture, aspect } = useMemo(() => {
         const px = 96;
@@ -116,7 +138,14 @@ function Label({
     return (
         <mesh position={position} rotation={rotation}>
             <planeGeometry args={[height * aspect, height]} />
-            <meshStandardMaterial map={texture} transparent depthWrite={false} roughness={0.6} {...decal(2)} />
+            <meshStandardMaterial
+                map={texture}
+                transparent
+                depthWrite={false}
+                roughness={0.6}
+                {...(glow ? { emissiveMap: texture, emissive: '#ffffff', emissiveIntensity: 1.2 } : {})}
+                {...decal(2)}
+            />
         </mesh>
     );
 }
@@ -329,7 +358,7 @@ function KobraX({ feed }: { feed: ToolheadFeed }) {
     );
 }
 
-function BlowerFan({ position, speed }: { position: Vec3; speed: number }) {
+function BlowerFan({ position, speed, shell = SHELL }: { position: Vec3; speed: number; shell?: typeof SHELL }) {
     const depth = 7;
     const outer = 32;
     const inner = 23;
@@ -337,15 +366,15 @@ function BlowerFan({ position, speed }: { position: Vec3; speed: number }) {
         <group position={position}>
             <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, depth / 2]}>
                 <cylinderGeometry args={[outer, outer, depth, 64, 1, true]} />
-                <meshStandardMaterial {...SHELL} />
+                <meshStandardMaterial {...shell} />
             </mesh>
             <mesh position={[0, 0, depth]}>
                 <ringGeometry args={[inner, outer, 64]} />
-                <meshStandardMaterial {...SHELL} />
+                <meshStandardMaterial {...shell} />
             </mesh>
             <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, depth - 1.5]}>
                 <cylinderGeometry args={[inner, inner, 3, 64, 1, true]} />
-                <meshStandardMaterial color="#cfd2d5" side={BackSide} />
+                <meshStandardMaterial color={shell === SHELL ? '#cfd2d5' : '#3a3c40'} side={BackSide} />
             </mesh>
             <mesh position={[0, 0, depth - 3]}>
                 <circleGeometry args={[inner, 64]} />
@@ -513,6 +542,385 @@ function Kobra4({ feed }: { feed: ToolheadFeed }) {
     );
 }
 
+const GUNMETAL = { color: '#3e4146', roughness: 0.5, metalness: 0.25 };
+const SILVER = { color: '#a9adb3', roughness: 0.35, metalness: 0.55 };
+const TINTED = {
+    color: '#262a31',
+    roughness: 0.05,
+    metalness: 0.1,
+    clearcoat: 1,
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false,
+};
+
+type Vec2 = [number, number];
+
+function hexagon(r: number): Shape {
+    const s = new Shape();
+    for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 2 - (i * Math.PI) / 3;
+        if (i === 0) s.moveTo(r * Math.cos(a), r * Math.sin(a));
+        else s.lineTo(r * Math.cos(a), r * Math.sin(a));
+    }
+    s.closePath();
+    return s;
+}
+
+function faceSlots(origin: Vec2, along: Vec2, across: Vec2, count: number, key: string) {
+    const len = Math.hypot(...along) * 0.8;
+    const angle = Math.atan2(along[1], along[0]);
+    return Array.from({ length: count }, (_, i) => {
+        const t = (i + 0.75) / (count + 0.5);
+        const x = origin[0] + along[0] / 2 + across[0] * t;
+        const y = origin[1] + along[1] / 2 + across[1] * t;
+        return (
+            <mesh key={`${key}${t}`} position={[x, y, 0]} rotation={[0, 0, angle]}>
+                <planeGeometry args={[len, 1.1]} />
+                <meshStandardMaterial {...DARK} {...decal()} />
+            </mesh>
+        );
+    });
+}
+
+function VentCube({ position, r }: { position: Vec3; r: number }) {
+    const plate = useMemo(() => hexagon(r + 1.5), [r]);
+    const v = (deg: number): Vec2 => [r * Math.cos((deg * Math.PI) / 180), r * Math.sin((deg * Math.PI) / 180)];
+    const o: Vec2 = [0, 0];
+    return (
+        <group position={position} rotation={[0, Math.PI / 2, 0]}>
+            <mesh>
+                <extrudeGeometry args={[plate, { depth: 2, bevelThickness: 0.6, bevelSize: 0.6, bevelSegments: 2 }]} />
+                <meshStandardMaterial {...GUNMETAL} />
+            </mesh>
+            <group position={[0, 0, 2.65]}>
+                {faceSlots(o, v(30), v(150), 4, 't')}
+                {faceSlots(o, v(150), v(-90), 5, 'l')}
+                {faceSlots(o, v(-90), v(30), 5, 'r')}
+            </group>
+        </group>
+    );
+}
+
+function chamferedPlan(halfW: number, halfD: number, chamfer: number): Shape {
+    const s = new Shape();
+    s.moveTo(-halfW, halfD);
+    s.lineTo(halfW, halfD);
+    s.lineTo(halfW, -halfD + chamfer);
+    s.lineTo(halfW - chamfer, -halfD);
+    s.lineTo(-halfW + chamfer, -halfD);
+    s.lineTo(-halfW, -halfD + chamfer);
+    s.closePath();
+    return s;
+}
+
+function Kobra3({ feed }: { feed: ToolheadFeed }) {
+    const w = 60;
+    const h = 100;
+    const depth = 62;
+    const bottom = 8;
+    const top = bottom + h;
+    const front = 26;
+    const cz = front - depth / 2;
+    const bevel = 2.5;
+    const chamfer = 10;
+    const bandTop = bottom + 16;
+    const coverH = top - 3 - bandTop;
+    const coverY = bandTop + coverH / 2;
+    const faceW = w - 2 * chamfer;
+    const facetW = chamfer * Math.SQRT2;
+    const facetH = top - 2 - (bottom + 2);
+    const body = useMemo(
+        () =>
+            new ExtrudeGeometry(chamferedPlan(w / 2 - bevel, depth / 2 - bevel, chamfer - 1), {
+                depth: h - 2 * bevel,
+                bevelThickness: bevel,
+                bevelSize: bevel,
+                bevelSegments: 3,
+                curveSegments: 4,
+            }),
+        [],
+    );
+    const slot = useMemo(() => roundedRect(14, 8, 3.9), []);
+    useEffect(() => () => body.dispose(), [body]);
+    return (
+        <group>
+            <group scale={1.3}>
+                <Tip filament={feed.loaded} />
+            </group>
+            <RoundedBox args={[12, 4.5, 12]} radius={1.5} smoothness={3} position={[0, 6.3, 0]}>
+                <meshStandardMaterial color="#141517" roughness={0.85} />
+            </RoundedBox>
+            <mesh geometry={body} position={[0, bottom + bevel, cz]} rotation={[-Math.PI / 2, 0, 0]}>
+                <meshStandardMaterial {...GUNMETAL} />
+            </mesh>
+            {[-1, 1].map((side) => (
+                <group
+                    key={side}
+                    position={[side * (w / 2 - chamfer / 2), bottom + 2 + facetH / 2, front - chamfer / 2]}
+                    rotation={[0, (side * Math.PI) / 4, 0]}
+                >
+                    <mesh position={[0, 0, 0.05]}>
+                        <planeGeometry args={[facetW, facetH]} />
+                        <meshStandardMaterial {...SILVER} {...decal()} />
+                    </mesh>
+                    <mesh position={[-side * (facetW / 2 - 3.5), coverY - (bottom + 2 + facetH / 2), 0.1]}>
+                        <planeGeometry args={[2, coverH * 0.7]} />
+                        <meshStandardMaterial {...DARK} {...decal(2)} />
+                    </mesh>
+                </group>
+            ))}
+            <mesh position={[0, coverY, front + 0.05]}>
+                <planeGeometry args={[faceW, coverH]} />
+                <meshStandardMaterial color="#0c0d0f" roughness={0.8} {...decal()} />
+            </mesh>
+            <group position={[0, coverY + 4, front + 0.1]}>
+                <mesh>
+                    <ringGeometry args={[15, 16.5, 48]} />
+                    <meshStandardMaterial color="#2a2d32" {...decal(2)} />
+                </mesh>
+                <Spin speed={feed.fanSpeed}>
+                    <Blades count={9} from={5} to={14.5} width={3} z={0} color="#3d4046" />
+                    <mesh>
+                        <circleGeometry args={[5, 32]} />
+                        <meshStandardMaterial color="#2a2d32" {...decal(3)} />
+                    </mesh>
+                </Spin>
+            </group>
+            <mesh position={[0, coverY, front + 1.2]}>
+                <planeGeometry args={[faceW + 1, coverH]} />
+                <meshPhysicalMaterial {...TINTED} />
+            </mesh>
+            <Label text="ANYCUBIC" color="#f4f6f8" height={5.5} glow position={[0, bottom + 8.5, front + 0.05]} />
+            <VentCube position={[w / 2 - 0.6, bottom + h / 2, front - 24]} r={12} />
+            <mesh position={[-w / 2 - 0.05, bottom + 62, cz + 10]} rotation={[0, -Math.PI / 2, 0]}>
+                <shapeGeometry args={[slot, 8]} />
+                <meshStandardMaterial {...DARK} {...decal()} />
+            </mesh>
+            <RoundedBox args={[3, 4, 9]} radius={1} smoothness={2} position={[-w / 2 - 1, bottom + 62, cz + 10]}>
+                <meshStandardMaterial color="#5a5d63" roughness={0.5} />
+            </RoundedBox>
+            <RoundedBox args={[14, 34, 12]} radius={1.5} smoothness={3} position={[-2, top + 15, cz - 4]}>
+                <meshStandardMaterial color="#55585e" roughness={0.55} metalness={0.15} />
+            </RoundedBox>
+            {[-5, 1].map((dx) => (
+                <mesh key={dx} position={[dx, top + 3.5, cz + 2.05]}>
+                    <circleGeometry args={[1.2, 16]} />
+                    <meshStandardMaterial {...DARK} {...decal()} />
+                </mesh>
+            ))}
+            <mesh position={[-2, top + 28, cz + 2.05]}>
+                <planeGeometry args={[6, 1.2]} />
+                <meshStandardMaterial {...DARK} {...decal()} />
+            </mesh>
+            <mesh position={[-2, top + 33, cz - 4]}>
+                <cylinderGeometry args={[2.8, 2.8, 3, 20]} />
+                <meshStandardMaterial color="#f08a24" roughness={0.45} />
+            </mesh>
+            <Tube position={[-2, top + 34.5, cz - 4]} filament={feed.loaded} />
+            <RoundedBox args={[11, 6, 10]} radius={1.5} smoothness={2} position={[14, top + 3, cz - 6]}>
+                <meshStandardMaterial {...DARK} />
+            </RoundedBox>
+            <Cable position={[17, top + 6, cz - 15]} />
+        </group>
+    );
+}
+
+const K3MAX_GREY = { color: '#4b4e53', roughness: 0.7, metalness: 0.08 };
+
+function trapezoidPrism(bottomW: number, topW: number, height: number, depth: number, bevel: number) {
+    const shape = new Shape();
+    shape.moveTo(-bottomW / 2, 0);
+    shape.lineTo(bottomW / 2, 0);
+    shape.lineTo(topW / 2, height);
+    shape.lineTo(-topW / 2, height);
+    shape.closePath();
+    return new ExtrudeGeometry(shape, {
+        depth: depth - 2 * bevel,
+        bevelThickness: bevel,
+        bevelSize: bevel,
+        bevelSegments: 4,
+    });
+}
+
+function Kobra3Max({ feed }: { feed: ToolheadFeed }) {
+    const w = 54;
+    const h = 97;
+    const depth = 58;
+    const bottom = 7;
+    const top = bottom + h;
+    const cowlTop = bottom + 32;
+    const front = 22;
+    const cz = front - depth / 2;
+    const side = w / 2 + 0.05;
+    const fanScale = 0.5;
+    const body = useMemo(() => trapezoidPrism(48, 48, 64, 58, 3), []);
+    const cowl = useMemo(() => trapezoidPrism(31, 49, 36, 52, 2), []);
+    useEffect(
+        () => () => {
+            body.dispose();
+            cowl.dispose();
+        },
+        [body, cowl],
+    );
+    return (
+        <group>
+            <group scale={1.3}>
+                <Tip filament={feed.loaded} />
+            </group>
+            <RoundedBox args={[12, 5, 12]} radius={1.5} smoothness={3} position={[0, 6, 0]}>
+                <meshStandardMaterial color="#6d6f73" roughness={0.4} metalness={0.6} />
+            </RoundedBox>
+            <mesh geometry={body} position={[0, cowlTop - 2, front - depth + 3]}>
+                <meshStandardMaterial {...K3MAX_GREY} />
+            </mesh>
+            <group position={[0, cowlTop + 4, front]} rotation={[0.16, 0, 0]}>
+                <mesh geometry={cowl} position={[0, -36, -50]}>
+                    <meshStandardMaterial {...K3MAX_GREY} />
+                </mesh>
+            </group>
+            <group scale={fanScale}>
+                <BlowerFan
+                    position={[0, (top - 0.42 * h) / fanScale, (front + 0.5) / fanScale]}
+                    speed={feed.fanSpeed}
+                    shell={{ color: '#1f2023', roughness: 0.6, metalness: 0.1 }}
+                />
+            </group>
+            <Label text="ANYCUBIC" color="#d2d5d9" height={6.2} position={[0, top - 9, front + 0.55]} />
+            <group position={[side, cowlTop + 6, front - 12]} rotation={[0, Math.PI / 2, 0]}>
+                {offsets(6, 3.4).flatMap((dy) =>
+                    offsets(4, 3.4).map((dx) => (
+                        <RoundedBox
+                            key={`${dx}|${dy}`}
+                            args={[1.2, 2.9, 0.4]}
+                            radius={0.18}
+                            smoothness={2}
+                            position={[dx, dy, 0]}
+                            rotation={[0, 0, -0.75]}
+                        >
+                            <meshStandardMaterial {...DARK} {...decal()} />
+                        </RoundedBox>
+                    )),
+                )}
+            </group>
+            <RoundedBox args={[20, 12, 16]} radius={2} smoothness={3} position={[2, top + 5, cz]}>
+                <meshStandardMaterial {...DARK} />
+            </RoundedBox>
+            <mesh position={[2, top + 12.5, cz]}>
+                <cylinderGeometry args={[2.8, 2.8, 3, 20]} />
+                <meshStandardMaterial color="#f08a24" roughness={0.45} />
+            </mesh>
+            <Tube position={[2, top + 14, cz]} filament={feed.loaded} />
+            <RoundedBox
+                args={[5, 14, 6]}
+                radius={1.5}
+                smoothness={2}
+                position={[-11, top + 6, cz + 6]}
+                rotation={[0, 0, 0.45]}
+            >
+                <meshStandardMaterial {...DARK} />
+            </RoundedBox>
+            <Cable position={[-17, top, cz - 14]} />
+        </group>
+    );
+}
+
+const S1_SHELL = { color: '#eceef0', roughness: 0.4, metalness: 0.2 };
+const S1_ORANGE = { color: '#e5582d', roughness: 0.5, metalness: 0.05 };
+
+function KobraS1({ feed }: { feed: ToolheadFeed }) {
+    const w = 56;
+    const depth = 50;
+    const bottom = 7;
+    const baseTop = bottom + 10;
+    const top = baseTop + 63;
+    const front = 22;
+    const back = front - depth;
+    const cz = front - depth / 2;
+    const side = w / 2 + 0.05;
+    const fanY = top - 24.6;
+    const slot = useMemo(() => roundedRect(5.5, 1.7, 0.8), []);
+    return (
+        <group>
+            <group scale={1.3}>
+                <Tip filament={feed.loaded} />
+            </group>
+            <RoundedBox args={[11, 4, 11]} radius={1} smoothness={2} position={[0, 5.5, 0]}>
+                <meshStandardMaterial {...SILVER} />
+            </RoundedBox>
+            <RoundedBox
+                args={[w - 1, baseTop - bottom, depth - 1]}
+                radius={3}
+                smoothness={3}
+                position={[0, (bottom + baseTop) / 2, cz]}
+            >
+                <meshStandardMaterial {...S1_ORANGE} />
+            </RoundedBox>
+            <RoundedBox
+                args={[w, top - baseTop + 1, depth]}
+                radius={7}
+                smoothness={4}
+                position={[0, (top + baseTop - 1) / 2, cz]}
+            >
+                <meshStandardMaterial {...S1_SHELL} />
+            </RoundedBox>
+            <group position={[0, fanY, front]}>
+                <mesh position={[0, 0, 0.05]}>
+                    <ringGeometry args={[12.4, 15, 64]} />
+                    <meshStandardMaterial color="#f2f3f5" roughness={0.35} metalness={0.2} {...decal()} />
+                </mesh>
+                <mesh position={[0, 0, 0.05]}>
+                    <circleGeometry args={[12.4, 64]} />
+                    <meshStandardMaterial color="#141517" roughness={0.8} {...decal()} />
+                </mesh>
+                <mesh position={[0, 0, 0.05]}>
+                    <ringGeometry args={[11.2, 12.4, 64]} />
+                    <meshStandardMaterial color="#2c2e31" roughness={0.7} {...decal(2)} />
+                </mesh>
+                <group position={[0, 0, 0.1]}>
+                    <Spin speed={feed.fanSpeed}>
+                        <Blades count={24} from={9} to={11.2} width={0.7} z={0} color="#26282b" />
+                    </Spin>
+                </group>
+                <mesh scale={[1, 1, 0.35]}>
+                    <sphereGeometry args={[9, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                    <meshStandardMaterial color="#1c1d20" roughness={0.55} />
+                </mesh>
+                <mesh position={[0, 0, 3.2]}>
+                    <circleGeometry args={[0.7, 16]} />
+                    <meshStandardMaterial color="#050506" {...decal()} />
+                </mesh>
+            </group>
+            <Label text="ANYCUBIC" color="#6a6c70" height={6.3} position={[0, baseTop + 7.4, front + 0.05]} />
+            <group position={[side, top - 41, front - 15]} rotation={[0, Math.PI / 2, 0]}>
+                {offsets(4, 4.6).flatMap((dy, r) =>
+                    offsets(4, 4.4).map((dx) => (
+                        <mesh key={`${dx}|${dy}`} position={[dx + r * 2.6 - 3.9, dy, 0]} rotation={[0, 0, 0.85]}>
+                            <shapeGeometry args={[slot, 8]} />
+                            <meshStandardMaterial {...DARK} {...decal()} />
+                        </mesh>
+                    )),
+                )}
+            </group>
+            <RoundedBox args={[5, 18, 9]} radius={1.2} smoothness={2} position={[side + 2.5, top - 10, back + 12]}>
+                <meshStandardMaterial color="#5c6066" roughness={0.4} metalness={0.5} />
+            </RoundedBox>
+            <RoundedBox args={[4, 6, 6]} radius={1.2} smoothness={2} position={[side + 6, top - 4, back + 12]}>
+                <meshStandardMaterial {...DARK} />
+            </RoundedBox>
+            <RoundedBox args={[16, 6, 14]} radius={1.5} smoothness={2} position={[-6, top + 3, cz]}>
+                <meshStandardMaterial {...S1_SHELL} />
+            </RoundedBox>
+            <Tube position={[-6, top + 6, cz]} filament={feed.loaded} />
+            <Cable position={[14, top, cz - 10]} />
+        </group>
+    );
+}
+
 export function Toolhead({ model, feed }: { model: ToolheadModel; feed: ToolheadFeed }) {
-    return model === 'kobra-x' ? <KobraX feed={feed} /> : <Kobra4 feed={feed} />;
+    if (model === 'kobra-x') return <KobraX feed={feed} />;
+    if (model === 'kobra-3') return <Kobra3 feed={feed} />;
+    if (model === 'kobra-3-max') return <Kobra3Max feed={feed} />;
+    if (model === 'kobra-s1') return <KobraS1 feed={feed} />;
+    return <Kobra4 feed={feed} />;
 }
