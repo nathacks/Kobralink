@@ -34,7 +34,11 @@ Quitting Kobralink does not stop a print that has already started: the printer h
 ## Updates
 
 The app checks for updates on GitHub at launch and every 6 hours. It asks before downloading, then before restarting. You
-can also use **Check for Updates…** in the menu.
+can also use **Check for Updates…** in the menu. **Skip this version** stops the prompt for that version until a newer one is released (the menu check still shows it).
+
+On Windows and Linux, the download progress is shown in the app and on the taskbar icon, and **Restart** installs the update.
+On macOS the app is not signed by Apple, so automatic installation is not possible: the app offers to open the GitHub release,
+download the `.dmg` and replace the app in **Applications**.
 
 ## Where data is stored
 
