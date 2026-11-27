@@ -161,7 +161,7 @@ function Lines({
     useFrame(() => {
         const { base, top, ends, attribute, tip } = built;
         if (!ends.length) return;
-        const p = progress.current;
+        const p = progress.current && progress.current.layer >= shown ? progress.current : null;
         const index = p ? p.layer : layerIndex(shown, ends);
         const start = index > 0 ? ends[index - 1] : 0;
         const v = p ? start + p.seg * 2 + 1 : -1;
@@ -239,7 +239,7 @@ function Solid({
     useFrame(() => {
         const { mesh, ends, reach, tip } = built;
         if (!ends.length) return;
-        const p = progress.current;
+        const p = progress.current && progress.current.layer >= shown ? progress.current : null;
         const i = p ? (p.layer > 0 ? ends[p.layer - 1] : 0) + p.seg : -1;
         if (tip.i >= 0 && tip.i !== i) {
             mesh.setMatrixAt(tip.i, tip.m);
@@ -365,7 +365,7 @@ function Nozzle({
                 : [m.fromXY[0] + (m.toXY[0] - m.fromXY[0]) * k, m.fromXY[1] + (m.toXY[1] - m.fromXY[1]) * k];
         at.current = [x, y];
         ref.current.position.set(x - cx, m.z, -(y - cy));
-        progress.current = spot;
+        progress.current = spot ?? (progress.current?.layer === hint.current ? progress.current : null);
     });
 
     return (
@@ -423,6 +423,7 @@ export function GcodeScene({
     resetSignal,
     tint,
     nozzle,
+    live = false,
     showHead = true,
     toolhead = 'kobra-4',
     feed,
@@ -437,6 +438,7 @@ export function GcodeScene({
     resetSignal: number;
     tint?: string;
     nozzle?: ToolheadPosition | null;
+    live?: boolean;
     showHead?: boolean;
     toolhead?: ToolheadModel;
     feed?: ToolheadFeed;
@@ -445,6 +447,7 @@ export function GcodeScene({
 }) {
     const colors = useThemeColors();
     const progress = useRef<Progress | null>(null);
+    const done = live ? shown - 1 : shown;
     const shownTint = visibleTint(tint);
     const span = Math.max(1, data.maxX - data.minX, data.maxY - data.minY);
     const height = data.layers.length ? data.layers[data.layers.length - 1].z : 1;
@@ -461,6 +464,7 @@ export function GcodeScene({
     return (
         <Canvas
             dpr={[1, 2]}
+            resize={{ offsetSize: true }}
             camera={{ position: [distance * 0.7, distance * 0.6, distance * 0.7], fov: 45, near: 0.1, far: 10000 }}
         >
             <ambientLight intensity={mode === 'lines' ? 1 : 0.9} />
@@ -494,14 +498,14 @@ export function GcodeScene({
             {mode !== 'lines' ? (
                 <Solid
                     data={data}
-                    shown={shown}
+                    shown={done}
                     palette={palette}
                     fallback={shownTint ?? colors.primary}
                     progress={progress}
                     ghost={mode === 'ghost'}
                 />
             ) : (
-                <Lines data={data} shown={shown} colors={colors} tint={shownTint} progress={progress} />
+                <Lines data={data} shown={done} colors={colors} tint={shownTint} progress={progress} />
             )}
             {nozzle && feed && (
                 <Nozzle

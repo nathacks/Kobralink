@@ -41,7 +41,7 @@ export const PREVIEW_DIALOG_CLASS = 'max-h-[96svh] overflow-y-auto rounded-3xl s
 export function GcodePreview({ printerId, file }: { printerId: string; file: GcodeFileDto }) {
     const status = useParsedGcode(printerId, file);
     const [layer, setLayer] = useState(0);
-    const [follow, setFollow] = useState(false);
+    const [follow, setFollow] = useState(true);
     const [mode, setMode] = useState<SceneMode>('solid');
     const [pan, setPan] = useState(false);
     const [resetSignal, setResetSignal] = useState(0);
@@ -143,6 +143,7 @@ export function GcodePreview({ printerId, file }: { printerId: string; file: Gco
                                 pan={pan}
                                 resetSignal={resetSignal}
                                 nozzle={nozzle}
+                                live={following}
                                 showHead={showHead}
                                 toolhead={toolhead}
                                 plate={plate}
