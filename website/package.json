@@ -1,6 +1,6 @@
 {
     "name": "@kobralink/website",
-    "version": "0.0.0",
+    "version": "1.4.0",
     "private": true,
     "scripts": {
         "build": "next build",
